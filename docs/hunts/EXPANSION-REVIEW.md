@@ -4,7 +4,7 @@
 
 Status lives in the [build backlog](../BUILD-BACKLOG.json), never this file: `pnpm backlog`, `pnpm ledger:view FH-048`, and the two rows this review files, `pnpm ledger:view FH-048S` and `pnpm ledger:view FH-048T`.
 
-Reviewed 2026-11-16 by an agent, from the integration tree (main plus the first-wave Hunts branches). Sources: `lib/hunts/`, [the switches](../../lib/hunts/flags.ts), [the Hunts runbook](../RUNBOOKS.md#frequency-hunts-switches), `.env.example`, the FH rows in the ledger and the other pages in this folder.
+Reviewed 2026-11-16 by an agent and brought up to date against `main` on 2026-11-23, after the screens for teams, challenges, editions, count rules, the finale panel and route health merged. Sources: `lib/hunts/`, [the switches](../../lib/hunts/flags.ts), [the Hunts runbook](../RUNBOOKS.md#frequency-hunts-switches), `.env.example`, the FH rows in the ledger and the other pages in this folder.
 
 ## What this review could not do
 
@@ -17,7 +17,7 @@ Reviewed 2026-11-16 by an agent, from the integration tree (main plus the first-
 | Per-expansion approvals, switch, monitoring, rollback | Done as an inventory, below | Read from the tree. |
 | Legacy active use and obligations | Queries written, not run | No database was read for this review. |
 
-No production value was read: not a switch, not a row count, not a log line. Where this page says a switch is off in production, that rests on the runbook rule and the program brief, not on a reading.
+No production value was read: not a switch, not a row count, not a log line. Where this page says a switch is off in production, that rests on the runbook rule and the program brief, not on a reading. Where it says a migration is applied, that is what the named row records.
 
 ## Needs your call
 
@@ -27,6 +27,7 @@ Sorted by what blocks the most.
 |---|---|---|
 | 🔴 | **No expansion has its own switch.** Five of the six share a switch with a base capability or with each other (table below). The row's bar of "its own flag" is not met for any of them. Tracked as FH-048T. | Product and release |
 | 🔴 | **No pilot has run**, so nothing here chooses an expansion. The comparison is owed after the first pilot. Tracked as FH-048S. | Product and release |
+| 🔴 | **Claims on now means teams, forks and Mystery on.** Their player and author screens have shipped, so no missing screen keeps them dark any more. `HUNTS_CLAIMS_ENABLED` with `HUNTS_AUTHORING_ENABLED` opens all three at once. Part of FH-048T. | Product and release |
 | ⚠️ | **No event tells an expansion apart.** The five Hunt events carry no team, branch, edition, gift or sponsor dimension, and "cohort" in the event model means guest, member or staff, not a pilot group. | Product and analytics |
 | ⚠️ | **Turning the commerce switch off stops refund handling for Hunt benefits and Trail gifts.** For money features the safe stop is the sales pause, not the switch. See "Rollback for money features". | Finance and release |
 | ⚠️ | **Legacy retirement has no inventory.** The queries are below. Nobody has run them. | Owner |
@@ -51,27 +52,29 @@ Six capability switches in [`lib/hunts/flags.ts`](../../lib/hunts/flags.ts), plu
 
 | Expansion | Switch that gates it today | Own switch? | Other locks in code or data |
 |---|---|---|---|
-| Teams | `HUNTS_CLAIMS_ENABLED` | **No.** Shared with every solo claim. Claims on means teams on. | None. Migration `20270346082000` must be applied or the commands do not exist. |
-| Branches, choices and Mystery | `HUNTS_CLAIMS_ENABLED` at the claim door | **No.** The graph engine has no switch at all: a published route with a choice group is evaluated wherever claims are on. | No screen can author one yet, which is the only thing keeping it dark. |
+| Teams | `HUNTS_CLAIMS_ENABLED` | **No.** Shared with every solo claim. Claims on means teams on, and the team panel is on the play page. | None. FH-043T records migration `20270346082000` as applied on 2026-11-17. |
+| Branches, choices and Mystery | `HUNTS_CLAIMS_ENABLED` at the claim door | **No.** The graph engine has no switch at all: a published route with a choice group is evaluated wherever claims are on. | None. The challenges list in the Trail editor authors a fork or a Mystery wherever `HUNTS_AUTHORING_ENABLED` is on. |
 | Fundraisers: gifts | `HUNTS_COMMERCE_ENABLED` | **No.** Shared with paid passes, store items and sponsor milestones. | Per Trail: an ask opens only with `enabled` set and a recorded approver on `hunt_donation_asks`. No screen writes the approver. |
 | Fundraisers: sponsor milestones | `HUNTS_COMMERCE_ENABLED` | **No.** Same shared switch. | Per Trail: an active agreement with a recorded approver on `hunt_sponsor_agreements`. No screen writes one. |
-| Seasonal editions | `HUNTS_AUTHORING_ENABLED` for release and import, `HUNTS_ENABLED` for reads | **No.** Shared with all authoring. | Migration `20270346082000` must be applied. |
+| Seasonal editions | `HUNTS_AUTHORING_ENABLED` for release and import, `HUNTS_ENABLED` for reads | **No.** Shared with all authoring. | None. The editor's publish step releases an edition for any Trail that already has a live one. |
 | Collective and partner model | `HUNTS_AUTHORING_ENABLED` for invites and partner pages, `HUNTS_CLAIMS_ENABLED` for route health and the venue report | **No.** | `PARTNER_TERMS.approved` is `false` in [`lib/hunts/partners.ts`](../../lib/hunts/partners.ts), so no venue can accept. That is a code constant, changed by a deploy, not a switch. |
 | Paid passes | `HUNTS_COMMERCE_ENABLED` | **Closest, still shared.** The switch also opens store-item benefits, gifts and sponsor milestones. | The sales pause on `/hunts/finance` (`hunt_commerce_state`, audited) closes pass sales alone, without a deploy. |
 
 ### Teams
 
 - **Built.** [`lib/hunts/teams.ts`](../../lib/hunts/teams.ts), [`lib/hunts/team-store.ts`](../../lib/hunts/team-store.ts), [the five team actions](../../app/%28main%29/hunts/%5Bslug%5D/play/team-actions.ts), migration `20270346082000_hunt_teams_editions.sql` with `supabase/tests/hunt_teams.test.sql`. A team shares one run, so one stop is one credit per team.
-- **Not built.** Team screens, a non-captain's scan, and the award split call: FH-043S.
-- **Approvals owed.** Database owner applies the migration and confirms the two-session check (FH-043S). Owner decides whether teammates see each other's names (FH-043S). FH-016V and FH-019 come first: no solo Trail has been walked on a real database.
+- **Built since the first pass.** [The team panel](../../components/hunts/team-panel.tsx) on the play page (start, join from the captain's link, lock, leave, the team's stop count), and a team member's scan credits the team run.
+- **Not built.** The award split: nothing calls `hunt_team_award_allocate`, so a finished team's reward goes to the captain. A roster that shows first names. Both FH-043T.
+- **Approvals owed.** Database owner confirms the two-session lock check by hand (FH-043T). The owner has ruled that teammates see first names only. FH-016V and FH-019 come first: no solo Trail has been walked on a real database.
 - **Monitoring.** Route health counts runs, and a team is one run, so team and solo runs are not told apart. No team event exists.
 - **Rollback.** Unset `HUNTS_CLAIMS_ENABLED`, which also stops solo claims. `hunt_teams`, `hunt_team_members`, `hunt_team_awards`, the shared run and its credits all stay. Nothing is deleted.
 
 ### Branches, choices and Mystery
 
 - **Built.** [`lib/hunts/graph/branches.ts`](../../lib/hunts/graph/branches.ts), [`lib/hunts/mystery.ts`](../../lib/hunts/mystery.ts). No migration.
-- **Not built.** The player answer form, authoring, and a real two-session race on Postgres: FH-042S.
-- **Approvals owed.** Game systems decides whether the claim command itself should refuse a second member of a choice group (FH-042S, item 4). Until then a staff approval of a held claim can add a second credit, and the evaluator keeps the earlier one.
+- **Built since the first pass.** [The challenges list](../../components/hunts/trail-challenges.tsx) in the Trail editor ([`lib/hunts/challenges.ts`](../../lib/hunts/challenges.ts)), the player's answer field, and a Mystery that is out of tries no longer reads as the next stop.
+- **Not built.** A real two-session race of two branches on Postgres, and a pass on real phones: FH-042T.
+- **Approvals owed.** The owner decides whether the claim command itself should refuse a second member of a choice group (FH-042T, item 1). Today the evaluator closes the other branches and the progress count under the run lock refuses the second claim; the command has no rule of its own.
 - **Monitoring.** `hunt.stop_claim` records the reason class only. The Mystery answers (`answer_wrong`, `answer_locked`) are not in the class map in [`lib/hunts/analytics.ts`](../../lib/hunts/analytics.ts), so they fold into `unavailable`, the same class as an unknown error. A Mystery that locks players out cannot be told from a fault in events. Route health shows where runs wait and stall per stop, which is the nearest signal.
 - **Rollback.** Unset `HUNTS_CLAIMS_ENABLED`. Credits, claims and answer attempts stay. A choice already credited stays chosen.
 
@@ -86,23 +89,25 @@ Six capability switches in [`lib/hunts/flags.ts`](../../lib/hunts/flags.ts), plu
 ### Seasonal editions
 
 - **Built.** [`lib/hunts/editions.ts`](../../lib/hunts/editions.ts), [`lib/hunts/edition-store.ts`](../../lib/hunts/edition-store.ts), [the edition actions](../../app/%28main%29/hunts/edition-actions.ts), `supabase/tests/hunt_editions.test.sql`.
-- **Not built.** Release and import screens, and the player's view of an earlier edition: FH-044S. The editor's publish step still calls the older action, which carries no printed code forward.
-- **Approvals owed.** Owner rules on runs in flight at a release: today such a run becomes a record and takes no new credit (FH-044S, item 1). Database owner applies the migration. An operator walks one release with real printed codes (FH-044S, item 6).
+- **Built since the first pass.** The editor's publish step releases a new edition and shows the crosswalk, the printed codes that move, the retired codes and the players left on the old edition before the tap. The owner's rule is in the claim command: a run in flight keeps earning on its own edition for 7 days after a release (migration `20270346250000_hunt_edition_grace.sql`, `supabase/tests/hunt_edition_grace.test.sql`).
+- **Not built.** The two import doors, and the player's view of a run and rewards on an earlier edition: FH-044T.
+- **Approvals owed.** An operator walks one release with real printed codes and confirms a run started before it can finish inside the 7 days (FH-044T, item 3).
 - **Monitoring.** No release event and no edition dimension. A claim on a superseded edition answers `version_superseded`, which folds into the `closed` class with nine other answers.
-- **Rollback.** Unset `HUNTS_AUTHORING_ENABLED`, which stops all authoring. **A release is not undone by the switch.** A published edition is frozen by a trigger and moves forward to superseded only. Rolling back a bad edition means releasing another one.
+- **Rollback.** Unset `HUNTS_AUTHORING_ENABLED`, which stops all authoring. **A release is not undone by the switch.** A published edition is frozen by a trigger and moves forward to superseded only. Rolling back a bad edition means releasing another one, and runs on the edition before it keep their 7 days.
 
 ### The collective and partner model
 
 - **Built.** [`lib/hunts/partners.ts`](../../lib/hunts/partners.ts), [`lib/hunts/partner-store.ts`](../../lib/hunts/partner-store.ts), the partner pages under `app/(main)/hunts/partners/` and `app/(main)/hunts/edit/[id]/partners/`, count rules in [`lib/hunts/graph/count-rules.ts`](../../lib/hunts/graph/count-rules.ts), the finale gate in [`lib/hunts/rally-finale.ts`](../../lib/hunts/rally-finale.ts), [route health](../../lib/hunts/route-health.ts) and [the merchant report](../../lib/hunts/merchant-report.ts).
-- **Not built.** Acceptance on approved terms (FH-029S), authoring for N-of-M and chapters and live closures (FH-030S), the finale on any screen (FH-031S), live partner state in route health (FH-032S).
+- **Built since the first pass.** [The Shape step](../../components/hunts/trail-shape.tsx) authors any N of M stops and regions, a stop can name a partner venue, and live closures reach both the publish check and the player ([`lib/hunts/closures.ts`](../../lib/hunts/closures.ts)). [The finale panel](../../components/hunts/finale-panel.tsx) is on the play page. Route health reads live partner state.
+- **Not built.** Acceptance on approved terms (FH-029S). The author's finale Event picker, the seat check on the completion reward, the Event stop's door credit and the finale notice (FH-031T). A substitute placement for one stop. Nobody has run the acceptance cases: a real 3 of 5 publish, a refused closure, a player seeing a closed stop.
 - **Approvals owed.** FH-028S: a real operator walks [the partner agreement](PARTNER-AGREEMENT.md) and the partnerships owner, finance and counsel approve it. It is a draft with four open questions. FH-023 (contact policy, Privacy and CRM) before any venue receives a contact. FH-033 (district drill) and FH-034 (regional pilot, Local operations) have not run.
-- **Monitoring.** This is the best covered expansion. Organisers get `/hunts/<slug>/health`: stops reached, waiting and stalled (24 hours), placements open and closed, each venue's counts, and the outbox as message status. Venue staff get `/hunts/<slug>/report` and two exports, with cells under five hidden. Limit recorded in FH-032S: a venue withdrawn through the partner flow is not yet dropped from the active list.
+- **Monitoring.** This is the best covered expansion. Organisers get `/hunts/<slug>/health`: stops reached, waiting and stalled (24 hours), placements open and closed, each venue's counts, and the outbox as message status. Venue staff get `/hunts/<slug>/report` and two exports, with cells under five hidden. A venue that withdraws leaves the active list on the next read and its past counts stay under former venues. The finale counts read zero until something queues the finale notice (FH-031T).
 - **Rollback.** Unset the switch for the surface in question. Partner rows, pinned terms and earned credit stay. A single venue leaves by withdrawal or revocation, which blocks new proof there and keeps earlier credit, with no switch change.
 
 ### Paid passes
 
 - **Built.** [`lib/hunts/pass-binding.ts`](../../lib/hunts/pass-binding.ts), [`lib/hunts/pass-gate.ts`](../../lib/hunts/pass-gate.ts), [`lib/hunts/pass-checkout.ts`](../../lib/hunts/pass-checkout.ts), [`lib/hunts/commerce-webhook.ts`](../../lib/hunts/commerce-webhook.ts), the finance view at `/hunts/finance`, and the signed event matrix in [`lib/hunts/pilot-commerce-matrix.test.ts`](../../lib/hunts/pilot-commerce-matrix.test.ts).
-- **Approvals owed.** FH-035 (D7 funds flow). FH-036T: the owner's drill of pausing and reopening sales. FH-041S: a real sale, a real refund, payout proof and the operator's sign-off. The owner has declined real-card runs for now, and [the gate record](PILOT-COMMERCE.md) is unsigned. Migrations `20270346041000` and `20270346083000` must be applied.
+- **Approvals owed.** FH-035 (D7 funds flow). FH-036T: the owner's drill of pausing and reopening sales. FH-041S: a real sale, a real refund, payout proof and the operator's sign-off. The owner has declined real-card runs for now, and [the gate record](PILOT-COMMERCE.md) is unsigned.
 - **Monitoring.** `/hunts/finance` is the reconciling view. `hunt_commerce_audit` records each sales pause. A swallowed hook failure leaves a pending `hunt_commerce_intents` row with its error, retried twelve times and then left for review, or a `[hunts-commerce]` log line. No Hunt event fires on a sale.
 - **Rollback.** Pause sales first. See below.
 
@@ -127,9 +132,11 @@ None of these was observed in the field. Each is a limit a row or a gate page al
 | The accessibility and low-signal script has not been run on real phones | FH-017S |
 | An opened dispute suspends nothing: a benefit stays usable until the dispute closes | [Gate record](PILOT-COMMERCE.md) |
 | A refund handled before the ticket first settles is not seen | [Gate record](PILOT-COMMERCE.md) |
-| A run in flight when an edition is released takes no new credit | FH-044S |
-| Two live Postgres sessions racing for the last reward unit are checked by hand only | [Evidence](EVIDENCE.md), FH-002S |
-| A legacy capped check-in code admits two members at its last unit | FH-002S |
+| A run in flight when an edition is released stops earning 7 days later, and no release has been walked with printed codes | FH-044T |
+| A finished team's reward goes to the captain alone | FH-043T |
+| A completion reward is not yet held back for a player with no seat at the finale Event | FH-031T |
+| Two branches of one fork claimed at once have only been modelled, never raced on Postgres | FH-042T |
+| Two live Postgres sessions racing for the last reward unit are checked by hand only | [Evidence](EVIDENCE.md) |
 
 ## Legacy retirement
 
@@ -147,11 +154,11 @@ These paths are on main. They are not behind any Hunts switch. Whether `LOYALTY_
 | Host and stop management | [`lib/loyalty/hunt-actions.ts`](../../lib/loyalty/hunt-actions.ts), [`components/spaces/loyalty/hunts-panel.tsx`](../../components/spaces/loyalty/hunts-panel.tsx) | `LOYALTY_ENABLED` | Invited Spaces that accepted a stop. |
 | Rewards wallet and roster | [`app/(main)/rewards/page.tsx`](../../app/%28main%29/rewards/page.tsx), `app/api/v1/rewards/route.ts`, [`lib/loyalty/store.ts`](../../lib/loyalty/store.ts) | `LOYALTY_ENABLED` | Earned reward codes not yet handed out. The table has no expiry column, so an unredeemed reward is owed with no end date. |
 | QR campaigns | `app/q/[slug]/route.ts`, `season_challenges`, `challenge_qr_codes` | None of the above | Printed codes in the field, and Quest awards already paid. |
-| Check-in codes with a cap | [`lib/engagement/verify.ts`](../../lib/engagement/verify.ts), `nodes.max_claims` | None of the above | "First N win" promises on printed codes. |
+| Check-in codes with a cap | [`lib/engagement/verify.ts`](../../lib/engagement/verify.ts), [`lib/engagement/capture.ts`](../../lib/engagement/capture.ts), `nodes.max_claims` | None of the above | "First N win" promises on printed codes. The cap now holds at its last place (FH-002S, closed 2026-11-20). |
 
 The runbook's own rollback for Regulars is to unset the switch: earned rewards stay readable and nothing is deleted ([Regulars runbook](../RUNBOOKS.md#regulars-live-940-adr-1780)). Retirement is a different act from that rollback and has no runbook.
 
-The Hunts import tools ([`lib/hunts/editions.ts`](../../lib/hunts/editions.ts)) copy a legacy hunt's title and places into an unpublished draft. They carry no stamp, completion or reward across. An import does not discharge any obligation in the table above.
+The Hunts import tools ([`lib/hunts/editions.ts`](../../lib/hunts/editions.ts)) copy a legacy hunt's title and places into an unpublished draft. They carry no stamp, completion or reward across, and no screen calls them yet (FH-044T). An import does not discharge any obligation in the table above.
 
 ### Queries to measure active use and obligations
 
