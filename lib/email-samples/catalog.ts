@@ -278,7 +278,7 @@ const FREE_HUMAN_BRAND: FreeHumanEmailBrand = {
   unsubscribeUrl: `${SITE}/unsubscribe/s`,
   manageUrl: `${SITE}/manage-emails`,
 }
-/** The Bold and Wildheart kits' four emails. Every default is generic and coaches the owner what to write there. */
+/** The Bold, Wildheart and Aiden Tyack kits' four emails. Every default is generic and coaches the owner what to write there. */
 const houseKitBrand = (theme: HouseKitEmailTheme): HouseKitEmailBrand => ({
   theme,
   spaceName: 'Your Space name',
@@ -292,6 +292,7 @@ const houseKitBrand = (theme: HouseKitEmailTheme): HouseKitEmailBrand => ({
 const HOUSE_KIT_COVER: Record<HouseKitEmailTheme, string> = {
   bold: `${SITE}/brand/frequency/photos/boc-fire-night.jpg`,
   wildheart: `${SITE}/brand/wildheart/photos/cacao-circle.jpg`,
+  'aiden-tyack': `${SITE}/sites/aiden-tyack/photos/riders-on-coast-road.webp`,
 }
 const HOUSE_KIT_DATES = [
   { lead: '14', title: 'Name the gathering', sub: 'Time · Where it happens · How many spots are left' },
@@ -444,6 +445,8 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   // ── The Bold and Wildheart Theme Kits' emails (generic, coaching defaults) ─────────────────────────────
   ...houseKitSamples('bold'),
   ...houseKitSamples('wildheart'),
+  // The private Aiden Tyack theme's four letters (LIVE-2515), for the aidentyack Space's own mail.
+  ...houseKitSamples('aiden-tyack'),
   ...NEW_WORLD_EMAIL_TYPES.map((type) => ({ id: `new-world-${type}`, group: 'Spaces and campaigns' as const, run: () => { const k = newWorldKitEmailFrom(newWorldKitSpotlightContent('general')); return { to: TO, ...newWorldKitEmail(type, { ...SERVICES_BRAND, ...k.brand, accent: NEW_WORLD_EMAIL_TIDE }, k.facts) } } })),
   ...CYBERWITCH_EMAIL_TYPES.map((type) => ({ id: `cyberwitch-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...cyberwitchKitEmail(type, CYBERWITCH_BRAND) }) })),
   ...MINDLESS_EMAIL_TYPES.map((type) => ({ id: `mindless-${type}`, group: 'Spaces and campaigns' as const, run: () => ({ to: TO, ...mindlessKitEmail(type, MINDLESS_BRAND) }) })),

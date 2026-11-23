@@ -6,19 +6,24 @@ import { HOUSE_KIT_LAYOUTS_CSS } from './house-kit-layouts-css'
 import { HOUSE_KIT_LAYOUT_KEYS, HOUSE_KIT_PREFIX, houseKitSpotlightContent, type HouseKitTheme } from '@/lib/spotlight/house-kit-content'
 import { asSpotlightLayoutId, isHouseKitLayout, spaceLayoutId, spaceLooksFor, spotlightLayoutsFor } from '@/lib/spotlight/layouts'
 import { MEGA_SURFACES } from '@/lib/theme/mega-surfaces'
+import { THEME_PRESETS, validateSpotlightTheme } from '@/lib/spotlight/theme'
 
-const THEMES: HouseKitTheme[] = ['bold', 'wildheart', 'midnight']
+const THEMES: HouseKitTheme[] = ['bold', 'wildheart', 'midnight', 'aiden-tyack']
 const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/
 // The root's style attribute carries the theme's own token set; everything else must be free of literal colour.
 const body = (html: string) => html.replace(/<style>[\s\S]*?<\/style>/, '').replace(/ style="[^"]*"/, '')
 
-describe('House kit Spotlight layouts (Bold, Wildheart, Nocturne)', () => {
+describe('House kit Spotlight layouts (Bold, Wildheart, Nocturne, Aiden Tyack)', () => {
   it('registers the six layouts for each theme under its own prefix', () => {
     expect(HOUSE_KIT_LAYOUT_LABELS.map((l) => l.key)).toEqual([...HOUSE_KIT_LAYOUT_KEYS])
     for (const t of THEMES) {
       const ids = spotlightLayoutsFor(t).map((l) => l.id)
       expect(ids).toEqual(HOUSE_KIT_LAYOUT_KEYS.map((k) => `${HOUSE_KIT_PREFIX[t]}:${k}`))
-      for (const id of ids) expect(isHouseKitLayout(asSpotlightLayoutId(id)!)).toBe(true)
+      for (const id of ids) {
+        expect(isHouseKitLayout(id)).toBe(true)
+        // A private theme's layout is never a value a member Spotlight may store; a public one round-trips.
+        expect(asSpotlightLayoutId(id)).toBe(t === 'aiden-tyack' ? null : id)
+      }
       expect(spaceLooksFor(t)).toHaveLength(6)
       expect(spaceLayoutId(t, 'story')).toBe(`${HOUSE_KIT_PREFIX[t]}:story`)
     }
@@ -36,6 +41,12 @@ describe('House kit Spotlight layouts (Bold, Wildheart, Nocturne)', () => {
         expect(html).not.toContain('—')
       }
     }
+  })
+
+  it('keeps the private Aiden Tyack layouts off every public Spotlight list', () => {
+    expect(THEME_PRESETS.some((p) => p.id === 'aiden-tyack' || p.theme.layout?.startsWith('aiden-tyack-kit:'))).toBe(false)
+    expect(spaceLooksFor('aiden-tyack').map((l) => l.look)).toEqual([...HOUSE_KIT_LAYOUT_KEYS])
+    expect(validateSpotlightTheme({ layout: 'aiden-tyack-kit:stack' }).layout).toBeUndefined()
   })
 
   it('draws nothing for another theme\'s layout id', () => {

@@ -13,7 +13,7 @@ import {
 // The Bold and Wildheart kits' four emails: email-safe markup, the theme's own flat token set as literals, the
 // owner's accent when it is a real pick, escaped input, no dead link and no em dash in the words the kit adds.
 
-const THEMES: HouseKitEmailTheme[] = ['bold', 'wildheart']
+const THEMES: HouseKitEmailTheme[] = ['bold', 'wildheart', 'aiden-tyack']
 const brand = (theme: HouseKitEmailTheme, accent?: string): HouseKitEmailBrand => ({
   theme,
   accent,
@@ -74,6 +74,10 @@ describe('House kit emails (Bold, Wildheart)', () => {
     expect(all('bold').note.html).toContain('Sofia Sans Extra Condensed')
     expect(all('bold').note.html).toContain('text-transform:uppercase')
     expect(all('wildheart').note.html).toContain('IM Fell English')
+    // Aiden Tyack's blackletter is never set in caps.
+    expect(all('aiden-tyack').note.html).toContain('Grenze Gotisch')
+    expect(all('aiden-tyack').note.html).toContain("font:700 40px/1.04 'Grenze Gotisch', Georgia, 'Times New Roman', serif;color:")
+    expect(all('aiden-tyack').note.html).toContain("font:400 20px/1.4 'Cormorant Garamond'")
   })
 
   it('never links a script url', () => {
