@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { huntSwitchOn } from '@/lib/hunts/flags'
+import { loadFinaleEventOptions } from '@/lib/hunts/finale-store'
 import { loadTrail } from '@/lib/hunts/store'
 import { TrailEditor } from '@/components/hunts/trail-editor'
 import { previewReleaseAction, releaseEditionAction } from '../../edition-actions'
@@ -30,5 +31,7 @@ export default async function EditTrailPage({ params }: { params: Promise<{ id: 
   // FH-044S: a Trail with a live edition releases its open draft as the next edition, so the publish
   // step carries the printed codes forward and shows who is left on the old one before the tap.
   const edition = state.releasesEdition ? { release: releaseEditionAction, preview: previewReleaseAction } : null
-  return <TrailEditor initial={state} manage={manage} edition={edition} />
+  // FH-031T: the Events this trail may end at, loaded after loadTrail authorised the caller.
+  const finaleEvents = await loadFinaleEventOptions(state.huntId)
+  return <TrailEditor initial={state} manage={manage} edition={edition} finaleEvents={finaleEvents} />
 }

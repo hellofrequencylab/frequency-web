@@ -57,6 +57,8 @@ export const HUNT_MANIFEST: EntityManifest = {
     // FH-030S: a Passport's threshold (TrailDraft.finishCount), published as the finish group's
     // min_count (lib/hunts/draft.ts publishRows). Stops at one venue count once toward it.
     { path: 'finishCount', label: 'Players finish after this many stops', kind: 'number', section: 'shape', placement: 'rail' },
+    // FH-031T: the host Event a trail ends at. The editor loads the choices (lib/hunts/finale-store.ts): Events of the Hunt's own Space or a live partner.
+    { path: 'finaleEventId', label: 'Finale event (optional)', kind: 'reference', section: 'publishing', optionsFrom: 'finaleEvents', placement: 'rail' },
   ],
   repeats: [
     {

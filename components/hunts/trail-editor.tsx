@@ -48,6 +48,7 @@ import { remapChallenges } from '@/lib/hunts/challenges'
 import { TrailChallenges, type EditableChallenge } from './trail-challenges'
 import { TrailShape } from './trail-shape'
 import { EDITOR_STEPS, TRAIL_STEPS, stepNumber, type EditorStep } from './trail-steps'
+import { FinaleEventField } from './finale-event-field'
 
 // The stop fields, from the manifest's repeat. The kernel keeps a repeat field's `section` on the
 // group, so each def gets it back here before the control renders it.
@@ -92,7 +93,7 @@ type ManageLinks = { health: string; report: string }
 /** FH-044S: the edition actions the page hands in, for a Trail that already has a live edition. */
 export type EditionActions = { release: typeof releaseEditionAction; preview: typeof previewReleaseAction }
 
-export function TrailEditor({ initial, manage = null, edition = null }: { initial: TrailEditorState; manage?: ManageLinks | null; edition?: EditionActions | null }) {
+export function TrailEditor({ initial, manage = null, edition = null, finaleEvents = [] }: { initial: TrailEditorState; manage?: ManageLinks | null; edition?: EditionActions | null; finaleEvents?: readonly { value: string; label: string }[] }) {
   const router = useRouter()
   const [draft, setDraft] = useState<TrailDraft>(initial.draft)
   const [revision, setRevision] = useState(initial.revision)
@@ -719,6 +720,7 @@ export function TrailEditor({ initial, manage = null, edition = null }: { initia
               <p className="text-body-sm text-subtle">Changing this list is an edit, so the trail asks for one more preview walk and a fresh publish.</p>
             </section>
           )}
+          <FinaleEventField options={finaleEvents} value={draft.finaleEventId} onChange={(finaleEventId) => edit((d) => ({ ...d, finaleEventId }))} disabled={conflict !== null} />
           {VISIBILITY_FIELD && (
             <StudioField label={VISIBILITY_FIELD.label}>
               <FieldControl def={{ ...VISIBILITY_FIELD, required: true }} value={visibility} onChange={(v) => setVisibility(scalar(v))} disabled={published || conflict !== null} />
