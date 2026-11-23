@@ -126,10 +126,10 @@ const KIT_IMAGERY: Record<MegaThemeId, KitImagery> = {
   },
   // Aiden Tyack's stand-ins (the handoff's assets/photos), private to aidentyack.com: never on the public builder (PREVIEW_KIT_ORDER).
   'aiden-tyack': {
-    hero: '/sites/aiden-tyack/redwood-forest-silhouette.webp', heroPos: 'center 60%', portrait: AIDEN_TYACK_PHOTO('rider-portrait'), portraitPos: 'center 25%',
-    strip: [AIDEN_TYACK_PHOTO('rider-portrait'), '/sites/aiden-tyack/redwood-forest-silhouette.webp', AIDEN_TYACK_PHOTO('rider-portrait')], nav1: 'Shop', cta2: 'See the work',
-    covers: [AIDEN_TYACK_PHOTO('rider-portrait'), '/sites/aiden-tyack/redwood-forest-silhouette.webp'],
-    portraits: [AIDEN_TYACK_PHOTO('rider-portrait')],
+    hero: AIDEN_TYACK_PHOTO('riders-on-coast-road'), heroPos: 'center 55%', portrait: AIDEN_TYACK_PHOTO('rider-portrait'), portraitPos: 'center 25%',
+    strip: [AIDEN_TYACK_PHOTO('belt-tan-brass-buckle'), AIDEN_TYACK_PHOTO('cuff-tan-brass-stud'), AIDEN_TYACK_PHOTO('bracelet-double-wrap-tan')], nav1: 'Shop', cta2: 'See the work',
+    covers: [AIDEN_TYACK_PHOTO('belt-tan-coiled-studs'), AIDEN_TYACK_PHOTO('motorcycles-at-sunset'), AIDEN_TYACK_PHOTO('friends-at-sunset'), AIDEN_TYACK_PHOTO('rider-on-beach')],
+    portraits: [AIDEN_TYACK_PHOTO('rider-portrait'), AIDEN_TYACK_PHOTO('rider-on-beach')],
   },
   designer: {
     hero: DESIGNER_PHOTO('dz-designer-kitchen-hero'), heroPos: '38% center',

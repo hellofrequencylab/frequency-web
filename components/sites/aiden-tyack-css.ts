@@ -19,6 +19,8 @@ const NIGHT = '[data-house-theme="aiden-tyack"][data-th="night"]'
 const LABEL = 'font-family:var(--at-font-body);font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase'
 const EASE = 'var(--at-ease)'
 /** The stitch: a dashed line `inset` px inside the box, in the stitch colour. Drawn as an outline so it never moves the layout. */
+/** One selector per role layout for its items (no :is(), so every selector in the sheet starts at the theme root). */
+const roleItems = (variants: string[], tail = '') => variants.map((v) => `${A} [data-role][data-variant="${v}"] [data-part="item"]${tail}`).join(',')
 const stitch = (inset: number) => `outline:var(--at-frame) var(--at-stitch);outline-offset:-${inset}px`
 
 // THE BLOCK SHEET. The kit composes the Services block family (components/page-editor/blocks/services.tsx, classes `.sv-*`) until Aiden
@@ -193,6 +195,29 @@ ${A} .hs-menu-panel,${A} .hs-mega-panel{background:var(--at-surface) var(--at-gr
 /* The footer: the band. */
 ${A} .hs-footer-top,${A} .sv-footer{${BAND}}
 ${A} .hs-footer-col-title{${LABEL};color:var(--at-text-muted)}
+/* THE ROLE BLOCKS (lib/blocks/roles, the kit's sections). The shared sheet (components/sites/role-blocks-css.ts) lays them out from the
+ * core contract; this dresses them in the design's own hand: grain on every ground, the hide grain on bands, Title Case blackletter,
+ * the stitch inside cards (7px), photos (9px) and buttons (4px), stitched dividers between list rows, and a warm lift on hover. */
+${A} [data-role]{background:var(--at-canvas) var(--at-grain)}
+${A} [data-role][data-tone="surface"]{background:var(--at-surface) var(--at-grain)}
+${A} [data-role][data-tone="band"]{${BAND}}
+${A} [data-role] [data-part="title"]{font-family:var(--at-font-display);font-weight:700;text-transform:none;letter-spacing:0}
+${A} [data-role] [data-part="title"] em{font-family:var(--at-font-display);font-style:normal;font-weight:700;color:var(--at-accent-text)}
+${A} [data-role][data-tone="band"] [data-part="title"] em{color:var(--at-band-accent-text)}
+${A} [data-role] [data-part="eyebrow"],${A} [data-role] [data-part="kind"],${A} [data-role] [data-part="badge"],${A} [data-role] [data-part="label"]{${LABEL}}
+${A} [data-role] [data-part="price"],${A} [data-role] [data-part="value"]{font-family:var(--at-font-body);font-weight:700;font-variant-numeric:tabular-nums}
+${A} [data-role="stats"] [data-part="value"]{font-family:var(--at-font-display);font-size:clamp(48px,5vw,72px);line-height:1}
+${A} [data-role] [data-part="quote"]{font-family:var(--at-font-voice);font-style:italic;font-weight:400}
+${A} [data-role] [data-part="cta"]{${LABEL};border-radius:var(--at-r-control);${stitch(4)};outline-color:color-mix(in srgb,currentColor 55%,transparent)}
+${A} [data-role] [data-part="item"]{border-radius:var(--at-r-card);transition:transform var(--at-dur-fast) ${EASE},box-shadow var(--at-dur-fast) ${EASE}}
+${roleItems(['cards', 'grid', 'wall', 'tiers', 'spotlight', 'card'])}{background:var(--at-surface) var(--at-grain);box-shadow:var(--at-shadow-card);${stitch(7)}}
+${roleItems(['cards', 'grid', 'wall'], ':hover')}{transform:translateY(-2px);box-shadow:var(--at-shadow-lift)}
+${roleItems(['list', 'rows', 'stack', 'timeline'], '+[data-part="item"]')}{border-top:var(--at-frame) var(--at-stitch)}
+${A} [data-role] [data-part="media"] img,${A} [data-role] [data-part="photo"] img{border-radius:var(--at-r-card);${stitch(9)}}
+/* The forest hero: the band, with the redwood silhouette behind the words at 40% and no stitch (it is shade, not a photo). */
+${A} [data-role="hero"]:has(img[src*="redwood-forest-silhouette"]){${BAND}}
+${A} [data-role="hero"] img[src*="redwood-forest-silhouette"]{opacity:.4;outline:0;filter:none}
+${A} [data-role="hero"][data-variant="full"] [data-part="copy"]{${ON_PHOTO}}
 /* Motion: colour changes and lifts only, and everything stops under reduced motion. */
 ${A} .sv-ticker-track{animation:none}
 @media (prefers-reduced-motion:reduce){${A} *{transition:none!important;animation:none!important}}

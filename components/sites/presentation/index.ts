@@ -13,6 +13,7 @@ import newWorld from './new-world'
 import temple from './temple'
 import templeKit from './temple-kit'
 import wildheart from './wildheart'
+import aidenTyack from './aiden-tyack'
 
 // THE PRESENTATION LAYER (docs/THEME-COHESION.md section 2, ADR-1923, LIVE-1861). A theme never names a role block;
 // it supplies the layout each role takes by default, so the same Hero block is full-bleed on Nocturne and split on
@@ -26,8 +27,7 @@ const BY_THEME: Record<WebsiteTheme, PresentationDefaults> = {
   Temple: temple, TempleKit: templeKit, Designer: designer, FreeHuman: freeHuman, Services: services, NewWorld: newWorld, CyberWitch: cyberwitch,
   // Mindless draws each role's own default layout until its blocks carry their own looks.
   Mindless: {},
-  // Aiden Tyack draws each role's own default layout until its blocks carry their own looks.
-  AidenTyack: {},
+  AidenTyack: aidenTyack,
 }
 
 /** The layout this theme draws a role in when the owner has not picked one, or undefined for the role's own default. */
