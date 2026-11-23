@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, X } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import { cancelEnrollment } from '@/lib/spaces/enroll-actions'
 
@@ -45,23 +46,24 @@ export function EnrollmentCancelButton({
   if (confirming) {
     return (
       <span className="flex shrink-0 items-center gap-2">
-        <button
+        <Button
           type="button"
           onClick={cancel}
-          disabled={pending}
-          className="inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+          loading={pending}
+          variant="dangerOutline"
+          size="sm"
         >
-          {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
           Confirm
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={() => setConfirming(false)}
           disabled={pending}
-          className="text-meta font-semibold text-muted transition-colors hover:text-text"
+          variant="ghost"
+          size="sm"
         >
           Keep
-        </button>
+        </Button>
       </span>
     )
   }
@@ -70,13 +72,14 @@ export function EnrollmentCancelButton({
     <span
       className={`flex shrink-0 flex-col gap-1 ${align === 'center' ? 'items-center' : 'items-end'}`}
     >
-      <button
+      <Button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+        variant="ghost"
+        size="sm"
       >
         <X className="h-3.5 w-3.5" aria-hidden /> {label}
-      </button>
+      </Button>
       {error && <span className="text-2xs font-medium text-danger">{error}</span>}
     </span>
   )
