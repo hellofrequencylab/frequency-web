@@ -54,6 +54,7 @@ import {
   type RowRatio,
 } from './layout'
 import { entityBlockLimit, typeLimiter } from './block-limits'
+import { layerColumnTarget } from '@/lib/sites/editor/layer-focus'
 
 /** One row of a node document. `NodeLayout['rows'][number]`, named so the ops below read plainly. */
 export type NodeRow = NodeLayout['rows'][number]
@@ -274,6 +275,39 @@ export function placeNode(layout: NodeLayout, nid: string, rowId: string, col: n
   if (!lifted) return layout
   const next = insert(lifted.layout, lifted.node, rowId, col, index)
   return next ? normalizeNodeLayout(next) : layout
+}
+
+/** Where a block goes when it moves one column over inside its own section: the END of the neighbouring
+ *  column, the website Layers rule (`layerColumnTarget`, PROG-E6), read here with a section as the holding
+ *  block and its columns as the slots. `rows` carries block KEYS only (node ids, or type ids on the legacy
+ *  store), so both canvas stores answer through this one function. Null when the section has one column,
+ *  the block is already in the first or last column on that side, the block is not placed, or the target
+ *  column is at the stack cap (normalizing would drop the block that just arrived). */
+export function columnMoveTarget(
+  rows: readonly { id: string; cells: readonly (readonly string[])[] }[],
+  key: string,
+  direction: -1 | 1,
+): { rowId: string; col: number; index: number } | null {
+  const sections = rows.map((row) => ({
+    id: row.id,
+    slots: row.cells.map((stack, col) => ({ key: String(col), children: stack.map((id) => ({ id, slots: [] })) })),
+  }))
+  const target = layerColumnTarget(sections, key, direction)
+  if (!target || target.index >= MAX_STACK) return null
+  return { rowId: target.parentId, col: Number(target.slotKey), index: target.index }
+}
+
+/** Move a placed node one column over inside its own section (direction -1 left, +1 right), to the end of
+ *  that column. Its bags travel with it, and a move never trips a per-type cap or a lock: the lock rule
+ *  (`partitionSpaceBlocks`) decides what may be ADDED to a page, and a move adds nothing. A no-op where
+ *  `columnMoveTarget` answers null, on the bench, or for an unknown node. */
+export function moveNodeAcross(layout: NodeLayout, nid: string, direction: -1 | 1): NodeLayout {
+  const target = columnMoveTarget(
+    layout.rows.map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })),
+    nid,
+    direction,
+  )
+  return target ? placeNode(layout, nid, target.rowId, target.col, target.index) : layout
 }
 
 /** Nudge a placed node one step within its own column stack (delta -1 up, +1 down). A no-op at the ends,

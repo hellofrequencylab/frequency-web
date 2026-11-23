@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import type { RowSplit } from '@/lib/entity-blocks/rows-ops'
@@ -76,8 +76,11 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
   // The rail's block tiles are one tab stop (a roving tabindex, PROG-E6): the tile last focused, else the
   // selected block, else the first. Arrows walk every tile in reading order (section by section, column by
-  // column), Alt and Up or Down moves the block inside its column, Delete or Backspace removes it.
+  // column), Alt and Up or Down moves the block inside its column, Alt and Left or Right sends it to the
+  // end of the neighbouring column of its section, Delete or Backspace removes it.
   const [tileFocus, setTileFocus] = useState<string | null>(null)
+  // What a move across columns did, said once for a screen reader (the tile itself moves in silence).
+  const [moveSaid, setMoveSaid] = useState('')
 
   // Vertical rail alignment (railOffset): when a block is selected (usually by clicking it on the canvas),
   // the LEFT section list translates so the selected tile sits on the SAME horizontal line as the block on
@@ -129,7 +132,10 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
     const align = () => {
       const tile = selectedId ? tileRefs.current.get(selectedId) : null
       const block = selectedId ? blockRefs.current.get(selectedId) : null
-      if (!selectedId || !grid || !list || !tile || !block) {
+      // Below the two-pane breakpoint the rail sits ABOVE the canvas in one column, so there is no line to
+      // share: an offset there slides the rail down over the page it edits (seen at 390px, PROG-E6G).
+      const sideBySide = !!grid && getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length > 1
+      if (!selectedId || !grid || !list || !tile || !block || !sideBySide) {
         setRailOffset(0)
         return
       }
@@ -181,6 +187,16 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
     setTileFocus(key)
     requestAnimationFrame(() => tileRefs.current.get(key)?.querySelector<HTMLElement>('[data-layer-id]')?.focus())
   }
+  // One column over, inside the block's own section (the website Layers rule, on this builder's store). The
+  // tile is drawn again in its new column, so focus is handed back to it.
+  const onAcross = (key: string, direction: -1 | 1) => {
+    const col = model.acrossTarget(key, direction)
+    if (col === null) return
+    const type = model.rows.flatMap((row) => row.cells.flat()).find((block) => block.key === key)?.type
+    model.across(key, direction)
+    setMoveSaid(`${type ? label(type) : 'Block'} moved to column ${col + 1}.`)
+    focusTile(key)
+  }
   const onTilesKey = (event: KeyboardEvent<HTMLOListElement>) => {
     const key = (event.target as HTMLElement).closest<HTMLElement>('[data-layer-id]')?.dataset.layerId
     if (!key || event.defaultPrevented) return
@@ -191,7 +207,8 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
     if (plan.kind === 'move') { model.nudge(key, plan.direction); focusTile(key) }
     else if (plan.kind === 'focus') focusTile(plan.id)
     else if (plan.kind === 'act') { onRemoveBlock(key); if (plan.refocus) focusTile(plan.refocus) }
-    // Alt and Left or Right ('column') is only taken, so the browser's Back does not leave the builder.
+    // Alt and Left or Right is taken even with no column to go to, so the browser's Back never fires.
+    else if (plan.kind === 'column') onAcross(key, plan.direction)
   }
 
   const activeSplit = (columns: number, ratio: string | undefined): RowSplit =>
@@ -212,6 +229,7 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
               'Saved'
             )}
           </span>
+          <span className="sr-only" role="status" aria-live="polite">{moveSaid}</span>
         </div>
 
         {model.rows.length === 0 ? (
@@ -288,6 +306,9 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
                           active={block.key === selectedId}
                           canUp={si > 0}
                           canDown={si < stack.length - 1}
+                          canLeft={model.acrossTarget(block.key, -1) !== null}
+                          canRight={model.acrossTarget(block.key, 1) !== null}
+                          onAcross={(direction) => onAcross(block.key, direction)}
                           tileRef={(el) => {
                             tileRefs.current.set(block.key, el)
                           }}
@@ -390,6 +411,9 @@ function BlockTile({
   active,
   canUp,
   canDown,
+  canLeft,
+  canRight,
+  onAcross,
   tileRef,
   loomScope,
   content,
@@ -407,6 +431,10 @@ function BlockTile({
   active: boolean
   canUp: boolean
   canDown: boolean
+  /** Whether the section has a column on that side that can take this block. */
+  canLeft: boolean
+  canRight: boolean
+  onAcross: (direction: -1 | 1) => void
   tileRef: (el: HTMLLIElement | null) => void
   loomScope?: string
   content: Record<string, unknown>
@@ -434,10 +462,10 @@ function BlockTile({
           onFocus={onFocusTile}
           aria-current={active}
           aria-expanded={active}
-          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Delete"
+          aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete"
           data-layer-id={blockKey}
           tabIndex={tabStop ? 0 : -1}
-          title="Arrows walk the blocks. Alt and an arrow moves this one."
+          title="Arrows walk the blocks. Alt and an arrow moves this one, up, down or to the next column."
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-meta font-semibold text-text"
         >
           <Settings2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
@@ -465,6 +493,22 @@ function BlockTile({
 
       {active && (
         <div className="space-y-3 border-t border-border px-2.5 pb-3 pt-2">
+          {/* The move across columns, for a pointer or a finger (the keyboard twin is Alt and Left or Right).
+              A full 44px target with its words on it; only the sides that exist are offered. */}
+          {(canLeft || canRight) && (
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Move ${label(id)} to another column`}>
+              {canLeft && (
+                <button type="button" data-across="left" onClick={() => onAcross(-1)} className={ACROSS_BUTTON}>
+                  <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden /> Move left<span className="sr-only">, {label(id)}</span>
+                </button>
+              )}
+              {canRight && (
+                <button type="button" data-across="right" onClick={() => onAcross(1)} className={ACROSS_BUTTON}>
+                  Move right<span className="sr-only">, {label(id)}</span> <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                </button>
+              )}
+            </div>
+          )}
           {fields.length === 0 ? (
             <p className="text-2xs text-muted">This block has no structural settings. Edit its text on the canvas.</p>
           ) : (
@@ -491,6 +535,9 @@ function BlockTile({
     </li>
   )
 }
+
+const ACROSS_BUTTON =
+  'inline-flex min-h-11 min-w-11 flex-1 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 text-2xs font-semibold text-text transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
 
 // ── The add-block palette (the space blocks not yet placed). ──
 function AddBlockPalette({
