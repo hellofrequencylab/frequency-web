@@ -12,7 +12,7 @@ import { buildVeraSystem, veraTurnTools } from './agent-claude'
 import { DEFAULT_VERA_CONFIG } from './config'
 
 /** Which optional tool groups a turn offers on top of the member chat set. */
-export interface VeraToolAccess {
+interface VeraToolAccess {
   spaceManager?: boolean
   operator?: boolean
 }
@@ -49,7 +49,7 @@ export function veraPrefixCountRequests(
   }
 }
 
-export interface VeraPrefixReading {
+interface VeraPrefixReading {
   tier: ModelTier
   /** Tokens the prefix adds to a request. */
   prefixTokens: number
