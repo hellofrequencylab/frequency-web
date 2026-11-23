@@ -199,9 +199,10 @@ const PERMISSIONS_POLICY_CAMERA = 'camera=(self), microphone=(), geolocation=(se
 // `/:path((?!scan/?$).*)`: every path but the camera routes (a trailing slash included, and the
 // match is case-insensitive like the router's). The inner group may open with `(?!`; the outer
 // one may not start with `?`, which is path-to-regexp's rule, not ours.
-// SCAN-1213: every extension under public/themes, public/sites and public/create-a-space today.
-// A new format (avif, mp4) goes uncached until it is added here, which is the safe way to be wrong.
-const STATIC_ART_EXT = 'jpg|jpeg|png|svg|webp'
+// SCAN-1213: every extension under public/themes, public/sites and public/create-a-space today,
+// the aidentyack.com background clips (mp4, webm) included. A new format (avif) goes uncached
+// until it is added here, which is the safe way to be wrong.
+const STATIC_ART_EXT = 'jpg|jpeg|png|svg|webp|mp4|webm'
 const notCameraRoute =`/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
 
 // Exactly the five faces the active Stage loader opens. Named paths avoid tracing unrelated fonts
