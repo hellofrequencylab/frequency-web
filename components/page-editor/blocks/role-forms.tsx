@@ -2,10 +2,11 @@
 
 import { useState, type FormEvent } from 'react'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { submitContactForm } from '@/app/(main)/spaces/[slug]/contact-form-actions'
 
 // THE ROLE BLOCKS' FORMS (LIVE-2517). The Letter and Contact roles can carry a real form (their `form` switch, off by default, so a
-// block that never set it renders exactly as before). Both go through the Space's one anonymous lead door, the same door the New World
+// block that never set it renders exactly as before). A contact block's `topics` lines add a Topic box; the pick leads the message. Both go through the Space's one anonymous lead door, the same door the New World
 // and Network kit forms use (the Space resolved from the slug server-side, a honeypot and a rate limit above the write). Pressing the
 // letter's button is the opt-in; the contact form asks nothing more. Markup is the role contract only (`data-part` hooks, no theme
 // class), so every theme dresses it from role-blocks-css. A null slug is the editor canvas: the same markup, inert.
@@ -56,7 +57,8 @@ export function RoleLetterForm({ slug, label, buttonLabel }: { slug: string | nu
   )
 }
 
-export function RoleContactForm({ slug, buttonLabel }: { slug: string | null; buttonLabel: string }) {
+export function RoleContactForm({ slug, buttonLabel, topics = [] }: { slug: string | null; buttonLabel: string; topics?: string[] }) {
+  const [topic, setTopic] = useState(topics[0] ?? '')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
@@ -65,9 +67,14 @@ export function RoleContactForm({ slug, buttonLabel }: { slug: string | null; bu
   const off = slug === null
   if (status === 'done') return <p data-part="done" role="status">Thanks. Your message is on its way.</p>
   return (
-    <form data-part="form" data-form="contact" onSubmit={(e: FormEvent) => { e.preventDefault(); void send({ name, email, message, optIn: false, company }) }}>
+    <form data-part="form" data-form="contact" onSubmit={(e: FormEvent) => { e.preventDefault(); void send({ name, email, message: topic ? `Topic: ${topic}\n\n${message}` : message, optIn: false, company }) }}>
       <label data-part="field"><span data-part="label">Name</span><Input data-part="input" type="text" required autoComplete="name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} disabled={off} /></label>
       <label data-part="field"><span data-part="label">Email</span><Input data-part="input" type="email" required autoComplete="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={off} /></label>
+      {topics.length > 0 && (
+        <label data-part="field" data-wide=""><span data-part="label">Topic</span>
+          <Select data-part="input" options={topics} value={topic} onChange={(e) => setTopic(e.target.value)} disabled={off} />
+        </label>
+      )}
       <label data-part="field" data-wide=""><span data-part="label">Message</span><Textarea data-part="input" rows={4} required placeholder="What would you like to ask?" value={message} onChange={(e) => setMessage(e.target.value)} disabled={off} /></label>
       <Honeypot value={company} set={setCompany} />
       <div data-wide=""><button data-part="cta" type="submit" disabled={off || status === 'loading'}>{status === 'loading' ? 'Sending' : buttonLabel || 'Send'}</button></div>

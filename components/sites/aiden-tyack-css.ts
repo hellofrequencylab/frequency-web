@@ -22,6 +22,11 @@ const EASE = 'var(--at-ease)'
 /** One selector per role layout for its items (no :is(), so every selector in the sheet starts at the theme root). */
 const roleItems = (variants: string[], tail = '') => variants.map((v) => `${A} [data-role][data-variant="${v}"] [data-part="item"]${tail}`).join(',')
 const stitch = (inset: number) => `outline:var(--at-frame) var(--at-stitch);outline-offset:-${inset}px`
+/** The design's own dash (7 on, 5 off, 1.5px thick) as background layers: `dashRule` is one line along the top, `dashBox` the four edges.
+ *  The browser's own dashed outline draws 3px dashes, which read as a grey line; the design's stitch is the longer dash. */
+const dashLine = (c: string, angle: string, pos: string, size: string) => `repeating-linear-gradient(${angle},${c} 0 7px,transparent 7px 12px) ${pos}/${size} no-repeat`
+const dashRule = (c: string) => dashLine(c, '90deg', '0 0', '100% 1.5px')
+const dashBox = (c: string) => [dashRule(c), dashLine(c, '90deg', '0 100%', '100% 1.5px'), dashLine(c, '180deg', '0 0', '1.5px 100%'), dashLine(c, '180deg', '100% 0', '1.5px 100%')].join(',')
 
 // THE BLOCK SHEET. The kit composes the Services block family (components/page-editor/blocks/services.tsx, classes `.sv-*`) until Aiden
 // Tyack cuts its own, as Mindless, New World and CyberWitch do. This derives the sheet from that one source: the scope moves to the theme
@@ -187,7 +192,7 @@ ${A}[data-house-site] .mw-page{padding-bottom:0}
 ${A} .mw-wrap.mw-other{max-width:none;padding:0}
 ${A} .mw-other>div{padding-block:0;margin:0}
 ${A} .mw-other>div>*{margin-block:0}
-${A} [data-role] [data-part="inner"]{max-width:1320px;padding-inline:var(--at-gutter);gap:var(--at-gap)}
+${A} [data-role] [data-part="inner"]{max-width:var(--at-wrap);padding-inline:var(--at-gutter);gap:var(--at-gap)}
 /* THE HEADER (handoff Header): the announce band, then one bar on the canvas with a hairline under it. The menu on the left, the
  * lockup in the middle, the button on the right; under 940px the lockup leads and the menu folds into the Menu button. */
 ${A} .at-top{position:sticky;top:0;z-index:50}
@@ -205,7 +210,7 @@ ${A} .hs-header .hs-btn-dark,${A} .hs-header .hs-btn-dark:hover{min-height:44px;
 ${A} .hs-header .hs-btn-dark:hover{text-decoration:underline;text-underline-offset:6px}
 ${A} .hs-header .hs-brand{padding-left:0}
 @media (max-width:1099px){${A} .hs-pill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:". logo cta";row-gap:0}${A} .hs-header .hs-brand{justify-self:center}${A} .hs-nav{display:none}${A} .hs-header-actions{justify-self:end}${A} .hs-menu{display:block}${A} .hs-menu-button{background:none;border:0;box-shadow:none;color:var(--at-text);border-radius:var(--at-r-control)}}
-@media (min-width:1100px){${A} .hs-menu{display:none}${A} .hs-pill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"nav logo cta";padding-inline:max(var(--at-gutter),calc((100% - 1320px) / 2 + var(--at-gutter)))}${A} .hs-nav{justify-self:start}${A} .hs-nav{overflow:visible}${A} .hs-header-actions{justify-self:end}}
+@media (min-width:1100px){${A} .hs-menu{display:none}${A} .hs-pill{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"nav logo cta";padding-inline:max(var(--at-gutter),calc((100% - 1320px) / 2))}${A} .hs-nav{justify-self:start}${A} .hs-nav{overflow:visible}${A} .hs-header-actions{justify-self:end}}
 /* The lockup: the hammers mark (the handoff's SVG as a mask, so it takes the ink around it), the name and the tracked line. */
 ${A} .at-logo{display:inline-flex;align-items:center;gap:10px;color:var(--at-text)}
 ${A} .at-mark{display:block;flex:none;width:42px;height:42px;background:currentColor;-webkit-mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat;mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat}
@@ -218,7 +223,7 @@ ${A} .hs-menu-panel,${A} .hs-mega-panel{background:var(--at-surface) var(--at-gr
 /* THE FOOTER (handoff Footer): the pine band with grain, the mark over the name and the line, the link columns, a stitch, then the
  * credit as a label. */
 ${A} .at-footer-ground{${BAND};padding:64px 0 32px}
-${A} .at-footer-ground .hs-footer-top{max-width:1320px;margin:0 auto;padding:0 var(--at-gutter);border:0;background:none;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:40px 32px}
+${A} .at-footer-ground .hs-footer-top{max-width:var(--at-wrap);margin:0 auto;padding:0 var(--at-gutter);border:0;background:none;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:40px 32px}
 ${A} .at-footer-ground .hs-footer-brand{gap:14px}
 ${A} .at-footer-ground .hs-footer-brand .hs-brand{color:var(--at-text)}
 ${A} .at-footer-ground .at-logo{flex-direction:column;align-items:flex-start;gap:14px}
@@ -230,7 +235,7 @@ ${A} .at-footer-ground .hs-footer-col,${A} .at-footer-ground .hs-footer-links{di
 ${A} .at-footer-ground .hs-footer-col-title{${LABEL};color:var(--at-band-accent-text);margin-bottom:12px}
 ${A} .at-footer-ground .hs-footer-col a,${A} .at-footer-ground .hs-footer-links a{min-height:44px;line-height:44px;font-family:var(--at-font-body);font-size:15px;color:var(--at-text);text-decoration:none}
 ${A} .at-footer-ground .hs-footer-col a:hover,${A} .at-footer-ground .hs-footer-links a:hover{color:var(--at-band-accent-text)}
-${A} .at-footer-ground .hs-footer{max-width:calc(1320px - 2 * var(--at-gutter));margin:40px auto 0;padding:18px 0 0;border-top:var(--at-frame) var(--at-stitch);width:calc(100% - 2 * var(--at-gutter));color:var(--at-text-muted);font-size:14px}
+${A} .at-footer-ground .hs-footer{max-width:1320px;margin:40px auto 0;padding:18px 0 0;border-top:var(--at-frame) var(--at-stitch);width:calc(100% - 2 * var(--at-gutter));color:var(--at-text-muted);font-size:14px}
 ${A} .at-footer-ground .hs-footer a{color:var(--at-text-muted)}
 ${A} .at-footer-ground .hs-footer-line{${LABEL};color:var(--at-text-muted)}
 /* The credit is the handoff's plain label (the Built on Frequency line beside it), not the Partner pill. */
@@ -317,7 +322,7 @@ ${A} [data-role="steps"] [data-part="body"]{font-size:16px}
 /* GALLERY. Band (carousel): photos edge to edge on the band, 4px apart, 4:5, no frame. Grid: square photos under the heading. */
 ${A} [data-role="gallery"][data-variant="carousel"]{padding:0;background:var(--at-band)}
 ${A} [data-role="gallery"][data-variant="carousel"] [data-part="inner"]{max-width:none;padding:0}
-${A} [data-role="gallery"][data-variant="carousel"] [data-part="heading"]{padding:var(--at-section-y) var(--at-gutter) 0;max-width:1320px;margin-inline:auto;width:100%;${BAND}}
+${A} [data-role="gallery"][data-variant="carousel"] [data-part="heading"]{padding:var(--at-section-y) var(--at-gutter) 0;max-width:var(--at-wrap);margin-inline:auto;width:100%;${BAND}}
 ${A} [data-role="gallery"][data-variant="carousel"] [data-part="list"]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:4px;overflow:visible;margin:0;padding:0;scroll-snap-type:none}
 ${A} [data-role="gallery"][data-variant="carousel"] [data-part="item"]{width:auto;flex:none;margin:0}
 ${A} [data-role="gallery"][data-variant="carousel"] [data-part="media"]{--rb-ratio:4/5;width:100%;height:auto;aspect-ratio:4/5;border-radius:0;box-shadow:none;background:none}
@@ -390,6 +395,202 @@ ${A} [data-role="offerings"] [data-part="price"]{font-size:18px}
 /* Stats and the rest: the shared card and row rules. */
 ${A} [data-role="stats"] [data-part="value"]{font-family:var(--at-font-display);font-size:clamp(48px,5vw,72px);line-height:1}
 ${roleItems(['list', 'rows', 'stack', 'timeline'], '+[data-part="item"]')}{border-top:var(--at-frame) var(--at-stitch)}
+/* THE DESIGNED SITE (LIVE-2517, Daniel's Claude Design file "Aiden Tyack Website.html"). These rules come last and win: the page the
+   owner designed, section by section, over the starter look above. Sizes and spacing are the file's own; colours are the token names. */
+${A}{--at-wrap:calc(1320px + 2 * var(--at-gutter));--at-font-numeral:var(--font-at-numeral,'Anton'),Impact,sans-serif;--at-tan:color-mix(in srgb,var(--at-accent-text) 60%,var(--at-accent-soft));--at-display-2:clamp(40px,5.5vw,80px);--at-shadow-deep:0 30px 60px -20px color-mix(in srgb,var(--at-photo-shade) 55%,transparent),0 60px 120px -40px color-mix(in srgb,var(--at-photo-shade) 50%,transparent)}
+${A} [data-role] [data-part="title"]{font-size:var(--at-display-2)}
+${A} [data-role] [data-part="eyebrow"]{font-size:11.5px}
+/* Header: the announce band and the bar stay at the top together; the bar is bone glass with a hairline and a soft shadow under it. */
+${A} .at-top{position:sticky;top:0;z-index:40}
+${A} .at-bar-line{font-weight:400;font-size:11px;color:color-mix(in srgb,var(--at-on-band) 82%,var(--at-band))}
+${A} .hs-pill{padding-block:14px;background:color-mix(in srgb,var(--at-canvas) 90%,transparent);-webkit-backdrop-filter:blur(10px) saturate(1.1);backdrop-filter:blur(10px) saturate(1.1);box-shadow:0 10px 24px -18px color-mix(in srgb,var(--at-photo-shade) 45%,transparent)}
+${A} .hs-nav-track{gap:clamp(14px,2.2vw,28px)}
+${A} .hs-nav a,${A} .at-nav-right a{${LABEL};position:relative;padding:6px 0;color:var(--at-text);text-decoration:none}
+${A} .hs-nav a::after,${A} .at-nav-right a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--at-accent-text);transform:scaleX(0);transform-origin:left;transition:transform var(--at-dur) ${EASE}}
+${A} .hs-nav a:hover,${A} .at-nav-right a:hover{text-decoration:none;color:var(--at-accent)}
+${A} .hs-nav a[aria-current="page"],${A} .at-nav-right a[aria-current="page"]{color:var(--at-accent)}
+${A} .hs-nav a[aria-current="page"]::after,${A} .at-nav-right a[aria-current="page"]::after,${A} .hs-nav a:hover::after,${A} .at-nav-right a:hover::after{transform:scaleX(1)}
+${A} .hs-nav-track>a:nth-of-type(n+4){display:none}
+${A} .at-nav-right{display:none}
+@media (min-width:1100px){${A} .at-nav-right{display:flex;align-items:center;gap:clamp(14px,2vw,22px)}}
+${A} .hs-header .at-mark{width:clamp(34px,3.6vw,46px);height:clamp(34px,3.6vw,46px)}
+${A} .hs-header .at-logo-name{font-size:clamp(24px,2.8vw,34px)}
+/* Hero: the pine band lit warm from the right, the redwoods at 42%, the words left, the portrait right with the pinned print at its
+   foot and the turning seal at its corner, then a stitch across the foot of the band. */
+${A} [data-role="hero"][data-tone="band"]{background:radial-gradient(90% 70% at 75% 30%,color-mix(in srgb,var(--at-accent-soft) 22%,transparent),transparent 60%),var(--at-grain-hide) var(--at-band);box-shadow:inset 0 -40px 60px -40px color-mix(in srgb,var(--at-photo-shade) 50%,transparent);padding-block:var(--at-section-y) 32px}
+${A} [data-role="hero"][data-tone="band"]::before{opacity:.42}
+${A} [data-role="hero"][data-tone="band"] [data-part="inner"]::after{content:"";grid-column:1/-1;height:2px;background:${dashRule('color-mix(in srgb,var(--at-photo-text) 40%,transparent)')}}
+${A} [data-role="hero"] [data-part="copy"]{gap:0}
+${A} [data-role="hero"] [data-part="eyebrow"]{font-size:13px}
+${A} [data-role="hero"][data-role] [data-part="title"]{margin:22px 0 28px;font-size:clamp(58px,7.8vw,132px);line-height:.92;text-shadow:none}
+${A} [data-role="hero"] [data-part="lead"]{margin:0 0 40px;max-width:520px;font-size:20px;line-height:1.6}
+${A} [data-role="hero"] [data-part="actions"]{gap:16px}
+${A} [data-role="hero"][data-role] [data-part="cta"]{min-height:56px;padding:0 30px}
+${A} [data-role="hero"][data-tone="band"][data-role] [data-part="cta"][data-kind="secondary"]{padding:0 30px;background:transparent;border:1px solid color-mix(in srgb,var(--at-on-band) 70%,transparent);color:var(--at-on-band);outline:var(--at-frame) color-mix(in srgb,var(--at-on-band) 50%,transparent);outline-offset:-5px}
+${A} [data-role="hero"][data-tone="band"][data-role] [data-part="cta"][data-kind="secondary"]:hover{background:color-mix(in srgb,var(--at-on-band) 10%,transparent);text-decoration:none}
+${A} [data-role="hero"] [data-part="stage"]{width:100%;max-width:560px;justify-self:end;padding:0 0 40px 40px}
+${A} [data-role="hero"] [data-part="stage"] [data-part="media"]{max-width:none;box-shadow:var(--at-shadow-deep);border:1px solid color-mix(in srgb,var(--at-photo-shade) 30%,transparent)}
+/* The print is paper and ink whatever ground it sits on (the band re-points the surface and text names, so it names the photo pair). */
+${A} [data-role="hero"] [data-part="pin"]{padding:6px;gap:0;background:var(--at-grain) var(--at-photo-text);border-radius:var(--at-r-control);box-shadow:var(--at-shadow-lift);color:var(--at-photo-shade)}
+${A} [data-role="hero"] [data-part="pin"]:hover{color:var(--at-photo-shade)}
+${A} [data-role="hero"] [data-part="pin"] img{border-radius:1px;filter:saturate(.85)}
+${A} [data-role="hero"] [data-part="pin-text"]{padding:8px 4px 2px;font-family:var(--at-font-body);font-size:11px;letter-spacing:.1em}
+${A} [data-role="hero"] [data-part="pin-text"] [data-part="price"]{font-size:11px;color:var(--at-accent)}
+${A} [data-role="hero"] [data-part="seal"]{top:-30px;right:clamp(-28px,-2vw,-8px);width:124px;background:var(--at-grain-hide) var(--at-accent);color:var(--at-on-accent);box-shadow:var(--at-shadow-lift)}
+${A} [data-role="hero"] [data-part="seal"] text{font-family:var(--at-font-body)}
+${A} [data-role="hero"] [data-part="seal"]::before{content:"";position:absolute;inset:22px;border-radius:50%;border:1px dashed color-mix(in srgb,var(--at-on-accent) 45%,transparent)}
+${A} [data-role="hero"] [data-part="seal"]::after{content:"";position:absolute;inset:33%;background:var(--at-on-accent);-webkit-mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat;mask:url(/sites/aiden-tyack/logo/logo-mark.svg) center/contain no-repeat}
+@media (max-width:599px){${A} [data-role="hero"] [data-part="seal"]{width:96px;top:-20px;right:-4px}${A} [data-role="hero"] [data-part="stage"]{padding:0 0 32px 24px}}
+/* Shop: the heading with the italic aside on its right, the tabs over a hairline, the count and the sort, then 4:5 framed photos with
+   the edition label on the photo, the name in blackletter, the material under it and the price in the condensed face. */
+${A} [data-role="shop"] [data-part="heading"]{row-gap:12px}
+${A} [data-role="shop"] [data-part="heading"]>[data-part="lead"]{margin:0;max-width:none;font-family:var(--at-font-voice);font-style:italic;font-size:22px;line-height:1.3;color:var(--at-accent-text)}
+@container (min-width:40rem){${A} [data-role="shop"] [data-part="heading"]>[data-part="lead"]{grid-column:2;grid-row:1/span 2;align-self:end;justify-self:end}}
+${A} [data-role="shop"] [data-part="toolbar"]{gap:24px}
+${A} [data-role="shop"] [data-part="tabs"]{flex:1 1 320px;min-width:0;gap:28px;border-bottom:1px solid var(--at-line)}
+${A} [data-role="shop"][data-role] [data-part="tab"]{min-height:40px;margin-bottom:-1px;${LABEL};color:var(--at-text-subtle);border-bottom:2px solid transparent}
+${A} [data-role="shop"][data-role] [data-part="tab"][aria-pressed="true"]{color:var(--at-text);border-bottom-color:var(--at-accent-text)}
+${A} [data-role="shop"] [data-part="count"]{font-size:13px;color:var(--at-text-subtle)}
+${A} [data-role="shop"][data-role] [data-part="sorter"] [data-part="input"]{width:206px;min-height:48px;appearance:auto}
+${A} [data-role="shop"][data-variant="grid"] [data-part="list"]{grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:40px 24px}
+${A} [data-role="shop"] [data-part="item"],${A} [data-role="shop"] [data-part="item"][data-card]{position:relative;gap:16px 12px}
+${A} [data-role="shop"] [data-part="item"]:hover{transform:none}
+${A} [data-role="shop"] [data-part="item"] [data-part="media"]{border:1px solid color-mix(in srgb,var(--at-text) 30%,transparent);box-shadow:var(--at-shadow-card);transition:transform var(--at-dur) ${EASE},box-shadow var(--at-dur) ${EASE}}
+${A} [data-role="shop"] [data-part="item"]:hover [data-part="media"]{transform:translateY(-4px);box-shadow:var(--at-shadow-lift)}
+${A} [data-role="shop"] [data-part="item"] [data-part="media"] img{filter:saturate(.85) contrast(1.05)}
+${A} [data-role="shop"][data-variant] [data-part="text"]{gap:6px}
+${A} [data-role="shop"] [data-part="name"]{font-size:26px;line-height:1}
+${A} [data-role="shop"] [data-part="meta"]{font-size:13px;line-height:1.4;color:var(--at-text-subtle)}
+${A} [data-role="shop"][data-role] [data-part="badge"]{position:absolute;top:18px;right:18px;z-index:2;order:0;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;background:var(--at-canvas);border-radius:var(--at-r-control);font-family:var(--at-font-body);font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--at-text)}
+${A} [data-role="shop"][data-role] [data-part="badge"]::before{content:"";width:4px;height:4px;border-radius:50%;background:currentColor}
+${A} [data-role="shop"][data-variant][data-role] [data-part="price"]{font-family:var(--at-font-numeral);font-weight:400;font-size:20px;color:var(--at-accent)}
+/* The photo band: one photo edge to edge under a dark fall, the heading low on the left in light ink. */
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child){position:relative;height:clamp(380px,46vw,700px);overflow:hidden;padding:0;background:var(--at-band)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="inner"]{display:flex;align-items:flex-end;height:100%;max-width:none;padding:0}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="list"]{position:absolute;inset:0;display:block}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="item"],${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]{height:100%;aspect-ratio:auto}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"] img{height:100%;aspect-ratio:auto;object-fit:cover;filter:saturate(.82) contrast(1.04)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="media"]::after{display:block;inset:0;border:0;border-radius:0;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--at-photo-shade) 55%,transparent) 62%,color-mix(in srgb,var(--at-photo-shade) 82%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--at-photo-shade) 35%,transparent),transparent 60%)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]{position:relative;z-index:2;width:100%;max-width:var(--at-wrap);margin-inline:auto;padding:0 var(--at-gutter) clamp(64px,9vw,128px);background:none;gap:14px;${ON_PHOTO}}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="heading"]>*{max-width:640px}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="eyebrow"]{color:var(--at-photo-muted)}
+${A} [data-role="gallery"][data-variant="carousel"]:has([data-part="item"]:only-child) [data-part="title"]{color:var(--at-photo-text)}
+/* Steps: the parchment band with a soft shade at top and foot, three stitched chalk cards, the number in the condensed face. */
+${A} [data-role="steps"][data-tone="surface"]{box-shadow:inset 0 12px 24px -16px color-mix(in srgb,var(--at-photo-shade) 25%,transparent),inset 0 -12px 24px -16px color-mix(in srgb,var(--at-photo-shade) 25%,transparent);border-bottom:1px solid var(--at-line)}
+${A} [data-role="steps"][data-variant="grid"] [data-part="list"]{gap:24px;padding-bottom:0;border-bottom:0}
+${A} [data-role="steps"][data-variant="grid"][data-role] [data-part="item"][data-card]{padding:32px;gap:0;background:var(--at-grain) var(--at-surface);border:1px solid var(--at-line);box-shadow:var(--at-shadow-card);${stitch(7)}}
+${A} [data-role="steps"][data-variant="grid"] [data-part="item"][data-card]:hover{transform:translateY(-2px);box-shadow:var(--at-shadow-lift)}
+${A} [data-role="steps"][data-role] [data-part="index"]{font-family:var(--at-font-numeral);font-weight:400;font-size:40px;line-height:1;color:var(--at-tan)}
+${A} [data-role="steps"] [data-part="name"]{margin:14px 0 10px;font-size:30px}
+${A} [data-role="steps"] [data-part="body"]{margin:0;font-size:15px;line-height:1.55;color:var(--at-text)}
+/* Story (the custom work split): the framed photo at 5:4 on one side, the label, heading, words and one button on the other. */
+${A} [data-role="story"][data-role][data-variant="split"][data-variant] [data-part="inner"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:clamp(32px,6vw,80px);align-items:center}
+${A} [data-role="story"] [data-part="copy"]{gap:0}
+${A} [data-role="story"] [data-part="heading"]{gap:12px}
+${A} [data-role="story"] [data-part="lead"]{margin:8px 0 28px;max-width:460px;font-size:16px;color:var(--at-text)}
+${A} [data-role="story"] [data-part="media"]{--rb-ratio:5/4;box-shadow:var(--at-shadow-lift);border:1px solid color-mix(in srgb,var(--at-text) 30%,transparent)}
+${A} [data-role="story"] [data-part="media"] img{aspect-ratio:5/4;height:auto}
+/* Contact: parchment with a hairline over it; the heading, the line and ruled detail rows on the left, the form in a raised chalk card. */
+${A} [data-role="contact"][data-tone="surface"]{border-top:1px solid var(--at-line)}
+${A} [data-role="contact"][data-variant="split"] [data-part="inner"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:clamp(40px,6vw,96px)}
+${A} [data-role="contact"] [data-part="copy"]{gap:0}
+${A} [data-role="contact"] [data-part="heading"]{gap:12px}
+${A} [data-role="contact"] [data-part="lead"]{margin:28px 0 32px;max-width:420px;font-size:16px;color:var(--at-text)}
+${A} [data-role="contact"][data-role] [data-part="list"]{gap:18px}
+${A} [data-role="contact"][data-role] [data-part="item"]{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:baseline;padding:0 0 14px;border:0;border-bottom:1px solid var(--at-line)}
+${A} [data-role="contact"] [data-part="meta"]{font-size:11px;color:var(--at-text-subtle)}
+${A} [data-role="contact"] [data-part="value"]{font-size:15px}
+${A} [data-role="contact"][data-role] [data-part="side"][data-card]{padding:32px;outline:0;box-shadow:var(--at-shadow-lift)}
+${A} [data-role] select[data-part="input"]{appearance:auto}
+/* Footer: the lockup and three link columns, a stitch, then the two small lines (the copyright line and the footer line). */
+${A} .at-footer-ground{box-shadow:inset 0 24px 40px -24px color-mix(in srgb,var(--at-photo-shade) 45%,transparent)}
+${A} .at-footer-ground .hs-footer-top{grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}
+${A} .at-footer-ground .at-logo-name{font-size:36px}
+${A} .at-footer-ground .at-logo-tag{font-size:11px;letter-spacing:.32em;margin-top:8px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .hs-footer-col-title{margin-bottom:14px;font-size:11.5px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .hs-footer-col a,${A} .at-footer-ground .hs-footer-links a{min-height:24px;line-height:24px;margin-bottom:10px;font-size:14px}
+${A} .at-footer-ground .hs-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:48px;padding-top:20px;${LABEL};font-size:11.5px;color:color-mix(in srgb,var(--at-on-band) 72%,var(--at-band))}
+${A} .at-footer-ground .hs-footer>*{font:inherit;letter-spacing:inherit;color:inherit}
+/* The photo stitch in the design's own dash (7 on, 5 off, 1.5px), drawn as four dashed edges 9px inside the photo. */
+${A} [data-role] [data-part="media"]:has(img)::after{border:0;background:${dashBox('color-mix(in srgb,var(--at-photo-text) 55%,transparent)')}}
+/* Buttons carry the same stitch 4px inside, in their own ink at half strength (the outline it replaces drew the short browser dash). */
+${A} [data-role][data-role] [data-part="cta"]{outline:0}
+${A} [data-role][data-role] [data-part="cta"]::after{content:"";position:absolute;inset:4px;pointer-events:none;background:${dashBox('color-mix(in srgb,currentColor 50%,transparent)')}}
+${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{border-bottom:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
+${A} .at-footer-ground .hs-footer{border-top:0;background:${dashRule('color-mix(in srgb,var(--at-on-band) 40%,transparent)')}}
+/* A section set to sit flush under the one before it (the page intros run straight into their content). */
+${A} [data-role][data-space-top="none"]{padding-block-start:0}
+${A} [data-role][data-space-bottom="none"]{padding-block-end:0}
+/* Page intros (a hero with no photo on the page ground): the label, the big heading and the line, left, then straight into the page. */
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]){padding-block:clamp(56px,8vw,112px) clamp(32px,4vw,48px)}
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"])[data-role] [data-part="title"]{margin:14px 0 0;font-size:clamp(56px,9.4vw,136px)}
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]) [data-part="lead"]{margin:22px 0 0;max-width:560px;font-size:19px;color:var(--at-text)}
+${A} [data-role="hero"]:not([data-media]):not([data-tone="band"]) [data-part="copy"]{max-width:900px}
+/* Photo bands (the full hero on The Maker and Custom): the photo edge to edge under a dark fall, the heading low on the left. */
+${A} [data-role="hero"][data-variant="full"]{min-height:0;height:clamp(380px,50vw,640px);padding:0;align-items:end;background:var(--at-band)}
+${A} [data-role="hero"][data-variant="full"]{position:relative}
+${A} [data-role="hero"][data-variant="full"] [data-part="inner"]{position:static;align-self:end;width:100%;padding-bottom:clamp(64px,9vw,128px)}
+${A} [data-role="hero"][data-variant="full"] [data-part="media"]{position:absolute;inset:0;z-index:0;max-width:none}
+${A} [data-role="hero"][data-variant="full"] [data-part="copy"]{position:relative;z-index:1}
+${A} [data-role="hero"][data-variant="full"] [data-part="media"] img{opacity:1;filter:saturate(.82) contrast(1.04)}
+${A} [data-role="hero"][data-variant="full"] [data-part="media"]::after{display:block;inset:0;border:0;border-radius:0;background:linear-gradient(180deg,transparent 30%,color-mix(in srgb,var(--at-photo-shade) 55%,transparent) 62%,color-mix(in srgb,var(--at-photo-shade) 82%,transparent) 100%),linear-gradient(90deg,color-mix(in srgb,var(--at-photo-shade) 35%,transparent),transparent 60%)}
+${A} [data-role="hero"][data-variant="full"] [data-part="copy"]{max-width:680px}
+${A} [data-role="hero"][data-variant="full"] [data-part="eyebrow"]{margin-bottom:14px;color:var(--at-photo-text);text-shadow:0 1px 2px color-mix(in srgb,var(--at-photo-shade) 50%,transparent)}
+${A} [data-role="hero"][data-variant="full"][data-role] [data-part="title"]{margin:0;font-size:clamp(48px,7vw,116px);color:var(--at-photo-text)}
+${A} [data-role="hero"][data-variant="full"] [data-part="lead"]{margin:18px 0 0;max-width:480px;font-size:17px;color:var(--at-photo-muted)}
+/* A band that carries a line under its heading (Custom) is the shorter one, its heading a size down, as the design sets it. */
+${A} [data-role="hero"][data-variant="full"]:has([data-part="lead"]){height:clamp(340px,44vw,540px)}
+${A} [data-role="hero"][data-variant="full"][data-role]:has([data-part="lead"]) [data-part="title"]{font-size:clamp(48px,6.4vw,104px)}
+/* The maker's story (a story with no heading): the opening line large in the italic voice, the paragraphs, two buttons, the photo 4:5. */
+${A} [data-role="story"] [data-part="heading"]:not(:has([data-part="title"])) [data-part="lead"]{margin:0 0 24px;max-width:560px;font-family:var(--at-font-voice);font-style:italic;font-size:clamp(24px,2.4vw,32px);line-height:1.3;color:var(--at-accent)}
+${A} [data-role="story"] [data-part="lines"]{gap:18px;max-width:560px;margin-bottom:32px}
+${A} [data-role="story"] [data-part="lines"] [data-part="body"]{margin:0;font-size:17px;line-height:1.65;color:var(--at-text)}
+${A} [data-role="story"] [data-part="actions"]{gap:14px}
+${A} [data-role="story"]:not([data-flip]) [data-part="media"]{--rb-ratio:4/5;border:0;box-shadow:var(--at-shadow-lift)}
+${A} [data-role="story"]:not([data-flip]) [data-part="media"] img{aspect-ratio:4/5}
+${A} [data-role="story"]:not([data-flip]) [data-part="media"]::after{display:none}
+${A} [data-role][data-role] [data-part="actions"] [data-part="cta"][data-kind="secondary"]{background:transparent;color:var(--at-text);border:1px solid var(--at-line-strong);box-shadow:none;outline:var(--at-frame) var(--at-stitch);outline-offset:-5px;padding:0 26px}
+/* The process (strip): plain columns on parchment, the number over the name, a stitch under the row. */
+${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:32px;padding-bottom:56px;border-bottom:var(--at-frame) var(--at-stitch)}
+${A} [data-role="steps"][data-variant="strip"][data-role] [data-part="item"]{display:block;padding:0;background:none;border:0;box-shadow:none;outline:0}
+${A} [data-role="steps"][data-variant="strip"] [data-part="index"]{display:block;margin-bottom:14px}
+${A} [data-role="steps"][data-variant="strip"] [data-part="name"]{margin:0;font-size:32px;line-height:1}
+${A} [data-role="steps"][data-variant="strip"] [data-part="body"]{margin:12px 0 0;font-size:16px;line-height:1.6}
+${A} [data-role="steps"][data-tone="surface"][data-variant="strip"]{box-shadow:inset 0 12px 24px -16px color-mix(in srgb,var(--at-photo-shade) 25%,transparent),inset 0 -12px 24px -16px color-mix(in srgb,var(--at-photo-shade) 25%,transparent)}
+/* The order steps (timeline): three columns, the number beside the name and line, a stitch under them. */
+${A} [data-role="steps"][data-variant="timeline"]{padding-bottom:clamp(40px,6vw,72px)}
+${A} [data-role="steps"][data-variant="timeline"] [data-part="list"]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:24px;padding:0 0 clamp(40px,6vw,72px);border:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
+${A} [data-role="steps"][data-variant="timeline"][data-role] [data-part="item"]{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:18px;align-items:start;padding:0;margin:0;border:0;background:none}
+${A} [data-role="steps"][data-variant="timeline"][data-role] [data-part="item"]::before{display:none}
+${A} [data-role="steps"][data-variant="timeline"][data-role] [data-part="index"]{grid-row:1/span 2;position:static;width:auto;height:auto;border-radius:0;background:none;display:block;font-size:40px;color:var(--at-tan);white-space:nowrap}
+${A} [data-role="steps"][data-variant="timeline"] [data-part="index"]::before{content:"0";display:inline}
+${A} [data-role="steps"][data-variant="timeline"] [data-part="name"]{margin:0;font-size:28px;line-height:1}
+${A} [data-role="steps"][data-variant="timeline"] [data-part="body"]{margin:10px 0 0;font-size:15px;line-height:1.55;color:var(--at-text)}
+${roleItems(['timeline'], '+[data-part="item"]')}{border-top:0}
+/* Contact (card, the contact page): each detail as a label over the value, the form card beside them. */
+${A} [data-role="contact"][data-variant="card"] [data-part="inner"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(40px,6vw,88px);align-items:start}
+${A} [data-role="contact"][data-variant="card"][data-role] [data-part="list"]{gap:28px}
+${A} [data-role="contact"][data-variant="card"][data-role] [data-part="item"]{display:grid;grid-template-columns:none;gap:8px;padding:0;border:0}
+${A} [data-role="contact"][data-variant="card"] [data-part="meta"]{font-size:11.5px;color:var(--at-accent-text)}
+${A} [data-role="contact"][data-variant="card"] [data-part="value"]{font-size:18px;line-height:1.5}
+${A} [data-role="contact"] [data-part="note"]{margin:18px 0 0;font-size:14px;color:var(--at-text-subtle)}
+/* Care cards (offerings with no heading): plain chalk cards, no stitch, the name in blackletter and the line under it. */
+${A} [data-role="offerings"][data-variant="cards"] [data-part="list"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:24px}
+${A} [data-role="offerings"][data-variant][data-role] [data-part="item"][data-card]{padding:28px;gap:0;outline:0}
+${A} [data-role="offerings"] [data-part="name"]{margin:0;font-size:28px;line-height:1}
+${A} [data-role="offerings"] [data-part="body"]{margin:12px 0 0;font-size:16px;line-height:1.6;color:var(--at-text)}
+/* Repairs (questions on the band, every answer showing): the heading, line and outline button on the left, the answers on the right. */
+${A} [data-role="faq"][data-tone="band"] [data-part="inner"]{gap:clamp(40px,6vw,88px)}
+${A} [data-role="faq"][data-tone="band"] [data-part="heading"]{gap:12px}
+${A} [data-role="faq"][data-tone="band"] [data-part="lead"]{margin:28px 0 28px;max-width:440px;font-size:17px;line-height:1.65}
+${A} [data-role="faq"][data-tone="band"][data-role] [data-part="actions"] [data-part="cta"]{justify-self:start;background:transparent;border:1px solid color-mix(in srgb,var(--at-on-band) 70%,transparent);color:var(--at-on-band);outline:var(--at-frame) color-mix(in srgb,var(--at-on-band) 50%,transparent);outline-offset:-5px;box-shadow:none}
+${A} [data-role="faq"] details[open] summary{pointer-events:none;min-height:0;padding:0}
+${A} [data-role="faq"] details[open] summary::after{display:none}
+${A} [data-role="faq"][data-role] [data-part="list"]:has(details[open]){gap:28px}
+${A} [data-role="faq"] [data-part="list"]:has(details[open]) [data-part="item"]{padding-bottom:28px}
+${A} [data-role="faq"] [data-part="list"]:has(details[open]) [data-part="item"]:last-child{border-bottom:0}
+${A} [data-role="faq"] details[open] [data-part="question"]{font-size:26px;line-height:1.05}
+${A} [data-role="faq"] details[open] [data-part="answer"]{margin:10px 0 0;padding:0;font-size:16px;line-height:1.6}
 /* Motion: colour changes and lifts only, and everything stops under reduced motion. */
 ${A} .sv-ticker-track{animation:none}
 @media (prefers-reduced-motion:reduce){${A} *{transition:none!important;animation:none!important}}
