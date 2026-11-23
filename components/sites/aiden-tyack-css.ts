@@ -526,7 +526,7 @@ ${A} [data-role] [data-part="media"]:has(img)::after{border:0;background:${dashB
 /* Buttons carry the same stitch 4px inside, in their own ink at half strength (the outline it replaces drew the short browser dash). */
 ${A} [data-role][data-role] [data-part="cta"]{outline:0}
 ${A} [data-role][data-role] [data-part="cta"]::after{content:"";position:absolute;inset:4px;pointer-events:none;background:${dashBox('color-mix(in srgb,currentColor 50%,transparent)')}}
-${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{border-bottom:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
+${A} [data-role="steps"][data-variant="strip"] [data-part="list"]{border-top:0;border-bottom:0;background:${dashLine('var(--at-stitch)', '90deg', '0 100%', '100% 1.5px')}}
 ${A} .at-footer-ground .hs-footer{border-top:0;background:${dashRule('color-mix(in srgb,var(--at-on-band) 40%,transparent)')}}
 /* A section set to sit flush under the one before it (the page intros run straight into their content). */
 ${A} [data-role][data-space-top="none"]{padding-block-start:0}
