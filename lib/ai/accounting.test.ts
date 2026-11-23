@@ -34,14 +34,14 @@ it('a usage without cache fields records the split as not recorded (null), not z
   await settleAiAttempt('attempt', { inputTokens: 10, outputTokens: 2 }, 0.01)
   expect(m.rpc).toHaveBeenCalledWith('ai_settle_attempt', expect.objectContaining({ p_cache_read_tokens: null, p_cache_creation_tokens: null }))
 })
-it('falls back to the four-argument settle while the split migration is unapplied, and says so', async () => {
+it('a missing settle function is a settle failure like any other: one call, then the hold (PROG-E8 4b fallback retired)', async () => {
   m.rpc.mockResolvedValueOnce({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' } })
-  await settleAiAttempt('attempt', { inputTokens: 10, outputTokens: 2, cacheReadInputTokens: 5 }, 0.01)
+  await expect(settleAiAttempt('attempt', { inputTokens: 10, outputTokens: 2, cacheReadInputTokens: 5 }, 0.01)).rejects.toThrow('settle_failed')
   expect(m.rpc).toHaveBeenCalledTimes(2)
-  expect(m.rpc).toHaveBeenLastCalledWith('ai_settle_attempt', { p_id: 'attempt', p_input_tokens: 15, p_output_tokens: 2, p_actual: 0.01 })
-  expect(m.error).toHaveBeenCalledWith('ai.accounting.cache_split_unavailable', { reservationId: 'attempt' })
+  expect(m.rpc).toHaveBeenLastCalledWith('ai_hold_attempt', { p_id: 'attempt', p_reason: 'settle_failed' })
+  expect(m.error).not.toHaveBeenCalledWith('ai.accounting.cache_split_unavailable', expect.anything())
 })
-it('any other settle error does not fall back: it holds', async () => {
+it('any other settle error holds too', async () => {
   m.rpc.mockResolvedValueOnce({ data: null, error: { code: 'P0001', message: 'Invalid AI usage' } })
   await expect(settleAiAttempt('attempt', { inputTokens: 10, outputTokens: 2 }, 0.01)).rejects.toThrow('settle_failed')
   expect(m.rpc).toHaveBeenLastCalledWith('ai_hold_attempt', { p_id: 'attempt', p_reason: 'settle_failed' })

@@ -50,22 +50,13 @@ export async function settleAiAttempt(id: string, usage: TokenUsage, costUsd: nu
     throw new AiAccountingError(id, 'invalid_usage')
   }
   try {
-    const admin = createAdminClient()
-    const base = { p_id: id, p_input_tokens: promptTokensOf(usage), p_output_tokens: usage.outputTokens, p_actual: costUsd }
-    // PROG-E8 4b: the six-argument overload (migration 20270346130000) stores the cache split beside
-    // the whole-prompt input_tokens. A count the provider did not report goes as null ("not recorded").
-    let { data, error } = await accountingRpc(admin, 'ai_settle_attempt', {
-      ...base,
+    // PROG-E8 4b: the six-argument overload (migration 20270346130000, applied) stores the cache split
+    // beside the whole-prompt input_tokens. A count the provider did not report goes as null ("not recorded").
+    const { data, error } = await accountingRpc(createAdminClient(), 'ai_settle_attempt', {
+      p_id: id, p_input_tokens: promptTokensOf(usage), p_output_tokens: usage.outputTokens, p_actual: costUsd,
       p_cache_read_tokens: usage.cacheReadInputTokens ?? null,
       p_cache_creation_tokens: usage.cacheCreationInputTokens ?? null,
     })
-    // Until that migration is applied the overload does not exist (PGRST202, raised before anything
-    // runs), so settle on the four-argument function exactly as before. Logged so the fallback firing
-    // is visible; retire this branch once the migration is live.
-    if (error?.code === 'PGRST202') {
-      log.error('ai.accounting.cache_split_unavailable', { reservationId: id })
-      ;({ data, error } = await accountingRpc(admin, 'ai_settle_attempt', base))
-    }
     if (error || data !== true) throw new AiAccountingError(id, 'settle_failed')
   } catch {
     await holdAiAttempt(id, 'settle_failed')
