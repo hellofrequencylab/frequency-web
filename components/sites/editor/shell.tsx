@@ -13,7 +13,7 @@ import { websiteCoachingQuestions, type WebsiteCoachingPromptId } from '@/lib/si
 import { inlineFieldValue } from '@/lib/sites/editor/inline-edit'
 import { flattenLayers, layerColumnTarget, layerTabStop, planLayerKey, LAYER_KEYSHORTCUTS } from '@/lib/sites/editor/layer-focus'
 import { layerDropAttrs, type LayerDropTarget } from '@/lib/sites/editor/layer-touch'
-import { useLayerTouchDrag } from './use-layer-touch-drag'
+import { useLayerTouchDrag } from '@/lib/builder/use-layer-touch-drag'
 import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor/layout'
 import { pendingChangeLabels, publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -11,6 +11,9 @@ import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space
 import { Input } from '@/components/ui/field'
 import { capsLabel } from '@/components/ui/caps-label'
 import { flattenLayers, layerTabStop, planLayerKey } from '@/lib/sites/editor/layer-focus'
+import { canDropLayer, isTouchPress, layerDropAttrs, type LayerDropTarget } from '@/lib/sites/editor/layer-touch'
+import { useLayerTouchDrag } from '@/lib/builder/use-layer-touch-drag'
+import { MAX_STACK, type ColumnDrop } from '@/lib/entity-blocks/node-ops'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
@@ -81,6 +84,13 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
   const [tileFocus, setTileFocus] = useState<string | null>(null)
   // What a move across columns did, said once for a screen reader (the tile itself moves in silence).
   const [moveSaid, setMoveSaid] = useState('')
+  // A drag in the rail (PROG-E6H): a mouse drags a tile by its header (HTML drag), a finger or a pen holds
+  // it still and then drags (the long press the website Layers uses, one shared hook). Every place a block
+  // can land carries its target as data, and both paths end in the same `dropBlock`. `over` is the place
+  // the drag is on: lit when the block may land there, marked full when the column is at its cap.
+  const [over, setOver] = useState<{ key: string; full: boolean } | null>(null)
+  const [mouseDrag, setMouseDrag] = useState<string | null>(null)
+  const lastPointer = useRef('mouse')
 
   // Vertical rail alignment (railOffset): when a block is selected (usually by clicking it on the canvas),
   // the LEFT section list translates so the selected tile sits on the SAME horizontal line as the block on
@@ -162,6 +172,79 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
     }
   }, [selectedId, alignTick, model?.rows])
 
+  const focusTile = (key: string) => {
+    setTileFocus(key)
+    requestAnimationFrame(() => tileRefs.current.get(key)?.querySelector<HTMLElement>('[data-layer-id]')?.focus())
+  }
+
+  // ── Drag ops ── A landing place is a section's column and an index in it; the model decides what a drop
+  // there means (`dropTarget`: its own section only, never onto the place it has, never into a full column).
+  const blockAt = (key: string) => {
+    for (const row of model?.rows ?? [])
+      for (const [col, stack] of row.cells.entries()) {
+        const block = stack.find((b) => b.key === key)
+        if (block) return { row, col, block }
+      }
+    return null
+  }
+  const placeOf = (target: LayerDropTarget): ColumnDrop | null =>
+    target.parentId !== null && target.slotKey !== null ? { rowId: target.parentId, col: Number(target.slotKey), index: target.index } : null
+  /** What a drag of `id` over the place `key` shows: where it lands, or that the column is full. */
+  const weigh = (id: string, key: string, target: LayerDropTarget): { lands: ColumnDrop | null; full: boolean } => {
+    const place = placeOf(target)
+    const from = blockAt(id)
+    if (!model || !place || !from || !canDropLayer(id, { key, target })) return { lands: null, full: false }
+    const lands = model.dropTarget(id, place)
+    const full = !lands && from.row.id === place.rowId && from.col !== place.col && (from.row.cells[place.col]?.length ?? 0) >= MAX_STACK
+    return { lands, full }
+  }
+  const stayed = (id: string, full?: ColumnDrop | null) => {
+    const from = blockAt(id)
+    const name = from ? label(from.block.type) : 'Block'
+    setMoveSaid(full ? `Column ${full.col + 1} is full. ${name} stayed where it was.` : `${name} stayed where it was.`)
+  }
+  const dropBlock = (id: string, target: LayerDropTarget, key: string) => {
+    const from = blockAt(id)
+    const place = placeOf(target)
+    const { lands, full } = weigh(id, key, target)
+    if (!model || !from || !place || !lands) { stayed(id, full ? place : null); return }
+    model.dropAt(id, place)
+    setMoveSaid(`${label(from.block.type)} moved to place ${lands.index + 1} in column ${lands.col + 1}.`)
+    focusTile(id)
+  }
+  const touchDrag = useLayerTouchDrag({
+    onOver: (key, drag) => {
+      const state = key && drag ? weigh(drag.id, key, drag.target) : null
+      setOver(key && state && (state.lands || state.full) ? { key, full: state.full } : null)
+    },
+    onDrop: dropBlock,
+  })
+  // Escape, or letting go off every landing place, ends an HTML drag with no drop: nothing moved, and said so.
+  const endMouseDrag = () => {
+    if (mouseDrag) stayed(mouseDrag)
+    setMouseDrag(null)
+    setOver(null)
+  }
+  const mouseHandlers = (key: string, target: LayerDropTarget) => ({
+    onDragOver: (event: DragEvent<HTMLElement>) => {
+      if (!mouseDrag) return
+      event.stopPropagation()
+      const state = weigh(mouseDrag, key, target)
+      if (state.lands) { event.preventDefault(); event.dataTransfer.dropEffect = 'move' }
+      const lit = !!state.lands || state.full
+      if ((over?.key ?? null) !== (lit ? key : null) || (lit && over?.full !== state.full)) setOver(lit ? { key, full: state.full } : null)
+    },
+    onDrop: (event: DragEvent<HTMLElement>) => {
+      if (!mouseDrag) return
+      event.preventDefault(); event.stopPropagation()
+      const id = mouseDrag
+      setMouseDrag(null); setOver(null)
+      dropBlock(id, target, key)
+    },
+  })
+  const dragging = touchDrag.dragging ?? mouseDrag
+  const { style: touchStyle, ...touchHandlers } = touchDrag.handlers
+
   if (!model || !model.seeded) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-card border border-border">
@@ -183,10 +266,6 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
 
   const tileRows = flattenLayers(model.rows.flatMap((row) => row.cells.flat().map((block) => ({ id: block.key, slots: [] }))))
   const tileStop = tileFocus && tileRows.some((row) => row.id === tileFocus) ? tileFocus : layerTabStop(tileRows, selectedId)
-  const focusTile = (key: string) => {
-    setTileFocus(key)
-    requestAnimationFrame(() => tileRefs.current.get(key)?.querySelector<HTMLElement>('[data-layer-id]')?.focus())
-  }
   // One column over, inside the block's own section (the website Layers rule, on this builder's store). The
   // tile is drawn again in its new column, so focus is handed back to it.
   const onAcross = (key: string, direction: -1 | 1) => {
@@ -240,8 +319,11 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
           <ol
             ref={listRef}
             onKeyDown={onTilesKey}
+            {...touchHandlers}
+            onPointerDownCapture={(event) => { lastPointer.current = event.pointerType }}
+            data-dragging={dragging ? '' : undefined}
             className="relative space-y-2 transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
-            style={{ transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
+            style={{ ...touchStyle, transform: railOffset ? `translateY(${railOffset}px)` : undefined }}
           >
             {model.rows.map((row, ri) => (
               <li key={row.id} className="rounded-card border border-border bg-surface">
@@ -294,11 +376,29 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
 
                 {/* Columns — each a stack of block tiles + an add-block control. */}
                 <div className={`grid gap-1.5 p-2 ${row.columns > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  {row.cells.map((stack, col) => (
-                    <div key={`${row.id}-${col}`} className="space-y-1.5">
+                  {row.cells.map((stack, col) => {
+                    // The column itself is the landing place for its END (so an empty column can be filled);
+                    // a tile inside it is the place just before that tile.
+                    const endKey = `${row.id}:${col}`
+                    const endAt: LayerDropTarget = { parentId: row.id, slotKey: String(col), index: stack.length }
+                    return (
+                    <div key={`${row.id}-${col}`} className="space-y-1.5" {...layerDropAttrs(endKey, endAt)} {...mouseHandlers(endKey, endAt)}>
                       {stack.map((block, si) => (
                         <BlockTile
                           key={block.key}
+                          dropAttrs={layerDropAttrs(block.key, { parentId: row.id, slotKey: String(col), index: si })}
+                          dropHandlers={mouseHandlers(block.key, { parentId: row.id, slotKey: String(col), index: si })}
+                          landing={over?.key === block.key && !over.full}
+                          dragged={dragging === block.key}
+                          onDragStart={(event) => {
+                            // A finger never starts an HTML drag here: it has the long press.
+                            if (isTouchPress(lastPointer.current)) { event.preventDefault(); return }
+                            event.stopPropagation()
+                            event.dataTransfer.effectAllowed = 'move'
+                            event.dataTransfer.setData('text/plain', label(block.type))
+                            setMouseDrag(block.key)
+                          }}
+                          onDragEnd={endMouseDrag}
                           id={block.type}
                           blockKey={block.key}
                           tabStop={block.key === tileStop}
@@ -321,6 +421,13 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
                           onRemove={() => onRemoveBlock(block.key)}
                         />
                       ))}
+                      {over?.key === endKey && (over.full ? (
+                        <p data-landing="full" className="rounded-control border border-danger px-2 py-1.5 text-2xs font-semibold text-danger">
+                          This column is full. It holds {MAX_STACK} blocks.
+                        </p>
+                      ) : (
+                        <div data-landing="end" aria-hidden className={LANDING_LINE} />
+                      ))}
                       {addingAt && addingAt.rowId === row.id && addingAt.col === col ? (
                         <AddBlockPalette
                           addable={model.addable}
@@ -337,7 +444,8 @@ function SpaceCanvasEditorView({ model, loomScope, focusBlockId }: {
                         </button>
                       )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </li>
             ))}
@@ -414,6 +522,12 @@ function BlockTile({
   canLeft,
   canRight,
   onAcross,
+  dropAttrs,
+  dropHandlers,
+  landing,
+  dragged,
+  onDragStart,
+  onDragEnd,
   tileRef,
   loomScope,
   content,
@@ -435,6 +549,15 @@ function BlockTile({
   canLeft: boolean
   canRight: boolean
   onAcross: (direction: -1 | 1) => void
+  /** This tile as a landing place: a dragged block dropped on it goes just before it. */
+  dropAttrs: ReturnType<typeof layerDropAttrs>
+  dropHandlers: { onDragOver: (event: DragEvent<HTMLElement>) => void; onDrop: (event: DragEvent<HTMLElement>) => void }
+  /** A drag is over this tile and the block may land here: draw the line where it will go. */
+  landing: boolean
+  /** This tile is the one being dragged. */
+  dragged: boolean
+  onDragStart: (event: DragEvent<HTMLElement>) => void
+  onDragEnd: () => void
   tileRef: (el: HTMLLIElement | null) => void
   loomScope?: string
   content: Record<string, unknown>
@@ -451,11 +574,16 @@ function BlockTile({
   return (
     <li
       ref={tileRef}
-      className={`rounded-control border transition-colors ${
+      {...dropAttrs}
+      {...dropHandlers}
+      data-dragged={dragged || undefined}
+      className={`relative rounded-control border transition-colors ${
         active ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:border-border-strong'
-      }`}
+      } ${dragged ? 'opacity-60' : ''}`}
     >
-      <div className="flex items-center gap-1 px-1.5 py-1.5">
+      {landing && <span data-landing="before" aria-hidden className={`pointer-events-none absolute inset-x-0 -top-1.5 ${LANDING_LINE}`} />}
+      {/* The header is the drag handle for a mouse; the settings below it stay ordinary fields. */}
+      <div className="flex cursor-grab items-center gap-1 px-1.5 py-1.5 active:cursor-grabbing" draggable onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <button
           type="button"
           onClick={onSelect}
@@ -535,6 +663,9 @@ function BlockTile({
     </li>
   )
 }
+
+/** Where a dragged block will land: a line in the gap it is about to take. */
+const LANDING_LINE = 'h-1 rounded-pill bg-primary'
 
 const ACROSS_BUTTON =
   'inline-flex min-h-11 min-w-11 flex-1 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-2 text-2xs font-semibold text-text transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'

@@ -55,6 +55,7 @@ import {
 } from './layout'
 import { entityBlockLimit, typeLimiter } from './block-limits'
 import { layerColumnTarget } from '@/lib/sites/editor/layer-focus'
+import { reorder } from '@/lib/builder/gesture'
 
 /** One row of a node document. `NodeLayout['rows'][number]`, named so the ops below read plainly. */
 export type NodeRow = NodeLayout['rows'][number]
@@ -62,7 +63,8 @@ export type NodeRow = NodeLayout['rows'][number]
 // The same bounds node-tree.ts and rows-ops.ts enforce, so a mutated document is never larger than an
 // upgraded one.
 const MAX_ROWS = 24
-const MAX_STACK = 12
+/** The most blocks one column holds. A move into a column already at it is refused, never dropped. */
+export const MAX_STACK = 12
 const MAX_BENCH = 48
 const VALID_COLUMNS: ReadonlySet<number> = new Set([1, 2, 3, 4])
 const ROW_ID_RE = /^r[0-9a-z]+$/i
@@ -306,6 +308,45 @@ export function moveNodeAcross(layout: NodeLayout, nid: string, direction: -1 | 
     layout.rows.map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })),
     nid,
     direction,
+  )
+  return target ? placeNode(layout, nid, target.rowId, target.col, target.index) : layout
+}
+
+/** A place in a section a dragged block is dropped on: before the block now at `index` of column `col`
+ *  (index = the column's length is its end). Counted before the dragged block leaves, as a drop sees it. */
+export type ColumnDrop = { rowId: string; col: number; index: number }
+
+/** Where a DRAGGED block lands (PROG-E6H), the twin of `columnMoveTarget` for a drop: a place inside its own
+ *  column, or any place in another column of its own section. `rows` carries block KEYS only, so both canvas
+ *  stores answer through this one function. The order inside a column is the shared drag rule (`reorder`,
+ *  lib/builder/gesture.ts). Null, so nothing moves, when the block is not placed, the drop is in another
+ *  section, the column does not exist, the block would land where it already is, or the other column is at
+ *  the stack cap (normalizing would drop the block that just arrived), exactly as the button refuses. */
+export function dropMoveTarget(
+  rows: readonly { id: string; cells: readonly (readonly string[])[] }[],
+  key: string,
+  drop: ColumnDrop,
+): ColumnDrop | null {
+  const row = rows.find((r) => r.id === drop.rowId)
+  const from = row ? row.cells.findIndex((stack) => stack.includes(key)) : -1
+  const stack = row?.cells[drop.col]
+  if (!row || from < 0 || !stack || !Number.isInteger(drop.index) || drop.index < 0) return null
+  if (from !== drop.col) {
+    if (stack.length >= MAX_STACK) return null
+    return { rowId: row.id, col: drop.col, index: Math.min(drop.index, stack.length) }
+  }
+  const at = stack.indexOf(key)
+  const index = reorder(stack, at, Math.min(drop.index, stack.length)).indexOf(key)
+  return index === at ? null : { rowId: row.id, col: drop.col, index }
+}
+
+/** Drop a placed node on a place in its own section. Its bags travel with it; like every move it adds
+ *  nothing, so no per-type cap or lock is tripped. A no-op where `dropMoveTarget` answers null. */
+export function moveNodeTo(layout: NodeLayout, nid: string, drop: ColumnDrop): NodeLayout {
+  const target = dropMoveTarget(
+    layout.rows.map((row) => ({ id: row.id, cells: row.cells.map((stack) => stack.map((n) => n.nid)) })),
+    nid,
+    drop,
   )
   return target ? placeNode(layout, nid, target.rowId, target.col, target.index) : layout
 }
