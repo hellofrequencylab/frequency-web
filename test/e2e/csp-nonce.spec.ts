@@ -36,7 +36,7 @@ type Tally = { total: number; nonced: number; hashed: number; data: number; wron
 
 function readScripts(html: string, nonce: string, policy: string): Tally {
   const tally: Tally = { total: 0, nonced: 0, hashed: 0, data: 0, wrongNonce: 0, bare: [] }
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
     const [, attrs, body] = match
     tally.total += 1
     if (DATA_BLOCK.test(attrs)) {
