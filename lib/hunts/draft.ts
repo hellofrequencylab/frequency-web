@@ -11,6 +11,7 @@ import type { Blocker, Chapter, HuntGraph } from '@/lib/hunts/graph'
 import { BENEFIT_CODE } from '@/lib/hunts/pass-binding'
 import { challengeProblems, stopLayers, stopPlay, type Challenge, type ChallengeView } from '@/lib/hunts/challenges'
 import { slugify } from '@/lib/utils'
+import { applyFinalePolicy, finaleContent, finaleDraftField } from '@/lib/hunts/finale-draft'
 
 export type Stop = {
   place: string
@@ -75,6 +76,8 @@ export type TrailDraft = {
   finishCount?: number
   /** FH-030S: the Passport's regions. Absent when there are none; read only while `finishCount` is set. */
   regions?: DraftRegion[]
+  /** FH-031T: the host Event the trail ends at. Absent on a trail with no finale. */
+  finaleEventId?: string
 }
 
 export const MIN_STOPS = 3
@@ -155,6 +158,7 @@ export function parseTrailDraft(input: unknown): TrailDraft {
     // FH-030S: present only on a Passport, so every Trail is stored exactly as before.
     ...(finishCount !== null ? { finishCount } : {}),
     ...(regions.length > 0 ? { regions } : {}),
+    ...finaleDraftField(o.finaleEventId),
   }
 }
 
@@ -495,6 +499,7 @@ export function canonicalContent(draft: TrailDraft, challenges: readonly Challen
       : {}),
     // FH-030S: a Passport's regions are content (switching one changes who can finish). None, no key.
     ...(draftChapters(draft).length > 0 ? { chapters: draftChapters(draft) } : {}),
+    ...finaleContent(draft.finaleEventId),
   })
 }
 
@@ -511,5 +516,6 @@ export function publishedPolicy(prior: Record<string, unknown> | null, draft: Tr
   const chapters = draftChapters(draft)
   if (chapters.length > 0) policy.chapters = chapters
   else delete policy.chapters
+  applyFinalePolicy(policy, draft.finaleEventId)
   return policy
 }

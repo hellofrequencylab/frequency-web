@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import { cancelBooking, listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { MyBooking, OpenSlot } from '@/lib/spaces/booking'
 import { BookingPicker } from '@/components/spaces/booking-picker'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 
 // MEMBER SELF-SERVE BOOKINGS (client, P3, ADR-605). The member's own upcoming bookings with a Space,
@@ -98,23 +99,25 @@ function BookingMineRow({
         </div>
         {booking.canModify && mode === 'idle' && (
           <div className="flex shrink-0 items-center gap-2">
-            <button
+            <Button
               type="button"
               onClick={openReschedule}
-              className="rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-border-strong hover:text-text"
+              variant="secondary"
+              size="sm"
             >
               Reschedule
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => {
                 setMode('cancel')
                 setError(null)
               }}
-              className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              variant="ghost"
+              size="sm"
             >
               <X className="h-3.5 w-3.5" aria-hidden /> Cancel
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -138,23 +141,24 @@ function BookingMineRow({
             className="py-1.5"
           />
           <div className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
               onClick={doCancel}
-              disabled={pending}
-              className="inline-flex items-center gap-1 rounded-control border border-danger px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+              loading={pending}
+              variant="dangerOutline"
+              size="sm"
             >
-              {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
               Cancel booking
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setMode('idle')}
               disabled={pending}
-              className="text-meta font-semibold text-muted transition-colors hover:text-text"
+              variant="ghost"
+              size="sm"
             >
               Keep
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -163,13 +167,14 @@ function BookingMineRow({
         <div className="space-y-3 rounded-card border border-border bg-surface-elevated/40 p-3">
           <div className="flex items-center justify-between">
             <p className="text-meta font-semibold text-muted">Pick a new time</p>
-            <button
+            <Button
               type="button"
               onClick={() => setMode('idle')}
-              className="text-meta font-semibold text-muted transition-colors hover:text-text"
+              variant="ghost"
+              size="sm"
             >
               Close
-            </button>
+            </Button>
           </div>
           {loading || slots === null ? (
             <div className="flex items-center gap-2 text-body-sm text-muted">

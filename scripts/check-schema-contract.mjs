@@ -76,7 +76,8 @@ export const ALLOWLIST = [
   // 20270346130000 (ai_tokens_today and the cache token split, PROG-E8) and 20270346140000
   // (app_instances, PROG-E0) were confirmed recorded in the live project, and
   // lib/database.types.ts was regenerated from it (public schema). That regeneration retired all
-  // 126 entries this list held, not only those three: every entry stopped matching in the same
+  // 130 entries this list held (126, plus four FH-031T entries for lib/hunts/finale-store.ts that
+  // landed on main the same day), not only those three: every entry stopped matching in the same
   // run, with no call site touched, so each one retired because the schema caught up (the only
   // kind of retirement, see below). The owners were the Hunts rows (FH-*), DEF-ETSY, LIVE-882,
   // LIVE-763, LIVE-767, LIVE-781, LIVE-786, LIVE-1179, LIVE-2340, SCAN-759, SCAN-983, EMAIL-047

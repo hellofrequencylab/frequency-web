@@ -95,6 +95,10 @@ Not verified in this change, and said so:
    The proxy computes the hash in its bundle; the page renders the script from the server bundle. If the bundler prints
    those functions differently in the two, the hash will not match and the script is reported (test run) or blocked
    (enforced). The three other root scripts and the side script are plain strings and cannot differ.
+   **Answered 2026-11-23: it did differ.** The page bundle printed `function g(a){…}` and the hash never matched; it was the
+   one script left out on the enforce reading. The three rules are string literals now
+   (`ANALYTICS_ALLOWED_BROWSER_SOURCE`, `PARSE_CONSENT_CHOICE_BROWSER_SOURCE`,
+   `PIXEL_SAFE_ATTRIBUTION_QUERY_BROWSER_SOURCE`), and `lib/consent/cookie-consent.test.ts` runs each beside the real function.
 2. **Not-found pages under a member path.** A URL no route matches (`/feed/nothing-here`) is answered at routing time,
    possibly from the prerendered not-found page, which has no nonce. Under enforcement that page would render but not
    hydrate. The report shows these as inline blocks on a 404 address.
@@ -105,3 +109,8 @@ Not verified in this change, and said so:
    server the proxy's value replaces the config's (`next/dist/server/lib/router-utils/resolve-routes.js`). If Vercel sent
    both instead, a browser applies both and a script must pass each; every script the strict policy allows is also
    allowed by today's, so either outcome is safe.
+   **Answered 2026-11-23, and it matters more than this item expected.** The render on Vercel is handed the RESPONSE
+   side's `Content-Security-Policy`, not the one the proxy puts on the request. Enforced, that is the strict policy and
+   Next stamps the nonce (110 of 117 scripts on `/feed`). In the test run it is the static policy, so Next finds no nonce,
+   stamps nothing, and the report-only policy reports every Next script. The test run measures nothing until the enforced
+   header on member pages names the nonce during the run. Reading: `test/e2e/csp-nonce.spec.ts`.

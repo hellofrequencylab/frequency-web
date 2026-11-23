@@ -155,11 +155,11 @@ export function buildNoncePolicy(opts: { nonce: string; scriptHashes: readonly s
  * Every constant inline script a member-app document can contain, in the order they appear. Each
  * is imported from the module the page renders it from, so the hash and the page cannot drift.
  *
- * ⚠️ `analyticsHeadScript()` embeds three functions by `toString()` (lib/consent/cookie-consent.ts).
- * The proxy and the page are separate bundles, so if the bundler ever prints those functions
- * differently in the two, this hash will not match and the analytics script shows up in the report
- * as a blocked inline script whose sample starts `(function(){try{\nvar ID=`. That is a thing to
- * look for in the test run, before enforcing (docs/RUNBOOKS.md).
+ * `analyticsHeadScript()` is built from string constants only. It used to embed three functions by
+ * `toString()`, and the proxy and the page are separate bundles that print a function differently
+ * (the page's read `function g(a){…}`), so its hash never matched: it was the one script left
+ * without a nonce or a hash on the 2026-11-23 enforce reading. cookie-consent.test.ts holds the
+ * string twins to the real functions.
  */
 export function inlineScriptSources(): string[] {
   return [

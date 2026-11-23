@@ -1149,7 +1149,9 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 
 **Watch:** runtime logs for `csp.violation` with `policy: nonce`. Expected noise: `vercel.live` on previews only. A report naming an inline script on a member page (the analytics head hash, a not-found page under a member path) is a fix before step 2.
 
-**Gate before step 2:** seven days of production with no unexplained `policy: nonce` report; one preview with `CSP_NONCE_ENFORCE=1` where sign-in, the feed, a Space page, Stripe checkout, a map and GA all load in a real browser; and the owner's go.
+**Measured 2026-11-23, read before trusting the reports:** the test run as built cannot see the nonce. Next looks for it in `Content-Security-Policy` first, and on Vercel the render is handed the response's value under that name, which in the test run is the static policy with no nonce. Next then stamps none of its scripts and every one is reported (1,122 reports in 23 hours, none about a real gap). Reports from that period say nothing about readiness, and the seven days have not started. With the policy enforced on a preview, Next does stamp its scripts. The reading comes from `test/e2e/csp-nonce.spec.ts`: run `e2e (manual)` with `capture_shell` on and read the `[csp-nonce]` lines (`nonced`, `hashed`, `bare`). `bare` is the number of scripts the strict policy would block, and it must be 0.
+
+**Gate before step 2:** `test/e2e/csp-nonce.spec.ts` reads `bare=0` on `/feed`, `/lead` and a Space page; seven days of production with no unexplained `policy: nonce` report, counted from a test run that can see the nonce; one preview with `CSP_NONCE_ENFORCE=1` where sign-in, the feed, a Space page, Stripe checkout, a map and GA all load in a real browser; and the owner's go.
 
 **Step 2:** set `CSP_NONCE_ENFORCE=1` on Production and redeploy. It wins over step 1.
 

@@ -157,6 +157,17 @@ export function toAnthropicTools(tools: readonly VeraToolDef[]): Anthropic.Tool[
   }))
 }
 
+/** Pure: the tool definitions one turn sends, in registry order: the member chat set, the Space
+ *  manager tools only when the turn holds the manager checks, the operator tools only when it holds
+ *  the lookup. The live turn and the prefix reading (./cached-prefix) both take their tools from
+ *  here, so the reading cannot drift from what is sent. */
+export function veraTurnTools(managerChecks?: unknown, adminLookup?: unknown): Anthropic.Tool[] {
+  const memberTools = VERA_TOOLS.filter(
+    (t) => MEMBER_CHAT_TOOL_KEYS.has(t.key) || (managerChecks && SPACE_MANAGER_TOOL_KEYS.has(t.key)) || (adminLookup && OPERATOR_TOOL_KEYS.has(t.key)),
+  )
+  return toAnthropicTools(memberTools)
+}
+
 /** Pure: split assistant content into reply text + tool calls. Unit-tested. */
 export function parseAssistantContent(content: ContentBlock[]): {
   text: string
@@ -318,10 +329,7 @@ export async function runVeraClaudeTurn(input: {
     // the lookup and no Space change at all.
     const adminLookup = input.viewer?.isOperator ? input.adminLookup : undefined
     const spaceSwitches = adminLookup ? { ...(managerChecks ?? NO_SPACE_CHANGES), lookup: adminLookup, ticketCard } : managerChecks
-    const memberTools = VERA_TOOLS.filter(
-      (t) => MEMBER_CHAT_TOOL_KEYS.has(t.key) || (managerChecks && SPACE_MANAGER_TOOL_KEYS.has(t.key)) || (adminLookup && OPERATOR_TOOL_KEYS.has(t.key)),
-    )
-    const tools = toAnthropicTools(memberTools)
+    const tools = veraTurnTools(managerChecks, adminLookup)
     const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
       { role: 'user' as const, content: input.memberText },
