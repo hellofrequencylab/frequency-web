@@ -5280,7 +5280,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "7481bf321d645a207406951f7581dbc0158c55ca2a2ca94fd1afa351c55103c6",
+          "sha256": "8e3160821b60901d242488f4b8d24fc3e24d096a9e7e18be967c7865a4ef0fc6",
           "baseMode": "100644",
           "headMode": "100644"
         },
