@@ -30,7 +30,7 @@ export interface ItemCommentView {
   mine: boolean
 }
 
-export interface ItemThreadView {
+interface ItemThreadView {
   comments: ItemCommentView[]
   lastReadAt: string | null
   me: string | null

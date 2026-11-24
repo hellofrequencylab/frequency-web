@@ -11,7 +11,7 @@ import type { ReferenceKind } from './references'
 // do not work never appears, and nothing here widens what they can already see. A short list,
 // title match only, newest first; a failure is an empty list, logged.
 
-export interface TaggableItem {
+interface TaggableItem {
   kind: Exclude<ReferenceKind, 'profile' | 'space' | 'entry'>
   id: string
   label: string
