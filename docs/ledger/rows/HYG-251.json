@@ -1,0 +1,19 @@
+{
+  "id": "HYG-251",
+  "title": "Space CRM tasks live in the one task table beside Plan to-dos",
+  "lane": "hygiene",
+  "priority": "P3",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/crm/space-tasks.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
+  },
+  "detail": "FOUND 2026-11-24: Space CRM tasks are crm_activities rows with kind='task' while Plan to-dos and the operator queue use crm_tasks, so a person's work is split across two tables and no list shows both. crew_tasks stays separate on purpose (the member volunteer economy). Fix: move the rows into crm_tasks (additive migration), point space-tasks.ts at it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs HYG-251",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

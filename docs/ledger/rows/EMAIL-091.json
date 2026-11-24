@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-091",
+  "title": "Unread hub notices step from push to one email per thread to a daily digest, and stop once read",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/notifications/router.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
+  },
+  "detail": "FOUND 2026-11-24: each notice goes out on its own channels at once, so a busy Plan thread sends one email per comment and nothing respects quiet hours. Fix: a ladder (in-app at once, web push after 1 to 2 minutes if unseen, one email per thread after 15 to 30 minutes if unread, daily digest for the rest), cancelled on read; quiet hours in the person's time zone on notification preferences.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs EMAIL-091",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

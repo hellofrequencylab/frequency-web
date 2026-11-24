@@ -5,7 +5,11 @@
 // every other Email Studio write). The table is service-role only, so these actions are the only door.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin } from '@/lib/admin/guard'
+import { getCallerProfile } from '@/lib/auth'
+import { isStaff } from '@/lib/core/roles'
+import { getStaffMember } from '@/lib/staff'
+import { getCapabilityOverrides } from '@/lib/permissions'
+import { staffCan } from '@/lib/core/staff-roles'
 import { writerGate } from '@/lib/outbound/guard'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import type { Json } from '@/lib/database.types'
@@ -30,8 +34,22 @@ async function readAll(): Promise<SavedSection[] | null> {
   }))
 }
 
+/** The marketing READ gate, as a yes/no. It must never redirect: this read runs from a client effect inside an
+ *  open editor, and a redirect thrown from a server action navigates the whole page away. That is how a Space
+ *  owner's email editor closed itself on open and dropped them off the page (LIVE-2523). Same rule as
+ *  requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' }), answered with null instead. */
+async function canReadLibrary(): Promise<boolean> {
+  const profile = await getCallerProfile().catch(() => null)
+  if (!profile) return false
+  if (isStaff(profile.webRole)) return true
+  const staff = await getStaffMember().catch(() => null)
+  if (!staff) return false
+  const overrides = await getCapabilityOverrides().catch(() => undefined)
+  return staffCan(staff.role, 'marketing', 'read', overrides)
+}
+
 export async function listSavedSections(): Promise<SavedSection[] | null> {
-  await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
+  if (!(await canReadLibrary())) return null
   return readAll()
 }
 

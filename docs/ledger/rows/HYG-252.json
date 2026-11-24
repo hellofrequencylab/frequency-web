@@ -1,0 +1,19 @@
+{
+  "id": "HYG-252",
+  "title": "The DM page and the chat dock share one thread component",
+  "lane": "hygiene",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/messages/thread.tsx",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
+  },
+  "detail": "FOUND 2026-11-24: components/frequency/members/messages/dm-thread.tsx and components/messages/thread.tsx both render a DM thread with their own typing, send and scroll logic, so the composer upgrade in LIVE-2525 would land twice. Fix: one component, two placements.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs HYG-252",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

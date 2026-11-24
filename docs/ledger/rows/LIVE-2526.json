@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2526",
+  "title": "One Inbox lists everything that needs you, with snooze, archive and a Priority view",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/notifications/router.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
+  },
+  "detail": "FOUND 2026-11-24: the bell and /notifications list every notice flat, with no snooze or archive, and the calendar suite's Needs you panel is a separate list. Best practice (Linear Inbox, Priority tab since Sept 2026; Basecamp Hey!): one place for mentions, assignments, replies on followed items and due to-dos. Fix: snoozed_until and archived_at on notifications, an /inbox page with Priority (assigned, mentioned, DMs) and Other, Needs you as a view of it.\n\nDONE 2026-11-24: /inbox lists the bell's notices in three views (Priority: a tag, a DM or a to-do handed to you; Other; Snoozed), with Done and Snooze (3 hours, tomorrow, next week) as plain forms on the member's own session. snoozed_until and archived_at ride the LIVE-2524 migration (20270346300000). Plan comments and hand-overs now also land in the bell through a new plan.bell type (in-app, comments category), so they reach the Inbox; /notifications links to it.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2526"
+  },
+  "closed": "2026-11-24",
+  "wave": "W7"
+}

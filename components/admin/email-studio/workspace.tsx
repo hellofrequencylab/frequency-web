@@ -4,7 +4,7 @@ import { formatDateShort } from '@/lib/format-date'
 import type { NodeLayout } from '@/lib/entity-blocks/node-tree'
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { Copy, Loader2, Mail, Plus, Trash2 } from 'lucide-react'
-import { EmailEditorPane } from './editor-pane'
+import { EmailEditorPane, SHARED_SAVED_LIBRARY } from './editor-pane'
 import {
   createEmailDraft,
   deleteEmailDraft,
@@ -307,6 +307,9 @@ export function EmailStudioWorkspace({
               colors={colors}
               saveCampaign={act.save}
               sendTest={act.sendTest}
+              // The team's shared saved sections are staff-gated: only the admin bundle (no injected actions)
+              // gets them. A Space workspace keeps its saved sections in the browser (LIVE-2523).
+              savedLibrary={actions ? undefined : SHARED_SAVED_LIBRARY}
             />
           </div>
         )}
