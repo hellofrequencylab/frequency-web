@@ -451,3 +451,6 @@ tz_zone_lookup internal
 
 # LIVE-1179: two-way calendar sync, sealed tokens, owner and admins on the caller session (private.is_space_admin).
 space_calendar_sync_connections       authenticated
+
+# LIVE-2524: @ tags by id; the author writes and withdraws, the tagged person and the author read (RLS).
+mentions                              authenticated
