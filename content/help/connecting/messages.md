@@ -7,7 +7,7 @@ published: 2026-06-03
 updated: 2026-11-24
 audience: member
 featureKeys: [messages]
-keywords: [tag someone, mention, link a plan, dm, chat, inbox, group chat, private message, text someone, cant message, channel room]
+keywords: [tag someone, mention, link a plan, team room, dm, chat, inbox, group chat, private message, text someone, cant message, channel room]
 status: published
 ---
 
@@ -38,6 +38,7 @@ A room is an ongoing group space with a name, not a one-off chat.
 - Tap **Start a room** to make one. Any member can. You choose whether it is public or private.
 - Open rooms you can join appear under **Rooms to join**.
 - Every [Channel](/help/groups/channels) has its own room. Look for **Open room** on the Channel's page.
+- Every Space has a team room, named after the Space. Its owner and team are in it automatically, and someone who leaves the team leaves the room. Find it under **Rooms** in your inbox.
 
 ## Tag someone or link a plan
 

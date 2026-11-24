@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/messages/room-scope.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: rooms support Space scope, but nothing creates a team room when a Space is made, so a Space team has nowhere shared to talk except DMs. Fix: ensureSpaceTeamRoom on Space create and backfill, membership following space_members and accepted collaborators.",
+  "detail": "FOUND 2026-11-24: rooms support Space scope, but nothing creates a team room when a Space is made, so a Space team has nowhere shared to talk except DMs. Fix: ensureSpaceTeamRoom on Space create and backfill, membership following space_members and accepted collaborators.\n\nensureSpaceTeamRoom (lib/spaces/team-room.ts) makes one private room per Space (scope_id = space id) and keeps its members in step with the owner and active space_members on every team change; Spaces you run backfills older Spaces after render. No SQL.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2529",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2529"
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }

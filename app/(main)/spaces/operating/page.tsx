@@ -2,6 +2,7 @@ import { SearchConnectionNotice } from '@/components/spaces/search-connection-no
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import {
   Building2,
   Users,
@@ -20,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
+import { syncSpaceTeamRooms } from '@/lib/spaces/membership'
 import { spaceConversationHrefForViewer } from '@/lib/comms/conversations'
 import { planHrefForViewer } from '@/lib/calendar/plan-notify'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
@@ -183,6 +185,10 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
   if (spaces.length === 0) {
     return <NoSpacesSplash />
   }
+
+  // A Space made before team rooms existed gets its room the first time someone who runs it lands
+  // here (LIVE-2529). After the response, so the page never waits on it; a re-run writes nothing.
+  after(() => syncSpaceTeamRooms(spaces.map((s) => s.id)))
 
   // The container-query grid (each card sizes to the grid, not the viewport) stays portable across
   // rail/no-rail widths (PAGE-FRAMEWORK ADR-295).
