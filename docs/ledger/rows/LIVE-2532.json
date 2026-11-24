@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2532",
+  "title": "Vera suggests the best dates and times for the people who need to be there",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/calendar/vera-plan.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; owner ask 2026-11-24 17:35Z: AI meeting and date management so everyone can brainstorm the best date and time)"
+  },
+  "detail": "FOUND 2026-11-24: Vera's suggestDates offers whole free days for the Space (availability.ts reads unavailable time, events, pencils and day notes); it never offers a time of day and never reads who has to attend. Fix: suggestTimes takes the people, reads each one's assigned entries and team load, their connected Google busy time once calendar sync is live (LIVE-1179), quiet hours and past votes, and proposes three options with one line of reasoning each. Per ADR-1386 Vera only proposes: the options land as pencils for the team to vote on, nothing is booked.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2532",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
