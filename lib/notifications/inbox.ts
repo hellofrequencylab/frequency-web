@@ -11,7 +11,7 @@
 
 import type { NotificationItem } from '@/lib/notifications-map'
 
-export const INBOX_VIEWS = ['priority', 'other', 'snoozed'] as const
+const INBOX_VIEWS = ['priority', 'other', 'snoozed'] as const
 export type InboxView = (typeof INBOX_VIEWS)[number]
 
 export interface InboxItem extends NotificationItem {
@@ -22,11 +22,11 @@ export interface InboxItem extends NotificationItem {
 /** The bell types that mean "someone named you or handed you something". */
 const PRIORITY_TYPES = new Set(['mention', 'direct_message', 'plan_assign'])
 
-export function isPriority(n: Pick<NotificationItem, 'type'>): boolean {
+function isPriority(n: Pick<NotificationItem, 'type'>): boolean {
   return PRIORITY_TYPES.has(n.type)
 }
 
-export function isSnoozed(n: Pick<InboxItem, 'snoozed_until'>, now: Date): boolean {
+function isSnoozed(n: Pick<InboxItem, 'snoozed_until'>, now: Date): boolean {
   return Boolean(n.snoozed_until && Date.parse(n.snoozed_until) > now.getTime())
 }
 
@@ -58,7 +58,6 @@ export const SNOOZE_CHOICES = [
   { key: '1d', label: 'Tomorrow', hours: 24 },
   { key: '7d', label: 'Next week', hours: 24 * 7 },
 ] as const
-export type SnoozeKey = (typeof SNOOZE_CHOICES)[number]['key']
 
 /** The time a snooze choice ends, or null for a key that is not one of the choices. */
 export function snoozeUntil(key: unknown, now: Date): string | null {
