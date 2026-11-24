@@ -16,6 +16,9 @@ import { EventBroadcastSection } from './broadcast-section'
 import { RefundsOwedNotice } from './refunds-owed'
 import { EventDangerZone } from './event-danger-zone'
 import { EventDoorSection } from './door-section'
+import { getCallerProfile } from '@/lib/auth'
+import { spaceTeamIds, spaceTeamPeople } from '@/lib/threads/team'
+import { ItemThread } from '@/components/threads/item-thread'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -103,18 +106,24 @@ export default async function ManageEventPage({
 
   const { data: ev } = await admin
     .from('events')
-    .select('id, title, slug, is_cancelled')
+    .select('id, title, slug, is_cancelled, space_id, host_space_id')
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) notFound()
 
-  const event = ev as { id: string; title: string; slug: string; is_cancelled: boolean | null }
+  const event = ev as { id: string; title: string; slug: string; is_cancelled: boolean | null; space_id: string | null; host_space_id: string | null }
 
   // Gate: only the host, a cohost, or someone who runs the event's circle (the
   // 'event.editSettings' capability) may manage it. 404 (not 403) so a private
   // event slug never leaks via this route.
   const caps = await getEventCapabilities(event.id)
   if (!caps.has('event.editSettings')) notFound()
+
+  // The team thread (LIVE-2527) belongs to the Space that runs the event, and only its team sees it.
+  const threadSpaceId = event.host_space_id ?? event.space_id
+  const viewer = threadSpaceId ? await getCallerProfile() : null
+  const onTeam = !!(viewer && threadSpaceId && (await spaceTeamIds(threadSpaceId)).has(viewer.id))
+  const team = onTeam && threadSpaceId && viewer ? await spaceTeamPeople(threadSpaceId, viewer.id) : []
 
   let section = asEventHubSection(rawSection)
   if (section === 'tickets' && !TICKETING_ENABLED) section = 'home'
@@ -168,6 +177,12 @@ export default async function ManageEventPage({
               <EventMemberViewer eventId={event.id} slug={event.slug} />
             </Suspense>
           </section>
+          {onTeam && threadSpaceId && (
+            <section>
+              <SectionHeader title="Team thread" />
+              <ItemThread subjectType="event" subjectId={event.id} spaceId={threadSpaceId} people={team} placeholder="Write to your team about this event" />
+            </section>
+          )}
         </>
       )}
 

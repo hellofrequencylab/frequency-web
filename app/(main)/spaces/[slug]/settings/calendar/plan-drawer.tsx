@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,9 @@ import { actorWords, type PlanActivityView } from '@/lib/calendar/plan-activity'
 import { assignPlanTodo, listPlanAssignees } from './task-actions'
 import type { AssigneeChoice } from '@/lib/calendar/shared-tasks-core'
 import { PlanCommentThread } from './plan-comment-thread'
+import { useThreadLive } from '@/components/threads/use-thread-live'
+import { threadTopic } from '@/lib/threads/subjects'
+import { markThreadRead } from '@/lib/threads/actions'
 import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -217,6 +220,19 @@ export function PlanDrawer({
     }
   }, [open, plan, slug, entryId, readOnly])
 
+  // A new comment from either team lands without a reload (LIVE-2528), and opening the Plan marks
+  // its thread read, so the "New" line counts from here next time.
+  const livePlanId = open && plan ? plan.id : null
+  const onLiveComment = useCallback(() => {
+    if (!livePlanId) return
+    void listPlanComments(slug, livePlanId).then((res) => {
+      if (!isError(res)) setComments(res.data)
+    })
+  }, [slug, livePlanId])
+  useThreadLive(livePlanId ? threadTopic('plan', livePlanId) : null, onLiveComment)
+  useEffect(() => {
+    if (livePlanId) void markThreadRead('plan', livePlanId)
+  }, [livePlanId, comments.length])
   if (!plan) return null
 
   // One place both halves of the to-do list re-read from: the readiness bar counts OPEN to-dos, so

@@ -134,6 +134,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'contact':
       return '/spaces/operating'
 
+    // A word in the team thread under a deal (LIVE-2527). The deal opens on its contact inside the
+    // Space's CRM, which is slug-addressed, and the row carries only the deal id: same hub as contact.
+    case 'deal':
+      return '/spaces/operating'
+
     // Circle notices (a Circle milestone, a Circle membership's first-week notes) reference a
     // UUID while /circles/<slug> is slug-addressed, so they land on the Circles index.
     case 'circle':
