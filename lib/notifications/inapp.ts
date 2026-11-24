@@ -1,3 +1,4 @@
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { JobHandler } from '@/lib/queue/outbox'
 import type { PreferenceSubject } from '@/lib/notification-preferences'
@@ -71,7 +72,7 @@ export const runHubLadder: JobHandler = async (payload) => {
   ])
   const quiet =
     prefs && prefs.quiet_hours_start !== null && prefs.quiet_hours_end !== null
-      ? { start: prefs.quiet_hours_start, end: prefs.quiet_hours_end, timeZone: profile?.home_timezone || 'America/Los_Angeles' }
+      ? { start: prefs.quiet_hours_start, end: prefs.quiet_hours_end, timeZone: profile?.home_timezone || HOME_TZ }
       : null
   const now = Date.now()
   if (quiet && inQuietHours(now, quiet)) {

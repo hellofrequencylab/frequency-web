@@ -3,19 +3,21 @@
 import { useState, useTransition } from 'react'
 import { Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { saveQuietHours } from './quiet-actions'
 
 // Quiet hours for team notices (EMAIL-091). Pushes and emails about tags and team threads wait
 // until the morning; the bell in the app still shows everything at once.
 
-const HOURS = Array.from({ length: 24 }, (_, h) => h)
 
 function hourLabel(h: number): string {
   const suffix = h < 12 ? 'AM' : 'PM'
   const twelve = h % 12 === 0 ? 12 : h % 12
   return `${twelve}:00 ${suffix}`
 }
+
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({ value: h, label: hourLabel(h) }))
 
 export function QuietHoursForm({ initial }: { initial: { start: number | null; end: number | null } }) {
   const [on, setOn] = useState(initial.start !== null && initial.end !== null)
@@ -50,33 +52,23 @@ export function QuietHoursForm({ initial }: { initial: { start: number | null; e
         <div className="flex flex-wrap items-center gap-2 text-body-sm text-text">
           <label className="flex items-center gap-2">
             From
-            <select
-              className="rounded-control border border-border bg-surface px-2 py-1"
+            <Select
+              wrapperClassName="inline-block w-max max-w-full"
               value={start}
               disabled={pending}
               onChange={(e) => setStart(Number(e.target.value))}
-            >
-              {HOURS.map((h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
+              options={HOUR_OPTIONS}
+            />
           </label>
           <label className="flex items-center gap-2">
             to
-            <select
-              className="rounded-control border border-border bg-surface px-2 py-1"
+            <Select
+              wrapperClassName="inline-block w-max max-w-full"
               value={end}
               disabled={pending}
               onChange={(e) => setEnd(Number(e.target.value))}
-            >
-              {HOURS.map((h) => (
-                <option key={h} value={h}>
-                  {hourLabel(h)}
-                </option>
-              ))}
-            </select>
+              options={HOUR_OPTIONS}
+            />
           </label>
         </div>
         <div className="flex gap-2">
