@@ -1,7 +1,7 @@
 // The pure half of the Space team room (LIVE-2529): its name and how its members follow the team.
 // See lib/spaces/team-room.ts.
 
-export interface TeamSeat {
+interface TeamSeat {
   profileId: string
   admin: boolean
 }
