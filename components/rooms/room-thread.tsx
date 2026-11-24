@@ -16,7 +16,7 @@ import { chipClasses } from '@/components/ui/chip'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
 import { MessageText } from '@/components/mentions/message-text'
-import { LinkCardFor } from '@/components/mentions/link-card'
+import { LinkCardFor } from '@/components/mentions/link-preview'
 import { firstLink } from '@/lib/link-preview/core'
 import type { MentionPerson } from '@/components/mentions/use-tag-picker'
 

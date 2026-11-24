@@ -11,7 +11,7 @@ import type { Message } from '@/components/messages/thread'
 import { Textarea } from '@/components/ui/field'
 import dynamic from 'next/dynamic'
 import { MessageText } from '@/components/mentions/message-text'
-import { LinkCardFor } from '@/components/mentions/link-card'
+import { LinkCardFor } from '@/components/mentions/link-preview'
 import { firstLink } from '@/lib/link-preview/core'
 
 // # links a Plan, to-do, event, deal or contact in a direct message (LIVE-2525), loaded on demand.
