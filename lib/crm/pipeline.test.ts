@@ -19,6 +19,7 @@ const store: Record<string, Row[]> = {
   crm_stages: [],
   crm_deals: [],
   crm_activities: [],
+  crm_tasks: [],
   contacts: [],
   profiles: [],
 }
@@ -41,9 +42,11 @@ function queryFor(table: string) {
       eqs.push([col, val])
       return api
     },
-    is() {
-      // terminal for countOpenTasks (after .is('completed_at', null)); resolve a count.
-      return Promise.resolve({ count: matches().length, data: matches(), error: null })
+    is(col: string, val: unknown) {
+      // countOpenTasks ends on .is('plan_id', null) (awaited as a count, via then below); getSpaceTasks
+      // chains on to .order().limit(). Record it as a filter and stay chainable.
+      eqs.push([col, val as string])
+      return api
     },
     order() {
       return api
@@ -111,6 +114,10 @@ beforeEach(() => {
     { id: 'a-root', deal_id: 'd-root', kind: 'task', body: '', created_at: 'x', space_id: 'root', completed_at: null },
     { id: 'a-A', deal_id: 'd-A', kind: 'task', body: '', created_at: 'x', space_id: 'space-A', completed_at: null },
   ]
+  store.crm_tasks = [
+    { id: 'k-root', title: '', status: 'open', plan_id: null, created_at: 'x', space_id: 'root' },
+    { id: 'k-A', title: '', status: 'open', plan_id: null, created_at: 'x', space_id: 'space-A' },
+  ]
   store.contacts = [
     { id: 'c-root', email: 'r@x.com', display_name: 'Root', consent_state: 'unknown', created_at: 'x', space_id: 'root' },
     { id: 'c-A', email: 'a@x.com', display_name: 'A', consent_state: 'unknown', created_at: 'x', space_id: 'space-A' },
@@ -173,12 +180,12 @@ describe('getActivities', () => {
 describe('countOpenTasks', () => {
   it('GLOBAL: no space filter, counts all open tasks', async () => {
     const n = await countOpenTasks()
-    expect(hasSpaceFilter('crm_activities')).toBe(false)
+    expect(hasSpaceFilter('crm_tasks')).toBe(false)
     expect(n).toBe(2)
   })
   it('PER-SPACE: counts only that space', async () => {
     const n = await countOpenTasks('space-A')
-    expect(spaceFilterValue('crm_activities')).toBe('space-A')
+    expect(spaceFilterValue('crm_tasks')).toBe('space-A')
     expect(n).toBe(1)
   })
 })
@@ -227,22 +234,30 @@ describe('countContacts', () => {
 })
 
 describe('getSpaceTasks', () => {
-  it('reads only kind=task rows for the Space, scoped by space_id', async () => {
-    // Seed a task + a non-task activity in Space A, plus a root task that must NOT leak.
-    store.crm_activities = [
-      { id: 't-A', deal_id: null, contact_id: null, kind: 'task', body: 'Call A', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
-      { id: 'n-A', deal_id: null, contact_id: null, kind: 'note', body: 'a note', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
-      { id: 't-root', deal_id: null, contact_id: null, kind: 'task', body: 'Root task', due_at: null, completed_at: null, created_at: 'x', space_id: 'root' },
+  it('reads only the Space CRM tasks from crm_tasks (no Plan to-dos), scoped by space_id', async () => {
+    // Seed a CRM task + a Plan to-do in Space A, plus a root task that must NOT leak.
+    store.crm_tasks = [
+      { id: 't-A', deal_id: null, contact_id: null, plan_id: null, title: 'Call A', status: 'open', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+      { id: 'p-A', deal_id: null, contact_id: null, plan_id: 'plan-1', title: 'Plan to-do', status: 'open', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+      { id: 't-root', deal_id: null, contact_id: null, plan_id: null, title: 'Root task', status: 'open', due_at: null, completed_at: null, created_at: 'x', space_id: 'root' },
     ]
     const tasks = await getSpaceTasks('space-A')
-    expect(spaceFilterValue('crm_activities')).toBe('space-A')
+    expect(spaceFilterValue('crm_tasks')).toBe('space-A')
     expect(tasks.map((t) => t.id)).toEqual(['t-A'])
     expect(tasks[0]!.title).toBe('Call A')
   })
 
+  it('a task done from the operator queue (status only) reads as done', async () => {
+    store.crm_tasks = [
+      { id: 't-A', deal_id: null, contact_id: null, plan_id: null, title: 'Sent', status: 'done', due_at: null, completed_at: null, updated_at: '2026-11-24T10:00:00.000Z', created_at: 'x', space_id: 'space-A' },
+    ]
+    const tasks = await getSpaceTasks('space-A')
+    expect(tasks[0]!.completed_at).toBe('2026-11-24T10:00:00.000Z')
+  })
+
   it('resolves a deal link label, space-scoped', async () => {
-    store.crm_activities = [
-      { id: 't-A', deal_id: 'd-A', contact_id: null, kind: 'task', body: 'Follow up', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
+    store.crm_tasks = [
+      { id: 't-A', deal_id: 'd-A', contact_id: null, plan_id: null, title: 'Follow up', status: 'open', due_at: null, completed_at: null, created_at: 'x', space_id: 'space-A' },
     ]
     const tasks = await getSpaceTasks('space-A')
     expect(tasks[0]!.linkLabel).toBe('A deal')

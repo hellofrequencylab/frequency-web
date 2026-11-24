@@ -2,7 +2,7 @@ import { getSpaceTasks, partitionTasks, getDeals, getContacts } from '@/lib/crm/
 import { SpaceTasksPanel } from './space-tasks-panel'
 
 // PER-SPACE TASKS (server wrapper, CRM-STRATEGY §6/§7). A self-fetching server component that reads
-// THIS Space's tasks (crm_activities kind='task', scoped by space_id), splits them into open (due-soon
+// THIS Space's tasks (crm_tasks rows with no Plan, HYG-251, scoped by space_id), splits them into open (due-soon
 // first) + done with the pure partitionTasks helper, and hands them to the client panel for create /
 // edit / complete / reopen / delete. It also passes the Space's deals + contacts as the optional link
 // targets the create form offers. All reads are space-scoped + fail-safe (lib/crm/pipeline.ts). The

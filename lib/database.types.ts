@@ -4116,9 +4116,11 @@ export type Database = {
       crm_tasks: {
         Row: {
           assignee_profile_id: string | null
+          completed_at: string | null
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           due_at: string | null
           due_offset_days: number | null
           est_minutes: number | null
@@ -4134,9 +4136,11 @@ export type Database = {
         }
         Insert: {
           assignee_profile_id?: string | null
+          completed_at?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           due_at?: string | null
           due_offset_days?: number | null
           est_minutes?: number | null
@@ -4152,9 +4156,11 @@ export type Database = {
         }
         Update: {
           assignee_profile_id?: string | null
+          completed_at?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           due_at?: string | null
           due_offset_days?: number | null
           est_minutes?: number | null
@@ -4169,6 +4175,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_tasks_assignee_profile_id_fkey"
             columns: ["assignee_profile_id"]
