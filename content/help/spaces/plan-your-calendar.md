@@ -5,10 +5,10 @@ category: spaces
 order: 8
 group: Run it day to day
 published: 2026-10-26
-updated: 2026-11-18
+updated: 2026-11-24
 audience: host
 featureKeys: [events]
-keywords: [pencil in a date, hold a date, planning, to-dos, kanban, team calendar, google calendar sync, time zone]
+keywords: [tag a teammate, mention, pencil in a date, hold a date, planning, to-dos, kanban, team calendar, google calendar sync, time zone]
 status: published
 ---
 
@@ -34,6 +34,10 @@ Pencil and Planning dates stay on your team's view only. They never show on the 
 2. Tap the day, or up to three days, and give it a title. You can set how long to hold the date, and start from a playbook if you have one saved.
 3. Open the Plan to add notes for the team and to-dos, and to move it from one stage to the next.
 4. When you're ready, choose **Make it a Production**. That opens the new event form with what you planned already filled in.
+
+## Tag someone on a Plan
+
+In a Plan's comments, or in the notes under a to-do, type **@** and pick a name. Everyone who works the Plan is on the list, including the team of a Space you planned it with. The person you tag gets a notice that opens the Plan right where you left it, so you don't have to chase them in a text.
 
 Quick add on any day also lets you drop in a **To-do**, a **Private** entry, or an **Unavailable** block.
 

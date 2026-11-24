@@ -5458,6 +5458,288 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5470,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346300000_hub_mentions_and_inbox.sql",
+          "sha256": "2aba25e11e13249915acc5bff66fab2db25d64b99764243099785a440967c4a5"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts",
+          "status": "modified",
+          "sha256": "5bac47eae44877adac0eb6c4082904041236d28eba233802b066fb5d3f62c192",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-comment-thread.tsx",
+          "status": "modified",
+          "sha256": "b08d7efad871fc42bee9c3d83b70c75618972216b394346b7fd50b79d51e0988",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+          "status": "modified",
+          "sha256": "1ecefa49527991104bd83a9b2210fe1b1754d50b5a6314983d9a66d24d59312a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/operating/page.tsx",
+          "status": "modified",
+          "sha256": "f30a2da0abffc05f8b57f3b05d1f7b60319c58c9881342cb35bd024a3bff3f4c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/mentions/mention-textarea.tsx",
+          "status": "added",
+          "sha256": "8be17efab4bc6e1e8a0fbc31aa1a58c98a71e42f76b3e43b5345fa0fb218a2c0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/mentions/message-text.tsx",
+          "status": "added",
+          "sha256": "a14cb096355275309d81ad72bb6d8aa62fdb683b4906c285d6888d35945c9b6c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "content/help/spaces/plan-your-calendar.md",
+          "status": "modified",
+          "sha256": "a829e07006cc1d1f49fd6e0781af01ef00b04dfaddcd415c1993b1e9ad1aee59",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2524.json",
+          "status": "modified",
+          "sha256": "3e3c2086fbb7c0a3e046f41b8b45ebb655dd581c9a3575a1ec1c578a65053ff1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-comments-store.ts",
+          "status": "modified",
+          "sha256": "cff74e0bb89de8f39d18b0d59c9af717eb754e125abe01bfcd7adc9bbb0d1a3f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify-core.test.ts",
+          "status": "modified",
+          "sha256": "664fa3bc9af02859b8f327944ad93ed2648a575ffa27186673cc8b2e6a41f3ec",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify-core.ts",
+          "status": "modified",
+          "sha256": "62ba8fb8c2593ad13ebf8c2abc79a83856f40905603f4cd12442ece43179299b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify.ts",
+          "status": "modified",
+          "sha256": "7aefc833beff0cba9d5302e16ea02042fae713d1efde12efcb2e1f033f891092",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "f9bd796de2a7cd3a025a98bd41f9a3cbfb8ff42b88279e0d3f73694f41071bbb",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/references.test.ts",
+          "status": "added",
+          "sha256": "3cac26715d462de391ae1bde6710caffbe11cdb116cefdbfb28e395967b1fe11",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/references.ts",
+          "status": "added",
+          "sha256": "921da86493622aa47045eba68e058cac41f812a8b0de3c35aa9bc79d5acb9684",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.test.ts",
+          "status": "modified",
+          "sha256": "8345fa05718709b802f941c37775b0f638dc42dc67429cb513cc1a748c01d18e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.ts",
+          "status": "modified",
+          "sha256": "b8bae49ffbaaf46742d5e5864bf17ff635d05bbd388f2bdc83e5b569b90474b9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/registry.ts",
+          "status": "modified",
+          "sha256": "81db4d1916d3ba720043a18d6252ad10a8c562fc01c1650210f63ad3032620df",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "6e439aad0673c03f488f528d9e7adaf813520255d52a9946609f849ceaa1b41b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346300000_hub_mentions_and_inbox.sql",
+          "status": "added",
+          "sha256": "2aba25e11e13249915acc5bff66fab2db25d64b99764243099785a440967c4a5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_mentions_and_inbox.test.sql",
+          "status": "added",
+          "sha256": "f59715793dfe965b1d8c1de1d016e2c462bd69d8269170a6571bc979f3aee4f1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 5468,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346400000_calendar_time_votes.sql",
+          "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/find-a-time-panel.tsx",
+          "status": "added",
+          "sha256": "d61e95216ec7163dbc5f0a13b3df2ce3928f0ffba141b57f61697b54dd02a77a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/find-time-actions.ts",
+          "status": "added",
+          "sha256": "65631eb7d5fbb9ae66b431ef7eb9acd01b8f30afc46fb0729eb5b4f5a99cf055",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+          "status": "modified",
+          "sha256": "84c49744b8b83ca02f7b7ae2839c5b19e246e509c964f0a2db35b579e538584d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2531.json",
+          "status": "modified",
+          "sha256": "e364b57149af2e48b3d43b8cf1d171403ff0576fae68a18b15ace4d2df72fc94",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-vote-notify.ts",
+          "status": "added",
+          "sha256": "16cd3f8017148320c91763e7de0b15455340a6d6a638de7ec3b5cddc7a162424",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes-store.ts",
+          "status": "added",
+          "sha256": "7027343454472bdc458075cf0c4dc5e58ab5d10bb829b1c62c9fbdff609cb18f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes.test.ts",
+          "status": "added",
+          "sha256": "629f2ea709f01dc527a793f53a7ddb5981b8b05670eeb95674e399f831537fcd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes.ts",
+          "status": "added",
+          "sha256": "c2b259e0fa13cd70d8d059913acf5e1d2921dcac15efd0305f9e0c8fd5d4a0d4",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "85158039e4bef7d92d4229fb243bdd2f1809d721681f2023433ed826d4e548aa",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "5c4fad171313d519daf89e4e20d0f6684fefbe887e17fc4d916bd60f3505148d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "0237283b920627f57ca2f0423052857cf71bd2881e2adf8482656ee4bd12185d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346400000_calendar_time_votes.sql",
+          "status": "added",
+          "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_calendar_time_votes.test.sql",
+          "status": "added",
+          "sha256": "4ec6a3e66c53d2c37f606209d46eaf780e6023c892899c9b27a91d7f5f6851af",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }

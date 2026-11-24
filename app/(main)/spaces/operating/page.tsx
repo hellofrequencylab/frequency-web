@@ -23,6 +23,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
 import { syncSpaceTeamRooms } from '@/lib/spaces/membership'
 import { spaceConversationHrefForViewer } from '@/lib/comms/conversations'
+import { planHrefForViewer } from '@/lib/calendar/plan-notify'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 
 // "Spaces you run" — the operator's FRONT DOOR to the Spaces they own or admin (the hub the
@@ -205,7 +206,7 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
 export default async function SpacesOperatingPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ search?: string | string[]; conversation?: string | string[] }>
+  searchParams?: Promise<{ search?: string | string[]; conversation?: string | string[]; plan?: string | string[] }>
 }) {
   const sp = await searchParams
   const outcome = sp?.search
@@ -218,6 +219,13 @@ export default async function SpacesOperatingPage({
   const conversation = typeof sp?.conversation === 'string' ? sp.conversation : null
   if (conversation) {
     const href = await spaceConversationHrefForViewer(conversation, profileId)
+    if (href) redirect(href)
+  }
+  // LIVE-2524: a tag on a Plan carries only the Plan id; it opens in the console of the team the
+  // person works the Plan from, or (a miss) the hub.
+  const plan = typeof sp?.plan === 'string' && /^[0-9a-f-]{36}$/i.test(sp.plan) ? sp.plan : null
+  if (plan) {
+    const href = await planHrefForViewer(plan, profileId)
     if (href) redirect(href)
   }
 
