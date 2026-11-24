@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { log } from '@/lib/log'
 import { buildPlanShareEmail } from '@/lib/email'
 import { routeNotification } from '@/lib/notifications/router'
+import { routeLadder } from '@/lib/notifications/ladder-route'
 import { listSpaceCollaborationApprovers } from '@/lib/spaces/collaborations'
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -237,7 +238,7 @@ export async function notifyPlanMentions(input: {
     const copy = planMentionCopy(author?.name ?? 'Someone on the Plan', input.planTitle, todo?.title ?? null, input.body)
     for (const [profileId, home] of input.targets) {
       const path = `${calendarSettingsPath(home.slug)}?plan=${input.planId}`
-      await routeNotification(
+      await routeLadder(
         'item.mention',
         { profileId, subject: { subjectType: 'space', subjectId: home.id } },
         {

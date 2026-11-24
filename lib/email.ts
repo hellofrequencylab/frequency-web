@@ -1641,6 +1641,55 @@ Unsubscribe from message emails: ${unsubscribeUrl}
   }
 }
 
+// ── A tag left unread (EMAIL-091) ──────────────────────────────────────────────
+// The third rung of the notice ladder: someone tagged you on a Plan, an item thread or a room and
+// the bell has sat unread for twenty minutes. One email per thread per half hour, sent on the
+// `mentions` category so the member's own Mentions email switch and unsubscribe decide.
+
+interface HubTagEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  /** The notice's own title, e.g. "Sam mentioned you on Spring Market". */
+  title: string
+  preview: string
+  /** In-app path of the thread. */
+  path: string
+  /** A signed reply address, when the thread takes replies by email (EMAIL-090). */
+  replyTo?: string
+}
+
+export function buildHubTagEmail(params: HubTagEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, title, preview, path, replyTo } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'mentions' })
+  const threadUrl = `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+  const replyLine = replyTo ? 'Reply to this email and your words land in the thread.' : ''
+  return {
+    to,
+    subject: title,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    ...(replyTo ? { replyTo } : {}),
+    html: emailShell(`
+      ${emailKicker('Mentions')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(title)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(recipientName)}, here is what they said:</p>
+      <p data-fq="fq-p" style="${pStyle}">&ldquo;${escapeHtml(preview)}&rdquo;</p>
+      ${replyLine ? `<p data-fq="fq-p" style="${pStyle}">${escapeHtml(replyLine)}</p>` : ''}
+      ${emailButton('Open the thread', threadUrl)}
+    `),
+    text: `${title}
+
+Hi ${recipientName}, here is what they said:
+
+"${preview}"
+${replyLine ? `\n${replyLine}\n` : ''}
+Open the thread: ${threadUrl}
+
+Unsubscribe from mention emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 // ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
 // Built, not sent: the notification router transports it on the `lifecycle` category once the
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is

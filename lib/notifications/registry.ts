@@ -124,7 +124,7 @@ export interface NotificationContexts {
   /** A comment or a hand-over on a Plan, as a bell and Inbox row (LIVE-2526). The bell prints the
    *  actor's name before `body`. */
   'plan.bell': { kind: 'plan_comment' | 'plan_assign'; actorId: string; planId: string; body: string }
-  'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
+  'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string; email?: EmailPayload }
   /** A new word in the team thread under an event, a deal or a contact (LIVE-2527), to the people
    *  who follow it: whoever owns the item and whoever has written in the thread. Tagged people hear
    *  through 'item.mention' instead, never twice. */
@@ -450,7 +450,9 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
   'item.mention': {
     event: 'item.mention',
     category: 'mentions',
-    channels: ['inapp', 'push'],
+    // The email rung renders only when the notice ladder hands in a built email (EMAIL-091):
+    // it is the third rung, after the bell and the push, and only while the thread is unread.
+    channels: ['inapp', 'push', 'email'],
     render: (ctx) => ({
       inapp: {
         type: 'mention',
@@ -460,11 +462,14 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
         referenceId: ctx.referenceId,
       },
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+      email: ctx.email,
     }),
   },
   'item.comment': {
     event: 'item.comment',
     category: 'comments',
+    // Bell, then push if unread (EMAIL-091). No email rung: the Comments email switch is not
+    // wired, so a word in a followed thread never emails; a tag (item.mention) does.
     channels: ['inapp', 'push'],
     render: (ctx) => ({
       inapp: {
