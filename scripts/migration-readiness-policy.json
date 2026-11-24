@@ -5458,6 +5458,168 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5470,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346300000_hub_mentions_and_inbox.sql",
+          "sha256": "2aba25e11e13249915acc5bff66fab2db25d64b99764243099785a440967c4a5"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts",
+          "status": "modified",
+          "sha256": "5bac47eae44877adac0eb6c4082904041236d28eba233802b066fb5d3f62c192",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-comment-thread.tsx",
+          "status": "modified",
+          "sha256": "b08d7efad871fc42bee9c3d83b70c75618972216b394346b7fd50b79d51e0988",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+          "status": "modified",
+          "sha256": "1ecefa49527991104bd83a9b2210fe1b1754d50b5a6314983d9a66d24d59312a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/operating/page.tsx",
+          "status": "modified",
+          "sha256": "f30a2da0abffc05f8b57f3b05d1f7b60319c58c9881342cb35bd024a3bff3f4c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/mentions/mention-textarea.tsx",
+          "status": "added",
+          "sha256": "8be17efab4bc6e1e8a0fbc31aa1a58c98a71e42f76b3e43b5345fa0fb218a2c0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/mentions/message-text.tsx",
+          "status": "added",
+          "sha256": "9ebefc14d1436828b13190728595965092b0826dab8dbdb2dc8cb069d47728e1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "content/help/spaces/plan-your-calendar.md",
+          "status": "modified",
+          "sha256": "a829e07006cc1d1f49fd6e0781af01ef00b04dfaddcd415c1993b1e9ad1aee59",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2524.json",
+          "status": "modified",
+          "sha256": "2eb5e55f7c6d9644a031485d988b641b15b0905fb461f1e634d5412d902fe7ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-comments-store.ts",
+          "status": "modified",
+          "sha256": "cff74e0bb89de8f39d18b0d59c9af717eb754e125abe01bfcd7adc9bbb0d1a3f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify-core.test.ts",
+          "status": "modified",
+          "sha256": "664fa3bc9af02859b8f327944ad93ed2648a575ffa27186673cc8b2e6a41f3ec",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify-core.ts",
+          "status": "modified",
+          "sha256": "62ba8fb8c2593ad13ebf8c2abc79a83856f40905603f4cd12442ece43179299b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify.ts",
+          "status": "modified",
+          "sha256": "7aefc833beff0cba9d5302e16ea02042fae713d1efde12efcb2e1f033f891092",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "f9bd796de2a7cd3a025a98bd41f9a3cbfb8ff42b88279e0d3f73694f41071bbb",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/references.test.ts",
+          "status": "added",
+          "sha256": "3cac26715d462de391ae1bde6710caffbe11cdb116cefdbfb28e395967b1fe11",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/references.ts",
+          "status": "added",
+          "sha256": "132501eb7aa2b417979864d9df44b5c85432ea9f59a322e0ed28091bc4f2c7a8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.test.ts",
+          "status": "modified",
+          "sha256": "8345fa05718709b802f941c37775b0f638dc42dc67429cb513cc1a748c01d18e",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.ts",
+          "status": "modified",
+          "sha256": "b8bae49ffbaaf46742d5e5864bf17ff635d05bbd388f2bdc83e5b569b90474b9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/registry.ts",
+          "status": "modified",
+          "sha256": "81db4d1916d3ba720043a18d6252ad10a8c562fc01c1650210f63ad3032620df",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346300000_hub_mentions_and_inbox.sql",
+          "status": "added",
+          "sha256": "2aba25e11e13249915acc5bff66fab2db25d64b99764243099785a440967c4a5",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_mentions_and_inbox.test.sql",
+          "status": "added",
+          "sha256": "f59715793dfe965b1d8c1de1d016e2c462bd69d8269170a6571bc979f3aee4f1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
