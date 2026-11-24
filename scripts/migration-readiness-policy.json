@@ -5458,6 +5458,112 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5468,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346400000_space_calendar_time_votes.sql",
+          "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/find-a-time-panel.tsx",
+          "status": "added",
+          "sha256": "d61e95216ec7163dbc5f0a13b3df2ce3928f0ffba141b57f61697b54dd02a77a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/find-time-actions.ts",
+          "status": "added",
+          "sha256": "65631eb7d5fbb9ae66b431ef7eb9acd01b8f30afc46fb0729eb5b4f5a99cf055",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+          "status": "modified",
+          "sha256": "84c49744b8b83ca02f7b7ae2839c5b19e246e509c964f0a2db35b579e538584d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2531.json",
+          "status": "modified",
+          "sha256": "e364b57149af2e48b3d43b8cf1d171403ff0576fae68a18b15ace4d2df72fc94",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-vote-notify.ts",
+          "status": "added",
+          "sha256": "16cd3f8017148320c91763e7de0b15455340a6d6a638de7ec3b5cddc7a162424",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes-store.ts",
+          "status": "added",
+          "sha256": "7027343454472bdc458075cf0c4dc5e58ab5d10bb829b1c62c9fbdff609cb18f",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes.test.ts",
+          "status": "added",
+          "sha256": "629f2ea709f01dc527a793f53a7ddb5981b8b05670eeb95674e399f831537fcd",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/time-votes.ts",
+          "status": "added",
+          "sha256": "ac77e1595eae0919ef4abc039f0bc226c0540ad701983f652a417ad29e7cad99",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "85158039e4bef7d92d4229fb243bdd2f1809d721681f2023433ed826d4e548aa",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "0237283b920627f57ca2f0423052857cf71bd2881e2adf8482656ee4bd12185d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346400000_space_calendar_time_votes.sql",
+          "status": "added",
+          "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/space_calendar_time_votes.test.sql",
+          "status": "added",
+          "sha256": "4ec6a3e66c53d2c37f606209d46eaf780e6023c892899c9b27a91d7f5f6851af",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
