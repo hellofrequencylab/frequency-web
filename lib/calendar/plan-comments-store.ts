@@ -105,6 +105,42 @@ export async function insertPlanComment(
   }
 }
 
+/** One `mentions` row per person tagged in a comment (LIVE-2524), written as the author on their own
+ *  session, so the insert policy proves they write the Space they tagged from. The caller passes
+ *  only people it has already proved can see the Plan. Best effort: a failed write is logged and
+ *  costs the backlink, never the comment or the notice. */
+export async function recordCommentMentions(input: {
+  commentId: string
+  spaceId: string
+  authorProfileId: string
+  profileIds: readonly string[]
+}): Promise<number> {
+  const ids = [...new Set(input.profileIds)].filter((id) => id !== input.authorProfileId)
+  if (ids.length === 0) return 0
+  try {
+    const { error } = await (await db())
+      .from('mentions')
+      .insert(
+        ids.map((id) => ({
+          source_type: 'plan_comment',
+          source_id: input.commentId,
+          target_type: 'profile',
+          target_id: id,
+          space_id: input.spaceId,
+          created_by: input.authorProfileId,
+        })),
+      )
+    if (error) {
+      commentIoFailed('mentions', error)
+      return 0
+    }
+    return ids.length
+  } catch (err) {
+    commentIoFailed('mentions', err)
+    return 0
+  }
+}
+
 /** The author takes back their own comment. The function marks the caller's own unremoved row and
  *  nothing else, and says whether it did. */
 export async function removePlanCommentRow(commentId: string): Promise<boolean> {

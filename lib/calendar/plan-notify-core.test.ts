@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calendarSettingsPath, excerpt, planAssignCopy, planCommentCopy, planShareCopy, recipientsWithoutActor } from './plan-notify-core'
+import { calendarSettingsPath, excerpt, planAssignCopy, planCommentCopy, planMentionCopy, planShareCopy, recipientsWithoutActor } from './plan-notify-core'
 
 // THE WORDS A SHARED PLAN SENDS (PROG-CAL7, LIVE-545): plain, who and what, no long dash, no
 // exclamation; the actor is never a recipient; a comment is cut to a lock-screen line.
@@ -29,6 +29,17 @@ describe('the copy', () => {
     const long = excerpt('x'.repeat(200))
     expect(long.length).toBe(120)
     expect(long.endsWith('…')).toBe(true)
+  })
+})
+
+describe('a tag in a comment (LIVE-2524)', () => {
+  const SAM = '0b0e5c2a-1111-4a2b-9c3d-000000000001'
+  it('names the Plan and the to-do, and reads a tag as a name, never its stored token', () => {
+    expect(planMentionCopy('Alex', 'Autumn retreat', 'Book the van', `@[Sam](profile:${SAM}) can you?`)).toEqual({
+      title: 'Alex mentioned you on "Book the van" in "Autumn retreat"',
+      body: '@Sam can you?',
+    })
+    expect(planCommentCopy('Alex', 'Autumn retreat', null, `ask @[Sam](profile:${SAM})`).body).toBe('ask @Sam')
   })
 })
 

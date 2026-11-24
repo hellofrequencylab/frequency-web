@@ -44,6 +44,7 @@ export type NotificationEvent =
   | 'loyalty.nudge'
   | 'community.joined'
   | 'message.direct'
+  | 'item.mention'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -115,6 +116,10 @@ export interface NotificationContexts {
    *  (lib/messages/dm-notify.ts) decides it is the first unread one, authors the push copy, and
    *  renders the email when the recipient has an address. `tag` collapses the burst on the device. */
   'message.direct': { senderId: string; conversationId: string; title: string; body: string; url: string; tag: string; email?: EmailPayload }
+  /** Someone tagged the recipient with @ in a message box (LIVE-2524, hub plan 2026-11-24). The
+   *  caller proves the recipient can see the item, names it in the copy, and hands in the bell's
+   *  destination as a reference the href mapper understands ('plan' → `<space slug>:<plan id>`). */
+  'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
 }
 
 /** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
@@ -417,6 +422,24 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
       },
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
       ...(ctx.email ? { email: ctx.email } : {}),
+    }),
+  },
+  // An @ tag in a Plan or to-do comment, and later in rooms, DMs and item threads (LIVE-2524). The
+  // `mentions` category, like a feed mention and a DM: someone wrote to you by name. In-app so it
+  // lands in the bell (and the Inbox, LIVE-2526), push on the member's own push_mentions switch.
+  'item.mention': {
+    event: 'item.mention',
+    category: 'mentions',
+    channels: ['inapp', 'push'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'mention',
+        body: `mentioned you: ${ctx.body}`,
+        actorId: ctx.actorId,
+        referenceType: ctx.referenceType,
+        referenceId: ctx.referenceId,
+      },
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
     }),
   },
 }

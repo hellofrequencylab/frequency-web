@@ -485,6 +485,7 @@ export function PlanDrawer({
                         taskId={t.id}
                         comments={comments}
                         onChanged={() => refreshComments(plan.id)}
+                        people={assignees}
                         placeholder="A note on this to-do, for both teams."
                       />
                     </div>
@@ -771,6 +772,7 @@ export function PlanDrawer({
             taskId={null}
             comments={comments}
             onChanged={() => refreshComments(plan.id)}
+            people={assignees}
             placeholder={sharedFrom ? `A word for ${sharedFrom} and your team.` : 'A word for everyone working this Plan.'}
           />
         </div>
