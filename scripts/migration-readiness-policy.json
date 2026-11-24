@@ -5365,7 +5365,7 @@
       "expiresAt": "2026-12-01T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346350000_space_bookings_booker_time_zone.sql",
+          "file": "supabase/migrations/20270346450000_space_bookings_booker_time_zone.sql",
           "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c"
         }
       ],
@@ -5380,7 +5380,7 @@
         {
           "file": "docs/ledger/rows/BOOK-009.json",
           "status": "modified",
-          "sha256": "acfd77c476750c9a134329579550398110de47eb86be3008a5c27c2a142c27b7",
+          "sha256": "7b887a90d1df15d7d95b7ca1fb75c5508bb7cf3b6b4d2cc309c5300cebb990ec",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5429,12 +5429,12 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "36a7a1aaa823a06e7a28b618344935e60c185cb87013af9e5ee6160780a7ee9a",
+          "sha256": "5eeb0e70f58ab322a68078138e1c6ff9d59a9d2b67705769ea85f174f71dabc9",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346350000_space_bookings_booker_time_zone.sql",
+          "file": "supabase/migrations/20270346450000_space_bookings_booker_time_zone.sql",
           "status": "added",
           "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c",
           "baseMode": "000000",
