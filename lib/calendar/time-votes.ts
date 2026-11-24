@@ -37,7 +37,7 @@ export interface TimeVoteRow {
 }
 
 /** One candidate date, as the ranker needs it. */
-export interface TimeOptionInput {
+interface TimeOptionInput {
   entryId: string
   /** The wall-clock start the calendar stores (ISO), used only to break a tie in date order. */
   startsAt: string
