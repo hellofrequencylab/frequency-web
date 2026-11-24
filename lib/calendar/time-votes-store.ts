@@ -159,6 +159,7 @@ export async function listSpaceYesVotes(spaceId: string): Promise<{ profileId: s
       .select<{ id: string; starts_at: string; all_day: boolean }[]>('id, starts_at, all_day')
       .eq('space_id', spaceId)
       .in('id', ids)
+      .is('removed_at', null)
       .limit(300)
     if (entries.error || !entries.data) {
       voteIoFailed('past_yes_entries', entries.error)
