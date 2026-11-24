@@ -7,7 +7,7 @@
 // person has read in thread_reads. A Plan's thread, its own and its to-dos', is one topic: 'plan'.
 
 /** The items whose thread lives in item_comments. */
-export const ITEM_SUBJECTS = ['event', 'deal', 'contact'] as const
+const ITEM_SUBJECTS = ['event', 'deal', 'contact'] as const
 export type ItemSubjectType = (typeof ITEM_SUBJECTS)[number]
 
 /** Every thread kind thread_reads and the live topic know. */
