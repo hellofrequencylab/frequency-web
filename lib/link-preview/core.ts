@@ -28,7 +28,7 @@ export function normalizeUrl(raw: string): string | null {
   return out.length <= 2048 ? out : null
 }
 
-export interface PagePreview {
+interface PagePreview {
   title: string | null
   description: string | null
   imageUrl: string | null

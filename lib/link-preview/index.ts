@@ -15,7 +15,7 @@ import { isOwnHost } from './own-hosts'
 // the page's <head> metadata is kept. Best effort: any failure is a link without a card, never a
 // failed send. This module creates no client, so it adds nothing to the admin-client ratchet.
 
-export const PREVIEW_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const PREVIEW_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
  * A first, cheap refusal before any network or cache work: a bare name with no dot (localhost, an
