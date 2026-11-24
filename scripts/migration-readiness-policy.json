@@ -5626,7 +5626,7 @@
       "expiresAt": "2026-12-01T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346400000_space_calendar_time_votes.sql",
+          "file": "supabase/migrations/20270346400000_calendar_time_votes.sql",
           "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d"
         }
       ],
@@ -5697,7 +5697,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "f9b3c7ff38ed0dfd7c18b768ffff34926de8ee807ba3059ef93c213a96a6b6ac",
+          "sha256": "5c4fad171313d519daf89e4e20d0f6684fefbe887e17fc4d916bd60f3505148d",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5709,7 +5709,7 @@
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346400000_space_calendar_time_votes.sql",
+          "file": "supabase/migrations/20270346400000_calendar_time_votes.sql",
           "status": "added",
           "sha256": "d7f92e8e08fa2d582cd6fc88d17ce8e54c36c0664a257392d00c679fb16d5d7d",
           "baseMode": "000000",
