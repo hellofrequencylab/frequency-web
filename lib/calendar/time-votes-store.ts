@@ -135,3 +135,64 @@ export async function setMyTimeVoteRow(
     return { error: 'Your answer could not be saved.' }
   }
 }
+
+/** Every Yes on this Space's past Find a time polls, with the start the voter said Yes to, newest
+ *  first: what Vera reads to learn which days and times each person tends to manage (LIVE-2532). */
+export async function listSpaceYesVotes(spaceId: string): Promise<{ profileId: string; startsAt: string; allDay: boolean }[]> {
+  try {
+    const client = await db()
+    const { data, error } = await client
+      .from('space_calendar_time_votes')
+      .select<{ entry_id: string; voter_profile_id: string | null }[]>('entry_id, voter_profile_id')
+      .eq('space_id', spaceId)
+      .eq('choice', 'yes')
+      .order('updated_at', { ascending: false })
+      .limit(300)
+    if (error || !data) {
+      voteIoFailed('past_yes', error)
+      return []
+    }
+    const ids = [...new Set(data.map((v) => v.entry_id))]
+    if (ids.length === 0) return []
+    const entries = await client
+      .from('space_calendar_entries')
+      .select<{ id: string; starts_at: string; all_day: boolean }[]>('id, starts_at, all_day')
+      .eq('space_id', spaceId)
+      .in('id', ids)
+      .limit(300)
+    if (entries.error || !entries.data) {
+      voteIoFailed('past_yes_entries', entries.error)
+      return []
+    }
+    const byId = new Map(entries.data.map((e) => [e.id, e]))
+    return data.flatMap((v) => {
+      const e = byId.get(v.entry_id)
+      return e && v.voter_profile_id ? [{ profileId: v.voter_profile_id, startsAt: e.starts_at, allDay: e.all_day }] : []
+    })
+  } catch (err) {
+    voteIoFailed('past_yes', err)
+    return []
+  }
+}
+
+/** Put these live dates of one Space into one candidate group, so a single date Vera's options
+ *  join reads as one of several. RLS decides; the caller proved the Plan first. */
+export async function joinOptionGroupRows(spaceId: string, entryIds: readonly string[], group: string): Promise<boolean> {
+  if (entryIds.length === 0) return true
+  try {
+    const { error } = await (await db())
+      .from('space_calendar_entries')
+      .update({ option_group: group })
+      .eq('space_id', spaceId)
+      .in('id', entryIds)
+      .is('removed_at', null)
+    if (error) {
+      voteIoFailed('join_group', error)
+      return false
+    }
+    return true
+  } catch (err) {
+    voteIoFailed('join_group', err)
+    return false
+  }
+}
