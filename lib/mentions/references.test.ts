@@ -4,6 +4,7 @@ import {
   extractReferences,
   mentionedProfileIds,
   openMentionQuery,
+  openTagQuery,
   plainText,
   referenceToken,
   splitMessage,
@@ -67,5 +68,13 @@ describe('openMentionQuery', () => {
     expect(openMentionQuery('@', 1)).toEqual({ start: 0, query: '' })
     expect(openMentionQuery('mail me at a@b', 14)).toBeNull()
     expect(openMentionQuery('Thanks @sam ', 12)).toBeNull()
+  })
+})
+
+describe('openTagQuery', () => {
+  it('opens on @ for people and # for items, only at the start of a word', () => {
+    expect(openTagQuery('see #spr', 8)).toEqual({ sigil: '#', start: 4, query: 'spr' })
+    expect(openTagQuery('hi @al', 6)).toEqual({ sigil: '@', start: 3, query: 'al' })
+    expect(openTagQuery('page.html#top', 13)).toBeNull()
   })
 })

@@ -15,7 +15,7 @@
 // UUID, is plain text, so a pasted lookalike never becomes a reference.
 
 const REFERENCE_KINDS = ['profile', 'plan', 'task', 'entry', 'event', 'deal', 'contact', 'space'] as const
-type ReferenceKind = (typeof REFERENCE_KINDS)[number]
+export type ReferenceKind = (typeof REFERENCE_KINDS)[number]
 
 export interface Reference {
   kind: ReferenceKind
@@ -86,6 +86,17 @@ export function plainText(body: string): string {
   return splitMessage(body)
     .map((p) => ('text' in p ? p.text : `${p.ref.kind === 'profile' ? '@' : '#'}${p.ref.label}`))
     .join('')
+}
+
+/**
+ * The open @ or # query at the caret, for a picker: "see #spr|" gives { sigil: '#', start: 4, query: 'spr' }.
+ * The sigil must start a word, so an email address or a URL fragment never opens the list.
+ */
+export function openTagQuery(text: string, caret: number): { sigil: '@' | '#'; start: number; query: string } | null {
+  const before = text.slice(0, caret)
+  const m = /(^|\s)([@#])([^\s@#[\]()]{0,30})$/.exec(before)
+  if (!m) return null
+  return { sigil: m[2] as '@' | '#', start: before.length - m[3].length - 1, query: m[3] }
 }
 
 /**

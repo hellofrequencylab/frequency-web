@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/mentions/search-handles-client.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: rooms, DMs, Plan comments and comms each use a plain textarea; none reads @ or # and room messages send no notification at all. Fix: one shared composer and lib/mentions extractReferences used by every send path, writing the LIVE-2524 mentions table; # suggests items in the author's Space only, through an RLS-guarded lookup; an item shows a 'mentioned in' backlink.",
+  "detail": "FOUND 2026-11-24: rooms, DMs, Plan comments and comms each use a plain textarea; none reads @ or # and room messages send no notification at all. Fix: one shared composer and lib/mentions extractReferences used by every send path, writing the LIVE-2524 mentions table; # suggests items in the author's Space only, through an RLS-guarded lookup; an item shows a 'mentioned in' backlink.\n\nDONE 2026-11-24: one picker (components/mentions/use-tag-picker.tsx) serves the Plan comment box, room composer and DM composer: @ lists the people who can read the conversation, # (two letters) lists Plans, to-dos, events, deals and contacts from searchTaggableItems on the member's own session. Room sends keep only tags on room members, store every tag in public.mentions and send item.mention (bell opens the room); DM sends store # links. The room and DM pickers load on demand, so the chat dock on every page carries none of it. Messages render tags as chips.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2525",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2525"
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }
