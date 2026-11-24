@@ -20,7 +20,7 @@ export const LADDER_DELAY_MS: Record<LadderRung, number> = {
 }
 
 /** One email per thread per window, whatever the number of words in it. */
-export const EMAIL_WINDOW_MS = 30 * 60 * 1000
+const EMAIL_WINDOW_MS = 30 * 60 * 1000
 
 /** The dedupe key for a rung: push per thread per 2 minutes, email per thread per half hour. */
 export function ladderKey(rung: LadderRung, profileId: string, thread: string, nowMs: number): string {
@@ -33,7 +33,7 @@ export function ladderStillDue(notices: readonly { readAt: string | null; archiv
   return notices.some((n) => !n.readAt && !n.archivedAt)
 }
 
-export interface QuietHours {
+interface QuietHours {
   /** Hour of day (0 to 23) quiet starts, in the person's own time zone. */
   start: number
   /** Hour of day (0 to 23) quiet ends. Equal to start means off. */
