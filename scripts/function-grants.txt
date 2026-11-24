@@ -402,3 +402,5 @@ freeze_practice_support_evidence internal
 save_space_profile_draft internal
 # BOOK-004: a before-insert trigger on space_bookings, never called as an RPC.
 space_bookings_set_chain_id internal
+# LIVE-2527: the author or a Space admin removes a team-thread comment (definer, checks the caller).
+remove_item_comment authenticated
