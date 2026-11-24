@@ -45,6 +45,7 @@ export type NotificationEvent =
   | 'community.joined'
   | 'message.direct'
   | 'item.mention'
+  | 'plan.bell'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -119,6 +120,9 @@ export interface NotificationContexts {
   /** Someone tagged the recipient with @ in a message box (LIVE-2524, hub plan 2026-11-24). The
    *  caller proves the recipient can see the item, names it in the copy, and hands in the bell's
    *  destination as a reference the href mapper understands ('plan' → `<space slug>:<plan id>`). */
+  /** A comment or a hand-over on a Plan, as a bell and Inbox row (LIVE-2526). The bell prints the
+   *  actor's name before `body`. */
+  'plan.bell': { kind: 'plan_comment' | 'plan_assign'; actorId: string; planId: string; body: string }
   'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
 }
 
@@ -350,6 +354,17 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  // THE SAME TWO MOMENTS IN THE BELL AND THE INBOX (LIVE-2526). Routed beside the push above, so the
+  // push keeps its own shape and the bell row gets the in-app switch (inapp_comments). A hand-over
+  // (`plan_assign`) is Priority in the Inbox, a comment (`plan_comment`) is Other.
+  'plan.bell': {
+    event: 'plan.bell',
+    category: 'comments',
+    channels: ['inapp'],
+    render: (ctx) => ({
+      inapp: { type: ctx.kind, body: ctx.body, actorId: ctx.actorId, referenceType: 'plan', referenceId: ctx.planId },
     }),
   },
 
