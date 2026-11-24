@@ -1749,6 +1749,44 @@ The link is yours alone and works for three weeks.
   }
 }
 
+// THE DATE IS SET (EMAIL-093). Once the team confirms a Find a time date, everyone who answered gets
+// the date and an .ics to drop into their own calendar, members and outside collaborators alike, as
+// booking confirmations already do. Transactional and one to one: no list, so no unsubscribe.
+interface TimeConfirmedEmailParams {
+  to: string
+  recipientName: string | null
+  spaceName: string
+  planTitle: string
+  whenLabel: string
+  /** The calendar invite: an .ics file, base64. */
+  invite: { filename: string; content: string }
+  /** A member's way back to the Space's calendar; null for someone outside the team. */
+  calendarPath: string | null
+}
+
+export function buildTimeConfirmedEmail(params: TimeConfirmedEmailParams): EmailPayload {
+  const { to, recipientName, spaceName, planTitle, whenLabel, invite, calendarPath } = params
+  const subject = `${planTitle} is set for ${whenLabel}`
+  const hi = recipientName ? `Hi ${recipientName}, ` : 'Hi, '
+  const lead = `${spaceName} picked the date for ${planTitle}: ${whenLabel}. Thanks for saying what works. The invite is attached, so it can go straight into your calendar.`
+  const url = calendarPath ? `${BASE_URL}${calendarPath}` : null
+  return {
+    to,
+    subject,
+    html: emailShell(`
+      ${emailKicker('Find a time')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(hi + lead)}</p>
+      ${url ? emailButton('Open the calendar', url) : ''}
+    `),
+    text: `${subject}
+
+${hi}${lead}
+${url ? `\nOpen the calendar: ${url}\n` : ''}`,
+    attachments: [invite],
+  }
+}
+
 export async function sendBookingCancelledEmail(params: {
   to: string
   recipientName: string
