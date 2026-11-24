@@ -150,8 +150,9 @@ export function EmailEditorPane({
   sidebar?: ReactNode
 }) {
   const { id } = campaign
-  // Only the admin save path gets the staff-gated shared library by default (LIVE-2523).
-  const library = savedLibrary ?? (saveCampaign === saveEmailCampaign ? SHARED_SAVED_LIBRARY : undefined)
+  // The shared library THIS pane may use: the team's staff-gated one only on the admin save path by default;
+  // undefined for a Space editor, whose saved sections then live in the browser (LIVE-2523).
+  const sharedLibrary = savedLibrary ?? (saveCampaign === saveEmailCampaign ? SHARED_SAVED_LIBRARY : undefined)
   const [subject, setSubject] = useState(campaign.subject)
   const [preheader, setPreheader] = useState(campaign.preheader)
   const [fromName, setFromName] = useState(campaign.fromName ?? '')
@@ -325,7 +326,7 @@ export function EmailEditorPane({
             showPreviewToggle={false}
             sendTest={sendTest}
           />
-          <NodeEmailCanvasEditor colors={colors} library={library} />
+          <NodeEmailCanvasEditor colors={colors} library={sharedLibrary} />
           {sidebar}
         </div>
       </NodeLayoutProvider>
@@ -359,7 +360,7 @@ export function EmailEditorPane({
             showPreviewToggle={false}
             sendTest={sendTest}
           />
-          <EmailCanvasEditor colors={colors} library={library} />
+          <EmailCanvasEditor colors={colors} library={sharedLibrary} />
           {sidebar}
         </div>
       </EntityLayoutProvider>

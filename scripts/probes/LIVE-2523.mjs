@@ -24,8 +24,9 @@ if (/requireAdmin|redirect\(|notFound\(/.test(actions)) bad.push('saved-sections
 if (!/return null/.test(listBody)) bad.push('listSavedSections does not answer null to a caller without access')
 
 const pane = code(read('components/admin/email-studio/editor-pane.tsx'))
-if (/library=\{\s*(sharedLibrary|SHARED_SAVED_LIBRARY)\s*\}/.test(pane)) bad.push('editor-pane.tsx still hands the staff library to the canvas unconditionally')
-if (!/saveCampaign === saveEmailCampaign \? SHARED_SAVED_LIBRARY/.test(pane)) bad.push('editor-pane.tsx does not limit the default shared library to the admin save path')
+if (/library=\{\s*SHARED_SAVED_LIBRARY\s*\}/.test(pane)) bad.push('editor-pane.tsx still hands the staff library to the canvas unconditionally')
+if (!/const sharedLibrary = savedLibrary \?\? \(saveCampaign === saveEmailCampaign \? SHARED_SAVED_LIBRARY : undefined\)/.test(pane)) bad.push('editor-pane.tsx does not limit the default shared library to the admin save path')
+if (/^const sharedLibrary\b/m.test(pane)) bad.push('editor-pane.tsx still declares a module-wide shared library every pane receives')
 
 for (const f of [
   'components/spaces/marketing/space-email-compose-popup.tsx',
