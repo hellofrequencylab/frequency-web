@@ -16,6 +16,8 @@ import { chipClasses } from '@/components/ui/chip'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
 import { MessageText } from '@/components/mentions/message-text'
+import { LinkCardFor } from '@/components/mentions/link-card'
+import { firstLink } from '@/lib/link-preview/core'
 import type { MentionPerson } from '@/components/mentions/use-tag-picker'
 
 // The @ and # picker loads only where the caller hands in the room's people (the room page), never in
@@ -201,6 +203,7 @@ export function RoomThread({
                   <p className="text-body-sm text-text whitespace-pre-wrap leading-relaxed">
                     <MessageText body={m.body} />
                   </p>
+                  {firstLink(m.body) && <LinkCardFor url={firstLink(m.body) as string} />}
                 </div>
               </div>
             )
