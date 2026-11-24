@@ -2,6 +2,7 @@ import { SearchConnectionNotice } from '@/components/spaces/search-connection-no
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import {
   Building2,
   Users,
@@ -20,7 +21,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
+import { syncSpaceTeamRooms } from '@/lib/spaces/membership'
 import { spaceConversationHrefForViewer } from '@/lib/comms/conversations'
+import { planHrefForViewer } from '@/lib/calendar/plan-notify'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 
 // "Spaces you run" — the operator's FRONT DOOR to the Spaces they own or admin (the hub the
@@ -183,6 +186,10 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
     return <NoSpacesSplash />
   }
 
+  // A Space made before team rooms existed gets its room the first time someone who runs it lands
+  // here (LIVE-2529). After the response, so the page never waits on it; a re-run writes nothing.
+  after(() => syncSpaceTeamRooms(spaces.map((s) => s.id)))
+
   // The container-query grid (each card sizes to the grid, not the viewport) stays portable across
   // rail/no-rail widths (PAGE-FRAMEWORK ADR-295).
   return (
@@ -199,7 +206,7 @@ async function OperatedGrid({ profileId }: { profileId: string | null }) {
 export default async function SpacesOperatingPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ search?: string | string[]; conversation?: string | string[] }>
+  searchParams?: Promise<{ search?: string | string[]; conversation?: string | string[]; plan?: string | string[] }>
 }) {
   const sp = await searchParams
   const outcome = sp?.search
@@ -212,6 +219,13 @@ export default async function SpacesOperatingPage({
   const conversation = typeof sp?.conversation === 'string' ? sp.conversation : null
   if (conversation) {
     const href = await spaceConversationHrefForViewer(conversation, profileId)
+    if (href) redirect(href)
+  }
+  // LIVE-2524: a tag on a Plan carries only the Plan id; it opens in the console of the team the
+  // person works the Plan from, or (a miss) the hub.
+  const plan = typeof sp?.plan === 'string' && /^[0-9a-f-]{36}$/i.test(sp.plan) ? sp.plan : null
+  if (plan) {
+    const href = await planHrefForViewer(plan, profileId)
     if (href) redirect(href)
   }
 

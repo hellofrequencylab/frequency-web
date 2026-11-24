@@ -33,6 +33,7 @@ import {
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
 import {
   insertPlanComment,
+  recordCommentMentions,
   listPlanCommentRows,
   removePlanCommentRow,
   resolveCommentAuthors,
@@ -41,7 +42,8 @@ import {
 import { mapPlanCommentRow, orderThread, parseCommentBody, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { listPlanActivityRows, recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { latestActivity, mapPlanActivityRow, type PlanActivityView } from '@/lib/calendar/plan-activity'
-import { notifyPlanMoment } from '@/lib/calendar/plan-notify'
+import { notifyPlanMentions, notifyPlanMoment, planMentionTargets } from '@/lib/calendar/plan-notify'
+import { mentionedProfileIds } from '@/lib/mentions/references'
 import { mapPlanShareRow, parseShareAnswer, shareOptions, type PlanShareView } from '@/lib/calendar/plan-shares'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
@@ -869,8 +871,13 @@ export async function postPlanComment(
   })
   if ('error' in res) return fail(res.error)
   await recordPlanActivity({ planId, actorProfileId: side.profileId, actorSpaceId: side.spaceId, kind: 'comment', summary: task ? 'Left a note on a to-do.' : 'Commented on the Plan.' })
+  // A tag with @ reaches the person tagged, when they work the Plan (LIVE-2524). The tag is stored
+  // by id first, then the notice goes; whoever was told by name is not told again below.
+  const targets = await planMentionTargets({ planId, hostSpaceId: side.hostSpaceId, actorProfileId: side.profileId, profileIds: mentionedProfileIds(parsed.body) })
+  await recordCommentMentions({ commentId: res.id, spaceId: side.spaceId, authorProfileId: side.profileId, profileIds: [...targets.keys()] })
+  const told = await notifyPlanMentions({ planId, planTitle: side.planTitle, actorProfileId: side.profileId, taskId: task, body: parsed.body, targets })
   // The other team's editors, and the person a to-do was handed to, hear about it (LIVE-545).
-  await notifyPlanMoment({ event: 'plan.comment', planId, planTitle: side.planTitle, hostSpaceId: side.hostSpaceId, authorSpaceId: side.spaceId, actorProfileId: side.profileId, taskId: task, body: parsed.body })
+  await notifyPlanMoment({ event: 'plan.comment', planId, planTitle: side.planTitle, hostSpaceId: side.hostSpaceId, authorSpaceId: side.spaceId, actorProfileId: side.profileId, taskId: task, body: parsed.body, skipProfileIds: told })
   return ok({ id: res.id })
 }
 

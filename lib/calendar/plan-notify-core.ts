@@ -3,6 +3,8 @@
 // the Plan or a to-do, a to-do handed over. Nothing here does IO; lib/calendar/plan-notify.ts
 // resolves who and routes. Camp counselor: plain, who and what, no exclamation, no long dash.
 
+import { plainText } from '@/lib/mentions/references'
+
 export type PlanShareMoment = 'requested' | 'accepted' | 'declined'
 
 interface PlanMomentCopy {
@@ -28,6 +30,12 @@ export function planCommentCopy(authorName: string, planTitle: string, onTodo: s
   return { title: `${authorName} ${where}`, body: excerpt(body) }
 }
 
+/** The recipient was tagged with @ in a comment on the Plan or one of its to-dos (LIVE-2524). */
+export function planMentionCopy(authorName: string, planTitle: string, onTodo: string | null, body: string): PlanMomentCopy {
+  const where = onTodo ? `on "${onTodo}" in "${planTitle}"` : `on "${planTitle}"`
+  return { title: `${authorName} mentioned you ${where}`, body: excerpt(body) }
+}
+
 /** A to-do handed to the recipient. */
 export function planAssignCopy(actorName: string, todoTitle: string, planTitle: string): PlanMomentCopy {
   return { title: `${actorName} handed you a to-do`, body: `"${todoTitle}" on "${planTitle}".` }
@@ -35,7 +43,8 @@ export function planAssignCopy(actorName: string, todoTitle: string, planTitle: 
 
 /** The first line of a comment, short enough for a lock screen. */
 export function excerpt(body: string, max = 120): string {
-  const line = body.replace(/\s+/g, ' ').trim()
+  // A tag reads as "@Sam" on a lock screen, never as its stored token (LIVE-2524).
+  const line = plainText(body).replace(/\s+/g, ' ').trim()
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line
 }
 

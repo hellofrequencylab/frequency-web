@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-092",
+  "title": "A collaborator without a Frequency account can vote on dates from the email link",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/comms/reply-address.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; owner ask 2026-11-24 17:35Z: AI meeting and date management so everyone can brainstorm the best date and time)"
+  },
+  "detail": "FOUND 2026-11-24: owner ruling 2026-11-24 makes email the only outside channel for now, so outside collaborators (a venue, a guest teacher) must be able to pick a date from their inbox. Fix: a signed, expiring vote link per person per Plan (signTimeVoteToken/verifyTimeVoteToken) opening a one-page vote with no sign-in; the vote records the email address against the Plan.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs EMAIL-092",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
