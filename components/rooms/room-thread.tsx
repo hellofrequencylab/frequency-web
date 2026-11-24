@@ -1,7 +1,8 @@
 'use client'
 
 import { formatTimeShort } from '@/lib/format-date'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { PenLine, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -14,6 +15,12 @@ import { ChatComposer } from '@/components/ui/chat-composer'
 import { chipClasses } from '@/components/ui/chip'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import { roomPostGateReason, type RoomVisibility } from '@/lib/messages/room-access'
+import { MessageText } from '@/components/mentions/message-text'
+import type { MentionPerson } from '@/components/mentions/use-tag-picker'
+
+// The @ and # picker loads only where the caller hands in the room's people (the room page), never in
+// the chat dock that every member page carries (LIVE-2525).
+const TagPickerOverlay = dynamic(() => import('@/components/mentions/tag-picker-overlay'), { ssr: false })
 
 export type RoomMessage = {
   id: string
@@ -57,6 +64,7 @@ export function RoomThread({
   myProfileId,
   canPost,
   visibility,
+  people,
 }: {
   roomId: string
   initialMessages: RoomMessage[]
@@ -68,7 +76,10 @@ export function RoomThread({
    *  post depends on it, and a defaulted prop is how a Channel visitor ends up being told to
    *  "join the room" — a door that does not exist for a Channel. */
   visibility: RoomVisibility
+  /** The room's other members, offered when the writer types @ (LIVE-2525). Left out by the dock. */
+  people?: readonly MentionPerson[]
 }) {
+  const composerHost = useRef<HTMLDivElement>(null)
   const [messages, setMessages] = useState<RoomMessage[]>(initialMessages)
   const [body, setBody] = useState('')
   // The composer starts CLOSED, as one line (DAWN room law): a big empty box asks
@@ -187,7 +198,9 @@ export function RoomThread({
                       <span className="text-3xs text-muted">{formatTime(m.created_at)}</span>
                     </div>
                   )}
-                  <p className="text-body-sm text-text whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                  <p className="text-body-sm text-text whitespace-pre-wrap leading-relaxed">
+                    <MessageText body={m.body} />
+                  </p>
                 </div>
               </div>
             )
@@ -239,6 +252,10 @@ export function RoomThread({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+              <div ref={composerHost} className="relative">
+              {people && people.length > 0 && (
+                <TagPickerOverlay hostRef={composerHost} value={body} onValueChange={setBody} people={people} />
+              )}
               <ChatComposer
                 value={body}
                 onValueChange={next => { setBody(next); notifyTyping() }}
@@ -255,6 +272,7 @@ export function RoomThread({
                 // generic "Enter to send" hint would have used rather than stacking under it.
                 footer={kind ? <p className="mt-1.5 text-2xs text-muted">{KIND_COPY[kind].hint}</p> : null}
               />
+              </div>
             </div>
           </form>
         )

@@ -89,6 +89,17 @@ export function plainText(body: string): string {
 }
 
 /**
+ * The open @ or # query at the caret, for a picker: "see #spr|" gives { sigil: '#', start: 4, query: 'spr' }.
+ * The sigil must start a word, so an email address or a URL fragment never opens the list.
+ */
+export function openTagQuery(text: string, caret: number): { sigil: '@' | '#'; start: number; query: string } | null {
+  const before = text.slice(0, caret)
+  const m = /(^|\s)([@#])([^\s@#[\]()]{0,30})$/.exec(before)
+  if (!m) return null
+  return { sigil: m[2] as '@' | '#', start: before.length - m[3].length - 1, query: m[3] }
+}
+
+/**
  * The open @ query at the caret, for a picker: the word typed since the last @ that starts a word,
  * or null when the caret is not in one. "Thanks @sa|" gives { start: 7, query: 'sa' }.
  */
