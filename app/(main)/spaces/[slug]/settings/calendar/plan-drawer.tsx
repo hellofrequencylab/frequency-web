@@ -46,6 +46,7 @@ import { PlanCommentThread } from './plan-comment-thread'
 import { useThreadLive } from '@/components/threads/use-thread-live'
 import { threadTopic } from '@/lib/threads/subjects'
 import { markThreadRead } from '@/lib/threads/actions'
+import { FindATimePanel } from './find-a-time-panel'
 import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -575,6 +576,9 @@ export function PlanDrawer({
         </div>
 
         {!readOnly && (<>
+
+        {/* FIND A TIME (LIVE-2531): the team answers each candidate date and the best shows first. */}
+        <FindATimePanel slug={slug} planId={plan.id} />
 
         {/* THE REPAIR DOOR (PROG-CAL3). `plan_id` was create-only: `updateEvent` never touched it and
             nothing could put an event back on its Plan, so one wrong link could only be fixed in

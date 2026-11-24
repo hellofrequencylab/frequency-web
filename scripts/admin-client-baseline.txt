@@ -448,6 +448,7 @@
 #   lib/courses/course-context.ts: a public course's guides (display name and handle), its host Space's name, and its upcoming public event dates. Writes nothing.
 #   app/(marketing)/courses/[slug]/calendar.ics/route.ts: the same public, published, uncancelled sessions the course page lists, as one calendar file. Writes nothing.
 # PROG-E5: lib/spaces/profile-draft-write.ts calls save_space_profile_draft (service role only) after the canvas and Space page builder actions ran resolveSpaceManageAccess; the function checks manage access for the actor again and writes only spaces.preferences.profileLayoutDraft and its revision counter. Not a new bypass of a tenant table: it replaces the whole-blob preferences update both actions already made on the service-role client. Its test mocks the same module.
+# LIVE-2531: lib/calendar/time-vote-notify.ts writes ONE notifications row to a Plan's lead after the caller's own session proved the Plan and the vote; the recipient is another member, so no session can insert it (the lib/notifications/inapp.ts seam).
 app/(main)/(marketplace)/market/service-actions.ts
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
@@ -862,6 +863,7 @@ lib/blocking.ts
 lib/calendar/hold-lapse.ts
 lib/calendar/plan-notify.ts
 lib/calendar/plan-share-subjects.ts
+lib/calendar/time-vote-notify.ts
 lib/channels/programs.ts
 lib/circles/challenges.ts
 lib/circles/circle-weeks.ts
