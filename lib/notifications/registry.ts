@@ -117,12 +117,12 @@ export interface NotificationContexts {
    *  (lib/messages/dm-notify.ts) decides it is the first unread one, authors the push copy, and
    *  renders the email when the recipient has an address. `tag` collapses the burst on the device. */
   'message.direct': { senderId: string; conversationId: string; title: string; body: string; url: string; tag: string; email?: EmailPayload }
-  /** Someone tagged the recipient with @ in a message box (LIVE-2524, hub plan 2026-11-24). The
-   *  caller proves the recipient can see the item, names it in the copy, and hands in the bell's
-   *  destination as a reference the href mapper understands ('plan' → `<space slug>:<plan id>`). */
   /** A comment or a hand-over on a Plan, as a bell and Inbox row (LIVE-2526). The bell prints the
    *  actor's name before `body`. */
   'plan.bell': { kind: 'plan_comment' | 'plan_assign'; actorId: string; planId: string; body: string }
+  /** Someone tagged the recipient with @ in a message box (LIVE-2524, hub plan 2026-11-24). The
+   *  caller proves the recipient can see the item, names it in the copy, and hands in the bell's
+   *  destination as a reference the href mapper understands ('plan' → `<space slug>:<plan id>`). */
   'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
 }
 

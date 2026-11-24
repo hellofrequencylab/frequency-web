@@ -74,7 +74,7 @@ function nonceCspMode(): NonceCspMode {
 /** First segments that only app/(main) owns. */
 const MEMBER_SEGMENTS = new Set([
   'admin', 'cart', 'channels', 'circles', 'codes', 'connections', 'crew', 'drafts', 'e', 'edit',
-  'entry-points', 'feed', 'founder', 'friends', 'g', 'hunts', 'journal', 'journeys', 'launch', 'lead',
+  'entry-points', 'feed', 'founder', 'friends', 'g', 'hunts', 'inbox', 'journal', 'journeys', 'launch', 'lead',
   'library', 'marketplace', 'meet', 'messages', 'n', 'nearby', 'network', 'notifications', 'offer',
   'on-air', 'orders', 'outreach', 'pages', 'partners', 'people', 'practices', 'profile', 'rewards',
   'scan', 'search', 'settings', 'site-map', 'support', 'training', 'upgrade',
