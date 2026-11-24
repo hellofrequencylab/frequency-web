@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2525",
+  "title": "One message box in team rooms and DMs suggests @people and #Plans, to-dos, events, deals and contacts, and a tag notifies",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/mentions/search-handles-client.ts",
+    "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
+  },
+  "detail": "FOUND 2026-11-24: rooms, DMs, Plan comments and comms each use a plain textarea; none reads @ or # and room messages send no notification at all. Fix: one shared composer and lib/mentions extractReferences used by every send path, writing the LIVE-2524 mentions table; # suggests items in the author's Space only, through an RLS-guarded lookup; an item shows a 'mentioned in' backlink.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2525",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
