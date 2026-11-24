@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   blockingRange,
@@ -175,8 +175,15 @@ describe('blockingRange', () => {
 
 describe('the registry and the month window', () => {
   it('matches the kinds the migration allows', () => {
-    const sql = readFileSync('supabase/migrations/20270345005200_private_calendar_layer.sql', 'utf8')
-    const allowed = /kind\s+text not null check \(kind in \(([^)]*)\)\)/.exec(sql)![1]
+    // The NEWEST migration that sets the kind check wins (LIVE-2533 added 'meeting'), so the next
+    // kind is covered without editing this path.
+    const files = readdirSync('supabase/migrations')
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8'))
+      .filter((sql) => /space_calendar_entries/.test(sql) && /check \(kind in \(/.test(sql))
+    const sql = files[files.length - 1]
+    const allowed = /check \(kind in \(([^)]*)\)\)/.exec(sql)![1]
     expect(allowed.split(',').map((s) => s.trim().replace(/'/g, '')).sort()).toEqual(ENTRY_KINDS.map((k) => k.kind).sort())
     for (const k of ENTRY_KINDS) expect(CALENDAR_LAYERS.some((l) => l.key === k.layer)).toBe(true)
   })

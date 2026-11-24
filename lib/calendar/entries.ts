@@ -203,7 +203,8 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
       visibility: def.canShowPublicly && input.showPublicly ? 'public_unavailable' : 'team',
       hold_expires_at: holdExpiresAt,
       stage: stageDef?.stage ?? null,
-      description: def.isPencil ? trimOrNull(input.description, MAX_DESCRIPTION) : null,
+      // An event on its way keeps its public description here; a meeting keeps its agenda (LIVE-2533).
+      description: def.isPencil || def.isMeeting ? trimOrNull(input.description, MAX_DESCRIPTION) : null,
       plan_id:
         typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
           ? input.planId
