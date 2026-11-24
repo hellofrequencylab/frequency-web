@@ -15,7 +15,7 @@
 // UUID, is plain text, so a pasted lookalike never becomes a reference.
 
 const REFERENCE_KINDS = ['profile', 'plan', 'task', 'entry', 'event', 'deal', 'contact', 'space'] as const
-type ReferenceKind = (typeof REFERENCE_KINDS)[number]
+export type ReferenceKind = (typeof REFERENCE_KINDS)[number]
 
 export interface Reference {
   kind: ReferenceKind
