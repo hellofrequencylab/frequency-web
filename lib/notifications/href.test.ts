@@ -195,4 +195,9 @@ describe('notificationHref', () => {
       }
     }
   })
+  it('opens a tagged Plan through the Spaces hub, which resolves the team (LIVE-2524)', () => {
+    expect(notificationHref(notif({ reference_type: 'plan', reference_id: UUID }))).toBe(`/spaces/operating?plan=${UUID}`)
+    expect(notificationHref(notif({ reference_type: 'plan', reference_id: 'a-slug' }))).toBe('/spaces/operating')
+    expect(notificationHref(notif({ reference_type: 'plan', reference_id: null }))).toBe('/spaces/operating')
+  })
 })
