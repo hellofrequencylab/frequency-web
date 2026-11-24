@@ -27,8 +27,10 @@ import { deleteSharedSection, listSavedSections, saveSharedSection } from '@/lib
 import type { SavedLibrary } from '@/lib/email-studio/saved-sections'
 import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 
-/** The Email Studio keeps saved sections in the shared table (EMAIL-042), so the whole team and every device sees them. */
-const sharedLibrary: SavedLibrary = {
+/** The Email Studio keeps saved sections in the shared table (EMAIL-042), so the whole team and every device sees them.
+ *  STAFF ONLY: its actions are the marketing team's gate. A Space editor must never be handed it (LIVE-2523): the
+ *  list ran on mount, and for a Space owner who is not staff the old redirecting gate threw them off the page. */
+export const SHARED_SAVED_LIBRARY: SavedLibrary = {
   list: () => listSavedSections(),
   save: (input, fallbackName) => saveSharedSection({ ...input, fallbackName }),
   remove: (id) => deleteSharedSection(id),
@@ -122,6 +124,7 @@ export function EmailEditorPane({
   saveCampaign = saveEmailCampaign,
   sendTest = sendTestEmail,
   colors,
+  savedLibrary,
 }: {
   campaign: LoadedEmailCampaign
   /** Bubble a subject edit up so the left rail card relabels live. */
@@ -133,6 +136,10 @@ export function EmailEditorPane({
   sendTest?: (id: string, to?: string) => Promise<ActionResult<{ to: string }>>
   /** Brand palette for the canvas + live preview (spaceEmailColors for a Space). Defaults to DAWN. */
   colors?: EmailColors
+  /** Where "Save section" keeps blocks. Omitted: the team's shared library ONLY on the admin save path (no
+   *  saveCampaign injected); any scoped editor (a Space) keeps them in this browser instead, because the shared
+   *  library is staff-gated (LIVE-2523). The admin Email Studio workspace passes SHARED_SAVED_LIBRARY itself. */
+  savedLibrary?: SavedLibrary
   /** 'stacked' (default): toolbar on top, canvas below, preview toggled beside it. 'trio': a full-width
    *  three-region layout — settings/controls LEFT, the block canvas CENTER, the live preview RIGHT. 'canvas'
    *  (prototype, flag-gated): the on-canvas WYSIWYG editor — block list + core settings LEFT, a live clickable
@@ -143,6 +150,9 @@ export function EmailEditorPane({
   sidebar?: ReactNode
 }) {
   const { id } = campaign
+  // The shared library THIS pane may use: the team's staff-gated one only on the admin save path by default;
+  // undefined for a Space editor, whose saved sections then live in the browser (LIVE-2523).
+  const sharedLibrary = savedLibrary ?? (saveCampaign === saveEmailCampaign ? SHARED_SAVED_LIBRARY : undefined)
   const [subject, setSubject] = useState(campaign.subject)
   const [preheader, setPreheader] = useState(campaign.preheader)
   const [fromName, setFromName] = useState(campaign.fromName ?? '')
