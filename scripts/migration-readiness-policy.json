@@ -5507,7 +5507,7 @@
         {
           "file": "components/mentions/message-text.tsx",
           "status": "added",
-          "sha256": "9ebefc14d1436828b13190728595965092b0826dab8dbdb2dc8cb069d47728e1",
+          "sha256": "a14cb096355275309d81ad72bb6d8aa62fdb683b4906c285d6888d35945c9b6c",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -5521,7 +5521,7 @@
         {
           "file": "docs/ledger/rows/LIVE-2524.json",
           "status": "modified",
-          "sha256": "2eb5e55f7c6d9644a031485d988b641b15b0905fb461f1e634d5412d902fe7ff",
+          "sha256": "3e3c2086fbb7c0a3e046f41b8b45ebb655dd581c9a3575a1ec1c578a65053ff1",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5570,7 +5570,7 @@
         {
           "file": "lib/mentions/references.ts",
           "status": "added",
-          "sha256": "132501eb7aa2b417979864d9df44b5c85432ea9f59a322e0ed28091bc4f2c7a8",
+          "sha256": "921da86493622aa47045eba68e058cac41f812a8b0de3c35aa9bc79d5acb9684",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -5592,6 +5592,13 @@
           "file": "lib/notifications/registry.ts",
           "status": "modified",
           "sha256": "81db4d1916d3ba720043a18d6252ad10a8c562fc01c1650210f63ad3032620df",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "6e439aad0673c03f488f528d9e7adaf813520255d52a9946609f849ceaa1b41b",
           "baseMode": "100644",
           "headMode": "100644"
         },
