@@ -41,7 +41,7 @@ export function LinkCardFor({ url }: { url: string }) {
     >
       {card.kind === 'outside' && card.imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-16 w-16 shrink-0 rounded-sm object-cover" />
+        <img src={card.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-16 w-16 shrink-0 rounded-control object-cover" />
       )}
       <span className="min-w-0">
         <span className="block text-meta text-muted">{card.kind === 'outside' ? card.siteName ?? card.host : card.label}</span>
