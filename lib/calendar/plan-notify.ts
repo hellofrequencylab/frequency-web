@@ -131,6 +131,8 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
   const todo = input.taskId ? await getTaskInPlans(input.taskId, [input.planId]) : null
   const copy = planCommentCopy(author?.name ?? 'Someone on the Plan', input.planTitle, todo?.title ?? null, input.body)
   const tag = `plan-comment:${input.planId}:${input.taskId ?? 'plan'}`
+  // The bell and Inbox row (LIVE-2526): the bell prints the author's name first.
+  const bell = { kind: 'plan_comment' as const, planId: input.planId, actorId: input.actorProfileId, body: todo ? `left a note on "${todo.title}" in "${input.planTitle}"` : `commented on "${input.planTitle}"` }
   const sent = new Set<string>(input.skipProfileIds ?? [])
   for (const spaceId of otherSpaceIds) {
     const space = await getSpaceById(spaceId)
@@ -144,6 +146,7 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
         { profileId, subject: { subjectType: 'space', subjectId: space.id } },
         { ...copy, url: calendarSettingsPath(space.slug), tag },
       )
+      await routeNotification('plan.bell', { profileId, subject: { subjectType: 'space', subjectId: space.id } }, bell)
       out.recipients += 1
       out.enqueued += routed.enqueuedCount
     }
@@ -157,6 +160,7 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
         { profileId: todo.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
         { ...copy, url: calendarSettingsPath(home.slug), tag },
       )
+      await routeNotification('plan.bell', { profileId: todo.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } }, bell)
       out.recipients += 1
       out.enqueued += routed.enqueuedCount
     }
@@ -176,6 +180,12 @@ async function notifyAssign(input: Extract<PlanMomentInput, { event: 'plan.assig
     'plan.assign',
     { profileId: input.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
     { ...copy, url: calendarSettingsPath(home.slug), tag: `plan-assign:${input.planId}` },
+  )
+  // The bell and Inbox row (LIVE-2526): a hand-over is Priority there.
+  await routeNotification(
+    'plan.bell',
+    { profileId: input.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
+    { kind: 'plan_assign', planId: input.planId, actorId: input.actorProfileId, body: `handed you "${input.todoTitle}" on "${input.planTitle}"` },
   )
   out.recipients = 1
   out.enqueued = routed.enqueuedCount

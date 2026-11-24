@@ -46,6 +46,9 @@ export default async function NotificationsPage() {
         </form>
       )}
       <Button asChild variant="ghost" size="sm">
+        <Link href="/inbox">Open Inbox</Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm">
         <Link href="/settings/notifications">Manage</Link>
       </Button>
     </>
