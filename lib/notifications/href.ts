@@ -99,6 +99,10 @@ export function notificationHref(n: NotificationItem): string {
     case 'plan':
       return id && UUID_RE.test(id) ? `/spaces/operating?plan=${id}` : '/spaces/operating'
 
+    // An @ tag in a room message (LIVE-2525): the room, by id.
+    case 'room':
+      return id && UUID_RE.test(id) ? `/messages/r/${id}` : '/messages'
+
     // An inbound reply on the comms spine, by the thread's lane (EMAIL-074, lib/comms/reply-bell.ts).
     // A platform thread is staff work: the Conversation workspace opens it by id.
     case 'conversation':
