@@ -12,7 +12,7 @@ export function MessageText({ body, names }: { body: string; names?: ReadonlyMap
         'text' in part ? (
           <span key={i}>{part.text}</span>
         ) : (
-          <span key={i} className="rounded-sm bg-primary-bg px-1 font-medium text-text" data-mention={part.ref.kind}>
+          <span key={i} className="rounded-control bg-primary-bg px-1 font-medium text-text" data-mention={part.ref.kind}>
             {part.ref.kind === 'profile' ? '@' : '#'}
             {names?.get(part.ref.id) ?? part.ref.label}
           </span>
