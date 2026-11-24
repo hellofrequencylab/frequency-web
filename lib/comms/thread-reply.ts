@@ -20,7 +20,7 @@ import { listSpaceTeam } from '@/lib/spaces/membership'
 
 type Admin = SupabaseClient<Database>
 
-export type ThreadReplyStatus = 'recorded' | 'duplicate' | 'empty' | 'no_notice' | 'not_allowed' | 'error'
+type ThreadReplyStatus = 'recorded' | 'duplicate' | 'empty' | 'no_notice' | 'not_allowed' | 'error'
 
 const MAX_BODY = 4000
 
