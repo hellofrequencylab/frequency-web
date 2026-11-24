@@ -448,6 +448,8 @@ lifecycle_send_log                    internal
 analytics_experiments internal
 analytics_experiment_assignments internal
 tz_zone_lookup internal
+# LIVE-2530: link previews, read by signed-in members, written only by the server (service role).
+link_previews                         authenticated
 
 # LIVE-1179: two-way calendar sync, sealed tokens, owner and admins on the caller session (private.is_space_admin).
 space_calendar_sync_connections       authenticated
