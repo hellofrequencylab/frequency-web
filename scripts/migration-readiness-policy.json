@@ -5362,10 +5362,10 @@
     },
     {
       "pullRequest": 5461,
-      "expiresAt": "2026-11-30T23:59:59Z",
+      "expiresAt": "2026-12-01T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346290000_space_bookings_booker_time_zone.sql",
+          "file": "supabase/migrations/20270346350000_space_bookings_booker_time_zone.sql",
           "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c"
         }
       ],
@@ -5380,7 +5380,7 @@
         {
           "file": "docs/ledger/rows/BOOK-009.json",
           "status": "modified",
-          "sha256": "a89432ec9e37c1d9d73be0dedde7b50e49212fa6561def73d40d83aced32281b",
+          "sha256": "acfd77c476750c9a134329579550398110de47eb86be3008a5c27c2a142c27b7",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5429,12 +5429,12 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "b595acc7b1c90904a66f43aeee40aeaff3e34773f1d921228043a426108950b8",
+          "sha256": "36a7a1aaa823a06e7a28b618344935e60c185cb87013af9e5ee6160780a7ee9a",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346290000_space_bookings_booker_time_zone.sql",
+          "file": "supabase/migrations/20270346350000_space_bookings_booker_time_zone.sql",
           "status": "added",
           "sha256": "ee1140c40c80ef3d0319ea2817d0a6f12cd044f6b6539ae19960f5002ddd835c",
           "baseMode": "000000",
@@ -5726,6 +5726,182 @@
           "file": "supabase/tests/space_calendar_time_votes.test.sql",
           "status": "added",
           "sha256": "4ec6a3e66c53d2c37f606209d46eaf780e6023c892899c9b27a91d7f5f6851af",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
+    },
+    {
+      "pullRequest": 5474,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346310000_hub_item_threads.sql",
+          "sha256": "14e0cad7cd6a03f955854b0ab2fb2d9b85ae44f223e9fae13eaa88c334d87eee"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/events/[slug]/manage/page.tsx",
+          "status": "modified",
+          "sha256": "a3fc96d34f93aa2ad90b64be0e697ab461e63ec820597e43e32d204b4eca6c97",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+          "status": "modified",
+          "sha256": "0435e6e28e794b4ee10081f63775ad085b17d75fddac488cb7a5a88f3d9740ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/threads/item-thread.tsx",
+          "status": "added",
+          "sha256": "db5aabb41d91cfcae65c198724e22c256bffd1e4f22117cc68eec68e357b8be0",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/threads/use-thread-live.ts",
+          "status": "added",
+          "sha256": "9d43a935b36958bf67cfd8c782de3967c3ff835055d4c7d789177af268fa7b9a",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "content/help/connecting/messages.md",
+          "status": "modified",
+          "sha256": "11dd24f275f8e90bf769128ed3bf8741f3eb5047c8e19bd80acd6a9980f9362f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2527.json",
+          "status": "modified",
+          "sha256": "33a22ec1f153ef4ff73b96441da0aadb20298b51a64cdf4bf0f323787f375e49",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2528.json",
+          "status": "modified",
+          "sha256": "4ad400200d7d63cfe7b3ea09ccc31b3e2a298127b70766a3ed18feb0b48f6f96",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "a03981d02f9c2a89b6f68d9b97f6994706bfba45b9c530b0381cb4c6108e311c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/store.ts",
+          "status": "modified",
+          "sha256": "1fe93a19fd320cb2f57d801cc70921faba9005368643e37f143ee0fceba4fd77",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.test.ts",
+          "status": "modified",
+          "sha256": "2dc7a544b79bb71235ae58a1d80cd1d3494f12d7eb96dac6b492a70057feb9ba",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/href.ts",
+          "status": "modified",
+          "sha256": "efb0f35d8699d98a141d44530b7e8dcb0920946dffe1ccb0b5b0f5392656b028",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/registry.ts",
+          "status": "modified",
+          "sha256": "0539bff2d8d97f56d99fc149bba5f59ed8355e5a69fb2fe4bd521bf958ac0252",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/spaces/membership.ts",
+          "status": "modified",
+          "sha256": "8377d4650b37c788be83f32ec0ce68390784e4414592c50ae7f1c48e4e467a22",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/threads/actions.ts",
+          "status": "added",
+          "sha256": "59f62f8b1504aa29b92d870edc5d73094b7971efef5fe84fb131c98398974f19",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/threads/subjects.test.ts",
+          "status": "added",
+          "sha256": "01019ca97a07171d55fb302fc6eb0f45b0cb868738476925f43986f2a4ca60eb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/threads/subjects.ts",
+          "status": "added",
+          "sha256": "7fd904c776f8bd628c594da2c63f1a91f62dd9004ff96a615db29e8d36add1b8",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/threads/team.ts",
+          "status": "added",
+          "sha256": "e878bee26a03e98c287119bc975ed8fc2383efb20e86947b73bcd595a73f34ac",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "modules/crm/components/space-contact-detail.tsx",
+          "status": "modified",
+          "sha256": "6ce0af12870b85acf43228e675c3ef2b305f9c36cc17fe93b5816bc9cf749f85",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "3999d9c5834fceba2462ba0611984586d2bb3d9066de84e9794313a1d94a9c9f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "3048cbf6c6534af33acc5bc59468a2e26c5a16c8774afd71dba28bd60477dea5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346310000_hub_item_threads.sql",
+          "status": "added",
+          "sha256": "14e0cad7cd6a03f955854b0ab2fb2d9b85ae44f223e9fae13eaa88c334d87eee",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_item_threads.test.sql",
+          "status": "added",
+          "sha256": "90d9d93a783c84d0a4daa14d66c3b729604c222c8151146d7d1b2a6788dad761",
           "baseMode": "000000",
           "headMode": "100644"
         }
