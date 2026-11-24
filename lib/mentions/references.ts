@@ -14,7 +14,7 @@
 // The token grammar is closed on purpose: a kind outside REFERENCE_KINDS, or an id that is not a
 // UUID, is plain text, so a pasted lookalike never becomes a reference.
 
-export const REFERENCE_KINDS = ['profile', 'plan', 'task', 'entry', 'event', 'deal', 'contact', 'space'] as const
+const REFERENCE_KINDS = ['profile', 'plan', 'task', 'entry', 'event', 'deal', 'contact', 'space'] as const
 export type ReferenceKind = (typeof REFERENCE_KINDS)[number]
 
 export interface Reference {
@@ -62,7 +62,7 @@ export function referenceToken(kind: ReferenceKind, id: string, label: string): 
   return `${kind === 'profile' ? '@' : '#'}[${clean}](${kind}:${id})`
 }
 
-export type MessagePart = { text: string } | { ref: Reference }
+type MessagePart = { text: string } | { ref: Reference }
 
 /** A message split into plain text and references, for rendering a tag as a chip. */
 export function splitMessage(body: string): MessagePart[] {
