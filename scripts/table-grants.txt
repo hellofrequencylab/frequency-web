@@ -260,6 +260,7 @@ space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
+space_calendar_time_votes            authenticated
 space_calendar_private_feeds         authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
