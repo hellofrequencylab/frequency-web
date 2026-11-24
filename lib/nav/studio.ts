@@ -195,6 +195,10 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'support', href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', icon: 'LifeBuoy', min: 'host', staffDomain: 'members',
     world: 'community', worldLabel: 'Support', worldOrder: 10,
     adminNav: { section: 'operations', heading: 'Platform' } },
+  // Work (LIVE-2534, owner ruling 2026-11-24): the Console rollup of to-dos and live Plans across the
+  // Frequency Space and every Space the viewer runs. Read-only; each row opens its Plan.
+  { id: 'work', href: '/admin/work', label: 'Work', desc: 'Your to-dos and live Plans across Frequency and every Space you run.', icon: 'ListTodo', min: 'janitor',
+    adminNav: { section: 'operations', heading: 'Platform' } },
   { id: 'sms', href: '/admin/sms', label: 'Text messages', desc: 'SMS provisioning status and the operator on/off switch.', icon: 'MessageSquare', min: 'janitor', staffDomain: 'platform',
     adminNav: { section: 'operations', heading: 'Platform' } },
   { id: 'nonprofit-verifications', href: '/admin/nonprofit-verifications', label: 'Non Profit verification', desc: 'Review and approve 501(c)(3) verification requests.', icon: 'BadgeCheck', min: 'janitor',
@@ -579,6 +583,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   {
     href: '/admin/operations', label: 'Platform', min: 'janitor', staffDomain: 'platform',
     groups: [
+      { heading: 'Work', leaves: [{ leaf: 'work' }] },
       { heading: 'Site', leaves: [{ leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'page-layout' }, { leaf: 'appearance' }] },
       { heading: 'Commerce', leaves: [{ leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' }, { leaf: 'marketplace-reviews' }] },
       { heading: 'Accounts', leaves: [{ leaf: 'spaces' }, { leaf: 'roles' }, { leaf: 'sms' }, { leaf: 'nonprofit-verifications' }] },
