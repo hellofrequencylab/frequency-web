@@ -114,6 +114,26 @@ export async function listSpaceMembers(spaceId: string): Promise<SpaceMembership
   }
 }
 
+/** A Space's team as names: the owner and every active member, each with a display name. The
+ *  people an item thread is shared with (LIVE-2527), so the only people @ offers there and the
+ *  only names a thread shows. Service-role read of names only; FAIL-SAFE (empty on any error). */
+export async function listSpaceTeam(spaceId: string): Promise<{ profileId: string; name: string }[]> {
+  try {
+    const admin = createAdminClient()
+    const [{ data: space }, { data: members }] = await Promise.all([
+      admin.from('spaces').select('owner_profile_id').eq('id', spaceId).maybeSingle(),
+      admin.from('space_members').select('profile_id').eq('space_id', spaceId).eq('status', 'active'),
+    ])
+    const ids = [...new Set([space?.owner_profile_id, ...(members ?? []).map((m) => m.profile_id)].filter((v): v is string => !!v))]
+    if (ids.length === 0) return []
+    const { data: profiles } = await admin.from('profiles').select('id, display_name').in('id', ids)
+    const names = new Map((profiles ?? []).map((p) => [p.id, p.display_name?.trim() || 'Someone']))
+    return ids.map((id) => ({ profileId: id, name: names.get(id) ?? 'Someone' }))
+  } catch {
+    return []
+  }
+}
+
 /** Add (or re-activate) a member of a Space at a role. Service-role write, server-mediated (call
  *  behind app-authz). Upserts on the (space_id, profile_id) unique key, so re-adding a person
  *  updates their role/status rather than erroring. Returns the resulting membership, or null on
