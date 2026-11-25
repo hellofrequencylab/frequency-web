@@ -29,6 +29,8 @@ import type { EntryRow } from '@/lib/calendar/entries'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { formatEventWhen } from '@/lib/time/zone'
 import { getSpaceById } from '@/lib/spaces/store'
+import { buildTimeVoteInviteEmail, enqueueEmail } from '@/lib/email'
+import { normalizeVoteEmail, signTimeVoteToken, timeVotePath } from '@/lib/calendar/time-vote-token'
 
 // FIND A TIME (LIVE-2531): the Plan drawer's poll. The Space's team answers each candidate date
 // Yes, If need be or No, and the drawer lists the dates best first. Every read and write runs on the
@@ -262,4 +264,50 @@ export async function addSuggestedTime(
     summary: `Added a date Vera suggested: ${shortDateLabel(day)}.`,
   })
   return ok((await buildView(seat)).view)
+}
+
+// ── ASK SOMEONE OUTSIDE BY EMAIL (EMAIL-092) ────────────────────────────────────────────────────
+// Email is the only outside channel for now (owner ruling 2026-11-24). The team names an address and
+// that person gets a link, good for three weeks, that opens this Plan's candidate dates with no
+// account. Their answers land beside the team's, under their email address.
+
+export async function inviteTimeVoteByEmail(
+  slug: string,
+  planId: string,
+  raw: { email?: unknown; name?: unknown },
+): Promise<ActionResult<{ email: string }>> {
+  const seat = await planSeat(slug, planId)
+  if ('error' in seat) return fail(seat.error)
+  const email = normalizeVoteEmail(raw?.email)
+  if (!email) return fail('That is not an email address.')
+  const name = typeof raw?.name === 'string' ? raw.name.replace(/\s+/g, ' ').trim().slice(0, 80) || null : null
+  const rows = await listPlanTimeOptionRows(seat.spaceId, seat.plan.id)
+  if (rows.length < 2) return fail('Hold at least two dates before you ask anyone to pick.')
+  const token = signTimeVoteToken(seat.plan.id, email)
+  if (!token) return fail('That is not an email address.')
+  const [space, me] = await Promise.all([getSpaceById(seat.spaceId), resolveCommentAuthors([seat.profileId])])
+  try {
+    await enqueueEmail(
+      buildTimeVoteInviteEmail({
+        to: email,
+        recipientName: name,
+        spaceName: space?.name ?? 'A Space on Frequency',
+        planTitle: seat.plan.title,
+        whenLabels: rows.map(optionWhen),
+        votePath: timeVotePath(token),
+        askedBy: me.get(seat.profileId) ?? null,
+      }),
+      { dedupeKey: `time-vote-invite:${seat.plan.id}:${email}:${new Date().toISOString().slice(0, 13)}` },
+    )
+  } catch {
+    return fail('The email could not be sent. Try again in a minute.')
+  }
+  await recordPlanActivity({
+    planId: seat.plan.id,
+    actorProfileId: seat.profileId,
+    actorSpaceId: seat.spaceId,
+    kind: 'field',
+    summary: `Asked ${email} to pick a date.`,
+  })
+  return ok({ email })
 }
