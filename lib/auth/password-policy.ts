@@ -17,7 +17,7 @@
 //
 // Pure: no Next, no Supabase.
 
-/** The floor. Owner's call (card 2026-11-25): 12 recommended. */
+/** The floor. Owner ruling 2026-11-25 (decision card): 12. */
 export const PASSWORD_MIN_LENGTH = 12
 
 /** The ceiling. Supabase hashes with bcrypt, which reads only the first 72 BYTES, so anything longer
