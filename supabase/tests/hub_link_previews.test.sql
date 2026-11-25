@@ -1,4 +1,4 @@
--- pgTAP guard for 20270346320000_hub_link_previews (LIVE-2530): the cache is row-secured, signed-in
+-- pgTAP guard for 20270346470000_hub_link_previews (LIVE-2530): the cache is row-secured, signed-in
 -- members may read it, nobody but the service role may write it, and anon holds no grant.
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
