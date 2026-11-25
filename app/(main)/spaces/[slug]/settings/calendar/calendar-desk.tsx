@@ -1,7 +1,6 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
-import { SpaceTodosPanel } from './space-todos-panel'
 import { SharedPlansPanel } from './shared-plans-panel'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceEventsManager } from './space-events-manager'
@@ -29,7 +28,8 @@ export function CalendarDeskPanels({
   slug,
   spaceId,
   query,
-  todos,
+  todosPanel,
+  openTodos,
   shared,
   plans,
   events,
@@ -41,7 +41,9 @@ export function CalendarDeskPanels({
   spaceId: string
   /** The page's other query params (month, view), kept on every tab link. */
   query: Record<string, string>
-  todos: ComponentProps<typeof SpaceTodosPanel>
+  /** The To-dos tab, built by the page (only when that tab is open) so the panel stays page-mounted. */
+  todosPanel: ReactNode
+  openTodos: number
   shared: ComponentProps<typeof SharedPlansPanel>
   plans: ComponentProps<typeof CalendarPlansPanel>
   events: ComponentProps<typeof SpaceEventsManager>['events']
@@ -59,7 +61,6 @@ export function CalendarDeskPanels({
     const p = new URLSearchParams({ ...query, desk: d })
     return `${base}?${p.toString()}#calendar-desk`
   }
-  const openTodos = todos.tasks.filter((t) => t.status === 'open').length
   const sharedCount = shared.incoming.length + shared.sharedPlans.length
   const tabs = [
     { href: href('todos'), label: 'To-dos', count: openTodos || undefined },
@@ -75,7 +76,7 @@ export function CalendarDeskPanels({
       <UnderlineTabs tabs={tabs} activeHref={href(desk)} label="Calendar desk" />
       {desk === 'todos' ? (
         <div id="calendar-todos">
-          <SpaceTodosPanel {...todos} />
+          {todosPanel}
         </div>
       ) : desk === 'plans' ? (
         <div id="calendar-plans">

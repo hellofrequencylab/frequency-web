@@ -23,6 +23,7 @@ import { listSpacePlans, listRecentlyCancelledPlans, listPlaybooks, listPlanPenc
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
 import { incomingFromRow, type ShareSubject, type SharedPlanView } from '@/lib/calendar/plan-shares'
 import { CalendarDeskPanels, resolveCalendarDesk } from './calendar-desk'
+import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
 import { operatorHorizonWindow } from '@/lib/calendar/month-window'
@@ -53,6 +54,7 @@ export default async function SpaceCalendarConsolePage({
   searchParams: Promise<{ plan?: string | string[]; view?: string | string[]; y?: string | string[]; m?: string | string[]; desk?: string | string[] }>
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
+  const desk = resolveCalendarDesk(firstOf(query.desk), Boolean(firstOf(query.plan)))
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -248,7 +250,7 @@ export default async function SpaceCalendarConsolePage({
 
           <CalendarDeskPanels
             teamTools={canManage}
-            desk={resolveCalendarDesk(firstOf(query.desk), Boolean(firstOf(query.plan)))}
+            desk={desk}
             slug={space.slug}
             spaceId={space.id}
             query={Object.fromEntries(
@@ -257,7 +259,8 @@ export default async function SpaceCalendarConsolePage({
                 return v ? [[k, v]] : []
               }),
             )}
-            todos={{ slug: space.slug, tasks: todos, viewerId: viewerProfileId }}
+            todosPanel={desk === 'todos' ? <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} /> : null}
+            openTodos={todos.filter((t) => t.status === 'open').length}
             shared={{ slug: space.slug, incoming: incomingShares, sharedPlans }}
             plans={{
               slug: space.slug,
