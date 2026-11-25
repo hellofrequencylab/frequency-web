@@ -1,7 +1,7 @@
 import { stageLabel } from './board'
 import { dayLabel } from './days'
 import { KINDS } from './kinds'
-import { SUITE_VIEWS, SUITE_VIEW_LABEL, type SuiteView } from './suite-model'
+import { SUITE_TAB_LABEL, SUITE_VIEWS, viewForTab, type SuiteTab, type SuiteView } from './suite-model'
 import type { PlannerItem, PlannerKind, PlannerPlan } from './types'
 
 // THE COMMAND BAR'S ANSWER LIST (README 4). What a person typed becomes, in this order: a row that
@@ -17,6 +17,14 @@ export const VIEW_KEY: Record<SuiteView, string> = {
   list: 'I',
   board: 'B',
   timeline: 'L',
+}
+
+/** The key that opens each tab. Plans opens on the Board. */
+export const TAB_KEY: Record<SuiteTab, string> = {
+  month: 'M',
+  week: 'W',
+  agenda: 'A',
+  plans: 'B',
 }
 
 export type CommandRow =
@@ -40,8 +48,8 @@ export function commandRows(opts: {
   query: string
   /** The create row, when the words parse into something to add. */
   create: { kind: keyof typeof CREATE_DOT; label: string; meta: string } | null
-  /** The views that draw today. */
-  views: readonly SuiteView[]
+  /** The tabs the calendar offers. */
+  views: readonly SuiteTab[]
   plans: readonly Pick<PlannerPlan, 'id' | 'title' | 'stage'>[]
   items: readonly Pick<PlannerItem, 'id' | 'title' | 'kind' | 'date'>[]
 }): CommandRow[] {
@@ -50,11 +58,11 @@ export function commandRows(opts: {
   if (q.length > 2 && opts.create) {
     rows.push({ id: 'create', type: 'create', label: opts.create.label, meta: opts.create.meta, dot: KINDS[CREATE_DOT[opts.create.kind]].dot })
   }
-  for (const view of SUITE_VIEWS) {
-    if (!opts.views.includes(view)) continue
-    const label = SUITE_VIEW_LABEL[view].toLowerCase()
+  for (const tab of SUITE_VIEWS) {
+    if (!opts.views.includes(tab)) continue
+    const label = SUITE_TAB_LABEL[tab].toLowerCase()
     if (!q || label.startsWith(q) || `go ${label}`.includes(q)) {
-      rows.push({ id: `view:${view}`, type: 'view', view, label: `Open ${SUITE_VIEW_LABEL[view]} view`, meta: `Press ${VIEW_KEY[view]}` })
+      rows.push({ id: `view:${tab}`, type: 'view', view: viewForTab(tab, 'board'), label: `Open ${SUITE_TAB_LABEL[tab]} view`, meta: `Press ${TAB_KEY[tab]}` })
     }
   }
   if (!q || 'today'.startsWith(q)) rows.push({ id: 'today', type: 'today', label: 'Jump to today', meta: 'Press T' })

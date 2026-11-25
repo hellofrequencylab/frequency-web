@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
 import { Input } from '@/components/ui/field'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
-import { VIEW_KEY, commandRows, type CommandRow } from '@/lib/calendar/planner/command-results'
+import { TAB_KEY, commandRows, type CommandRow } from '@/lib/calendar/planner/command-results'
 import { parseCommand } from '@/lib/calendar/planner/command-parse'
-import type { SuiteView } from '@/lib/calendar/planner/suite-model'
+import type { SuiteTab } from '@/lib/calendar/planner/suite-model'
 import type { PlannerItem, PlannerPlan } from '@/lib/calendar/planner/types'
 
 // THE COMMAND BAR (README 4). Say it the way you would to a teammate: "Pencil supper club next fri
@@ -34,7 +34,7 @@ export function SuiteCommand({
 }: {
   today: string
   timeZone: string
-  views: readonly SuiteView[]
+  views: readonly SuiteTab[]
   plans: readonly Pick<PlannerPlan, 'id' | 'title' | 'stage'>[]
   items: readonly Pick<PlannerItem, 'id' | 'title' | 'kind' | 'date'>[]
   /** Runs a row. A create row comes with what was parsed. Returns a sentence when it failed. */
@@ -204,7 +204,7 @@ export function SuiteCommand({
             <kbd className="cal-kbd">P</kbd> pencil it in
           </span>
           <span>
-            <kbd className="cal-kbd">{views.map((v) => VIEW_KEY[v]).join(' ')}</kbd> views
+            <kbd className="cal-kbd">{views.map((v) => TAB_KEY[v]).join(' ')}</kbd> views
           </span>
           <span>
             <kbd className="cal-kbd">T</kbd> today

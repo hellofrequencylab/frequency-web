@@ -2,12 +2,30 @@ import { isShared } from './day-items'
 import { KINDS } from './kinds'
 import type { PlannerData, PlannerLayer } from './types'
 
-// THE CALENDAR SUITE'S OWN STATE VOCABULARY: the seven views and the key that opens each, the six Show
-// tiles, the count each tile carries, and the remembered view. Pure. The shell reads it; nothing in
-// here touches the DOM.
+// THE CALENDAR SUITE'S OWN STATE VOCABULARY: the four view tabs, the seven ways the calendar draws and
+// the key that opens each, the six Show tiles, the count each tile carries, and the remembered view.
+// Pure. The shell reads it; nothing in here touches the DOM.
 
-export const SUITE_VIEWS = ['day', 'week', 'month', 'agenda', 'list', 'board', 'timeline'] as const
-export type SuiteView = (typeof SUITE_VIEWS)[number]
+/** Every way the calendar draws. Day opens by tapping a date; List, Board and Timeline are the
+ *  Plans tab's three layouts, a sort of the same Plans rather than separate views (SCAN-1349). */
+export type SuiteView = 'day' | 'week' | 'month' | 'agenda' | 'list' | 'board' | 'timeline'
+const ALL_VIEWS: readonly SuiteView[] = ['day', 'week', 'month', 'agenda', 'list', 'board', 'timeline']
+
+/** The four tabs the calendar header offers (SCAN-1349): seven did not fit one row on a phone, and
+ *  three of them all showed every Plan. */
+export const SUITE_VIEWS = ['month', 'week', 'agenda', 'plans'] as const
+export type SuiteTab = (typeof SUITE_VIEWS)[number]
+
+export const SUITE_TAB_LABEL: Record<SuiteTab, string> = {
+  month: 'Month',
+  week: 'Week',
+  agenda: 'Agenda',
+  plans: 'Plans',
+}
+
+/** The Plans tab's layouts, in the order its sort control prints them. */
+export const PLAN_LAYOUTS = ['board', 'list', 'timeline'] as const
+export type PlanLayout = (typeof PLAN_LAYOUTS)[number]
 
 export const SUITE_VIEW_LABEL: Record<SuiteView, string> = {
   day: 'Day',
@@ -15,14 +33,25 @@ export const SUITE_VIEW_LABEL: Record<SuiteView, string> = {
   month: 'Month',
   agenda: 'Agenda',
   list: 'List',
-  board: 'Kanban',
+  board: 'Board',
   timeline: 'Timeline',
 }
 
-/** The views that show every Plan rather than a stretch of time: List, Kanban and Timeline. They have
+/** The views that show every Plan rather than a stretch of time: List, Board and Timeline. They have
  *  no month to page through, so they print their own title and carry no paging. */
-export function isPlanView(view: SuiteView): boolean {
+export function isPlanView(view: SuiteView): view is PlanLayout {
   return view === 'list' || view === 'board' || view === 'timeline'
+}
+
+/** The tab a view sits under. A day is a closer look at its week. */
+export function tabOf(view: SuiteView): SuiteTab {
+  if (isPlanView(view)) return 'plans'
+  return view === 'day' ? 'week' : view
+}
+
+/** The view a tab opens: Plans opens the layout used last. */
+export function viewForTab(tab: SuiteTab, layout: PlanLayout): SuiteView {
+  return tab === 'plans' ? layout : tab
 }
 
 const KEY_VIEW: Record<string, SuiteView> = {
@@ -35,20 +64,20 @@ const KEY_VIEW: Record<string, SuiteView> = {
   l: 'timeline',
 }
 
-/** The cookie word for a view. Kanban is the board the old Workflow tab remembered, so it keeps that
- *  word and a Space that last left Workflow open comes back on Kanban. */
+/** The cookie word for a view. The Board is what the old Workflow tab remembered, so it keeps that
+ *  word and a Space that last left Workflow open comes back on the Board. */
 export function viewCookieValue(view: SuiteView): string {
   return view === 'board' ? 'workflow' : view
 }
 
 /** A remembered view, from the cookie or the link. Reads the old tab words too (Calendar is Month,
- *  Workflow is Kanban); Guest was never an operator view, so it is nothing here. */
+ *  Workflow is the Board, Plans opens the Board); Guest was never an operator view, so it is nothing here. */
 export function parseSuiteView(raw: string | string[] | null | undefined): SuiteView | null {
   const value = Array.isArray(raw) ? raw[0] : raw
   if (!value) return null
   if (value === 'admin') return 'month'
-  if (value === 'workflow' || value === 'board') return 'board'
-  return (SUITE_VIEWS as readonly string[]).includes(value) ? (value as SuiteView) : null
+  if (value === 'workflow' || value === 'board' || value === 'plans') return 'board'
+  return (ALL_VIEWS as readonly string[]).includes(value) ? (value as SuiteView) : null
 }
 
 /** What opens first: the link, else the remembered view, else Month (Agenda under 720px). */
