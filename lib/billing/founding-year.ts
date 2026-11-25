@@ -41,6 +41,9 @@ export const FOUNDING_YEAR = {
   /** The numbered Founder seats (owner 2026-11-23: "150, numbered and visible"). Once they are taken the
    *  Founding Year stops selling and yearly is the plan's ordinary yearly price (LIVE-2542). */
   seatCap: 150,
+  /** The Founder fee perk (owner 2026-11-23): no finder's fee on anyone through January 31, 2028. It
+   *  replaces the old 3% buy-down promise. Midnight Pacific February 1, 2028 (LIVE-2543). */
+  noFindersFeeUntil: '2028-02-01T08:00:00.000Z',
 } as const
 
 /** The metadata key a Founding Year session and its subscription carry. */
@@ -95,7 +98,7 @@ export function isFoundingYearMetadata(meta: Record<string, string> | null | und
 /** The plain sentence beside a Founding Year price. PURE. */
 export function foundingYearNote(plan: FoundingYearPlan): string {
   const renew = FOUNDING_YEAR.renewalCents[plan] / 100
-  return `Founding Year, paid today. Your paid year runs ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}, then renews at $${renew} a year. No trial, nothing more until then.`
+  return `Founding Year, paid today. Your paid year runs ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}, then renews at $${renew} a year. No trial, and no finder's fee on any sale through ${FOUNDING_YEAR.yearEndsLabel}.`
 }
 
 // ── FOUNDER SEATS (LIVE-2542) ─────────────────────────────────────────────────────────────────────────
@@ -127,4 +130,14 @@ export function numberFounderSeats(rows: readonly FounderSeatRow[]): Map<string,
 /** Seats left of the 150, never below zero. PURE. */
 export function founderSeatsLeft(taken: number): number {
   return Math.max(0, FOUNDING_YEAR.seatCap - Math.max(0, Math.trunc(taken)))
+}
+
+// ── THE FOUNDER FEE PERK (LIVE-2543) ─────────────────────────────────────────────────────────────────
+
+/** Does a Space's sale skip the finder's fee because the Space is a Founder? True for an ACTIVE founder
+ *  row that holds a paid Founding Year, until the perk ends. A lapsed Founder pays the ordinary fee. PURE. */
+export function founderPaysNoFindersFee(input: { active: boolean; hasFoundingYear: boolean; now?: Date }): boolean {
+  if (!input.active || !input.hasFoundingYear) return false
+  const until = Date.parse(FOUNDING_YEAR.noFindersFeeUntil)
+  return Number.isFinite(until) && (input.now ?? new Date()).getTime() < until
 }

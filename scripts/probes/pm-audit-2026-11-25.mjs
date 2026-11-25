@@ -28,11 +28,15 @@ const PROBES = {
     return f
   },
   // The Space Calendar console is one workspace: the panels stacked under the calendar move into it.
+  // SpaceTodosPanel may still be written in page.tsx (HYG-117's probe requires it there), but only as
+  // the To-dos tab handed to the desk, never stacked beside the other panels.
   'SCAN-1341': () => {
     const page = code(CAL_PAGE)
-    return ['CalendarPlansPanel', 'SpaceTodosPanel', 'SharedPlansPanel', 'SpaceEventsManager', 'EventShareApprovals']
+    const f = ['CalendarPlansPanel', 'SharedPlansPanel', 'SpaceEventsManager', 'EventShareApprovals']
       .filter((c) => new RegExp(`<${c}\\b`).test(page))
       .map((c) => `the Calendar console still stacks <${c}> under the calendar`)
+    if (!/<CalendarDeskPanels\b/.test(page)) f.push('the Calendar console has no one-panel-at-a-time desk under the calendar')
+    return f
   },
   // The Plan pop-up is split into tabs, names the owner, and only says Production at Production.
   'SCAN-1342': () => {
@@ -67,7 +71,12 @@ const PROBES = {
   // CRM Tasks folds into Work.
   'SCAN-1346': () => {
     const f = []
-    if (!/redirect\(\s*'\/admin\/work'/.test(code('app/(main)/admin/crm/tasks/page.tsx'))) f.push('/admin/crm/tasks still lists the same to-dos as Work')
+    // A redirect page or a next.config redirect both count (HYG-043 prefers next.config for a static one).
+    const page = 'app/(main)/admin/crm/tasks/page.tsx'
+    const redirected = has(page)
+      ? /redirect\(\s*'\/admin\/work'/.test(code(page))
+      : /source:\s*'\/admin\/crm\/tasks',\s*destination:\s*'\/admin\/work'/.test(code('next.config.ts'))
+    if (!redirected) f.push('/admin/crm/tasks still lists the same to-dos as Work')
     if (/id:\s*'crm-tasks'/.test(code('lib/nav/studio.ts'))) f.push('the Console menu still carries a CRM Tasks row beside Work')
     return f
   },

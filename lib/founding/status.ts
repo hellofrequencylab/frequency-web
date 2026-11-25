@@ -46,6 +46,8 @@ interface FoundingRecord {
   reservedAt: string
   chargedAt: string | null
   cardOnFile: boolean
+  /** The row carries a paid Founding Year (`meta.founding_year`, LIVE-2541): a Founder seat holder. */
+  foundingYear: boolean
 }
 
 // ── The loose service-role handle for founding_members (untyped-admin idiom) ──────────────
@@ -82,6 +84,7 @@ function toRecord(r: Row): FoundingRecord {
     reservedAt: String(r.reserved_at ?? ''),
     chargedAt: (r.charged_at as string | null) ?? null,
     cardOnFile: r.card_on_file === true,
+    foundingYear: Boolean(((r.meta ?? {}) as { founding_year?: unknown }).founding_year),
   }
 }
 

@@ -27,6 +27,7 @@ import { headerFingerprint } from './map'
 import { planCommit, emailKey, phoneKey, type ProjectedContact, type ExistingKeys } from './dedupe'
 import type { ContactImportRow, CommitResult, ValueType } from './types'
 import type { ContactDetails, ContactOtherDetail } from '@/lib/connections/types'
+import { CONSENT_WORDING, recordContactConsent } from '@/lib/email-studio/consent'
 
 const empty = (v: string | null | undefined) => !((v ?? '').trim())
 
@@ -351,7 +352,10 @@ async function commitToSpace(
       try {
         // A lead, never auto-subscribed (ADR-099), unless the owner confirmed this list (LIVE-2312).
         const confirmed = attestedConsent(null, attestation)
+        // The id is minted here so a confirmed contact's permission record (EMAIL-085) can point at it.
+        const newId = confirmed ? crypto.randomUUID() : undefined
         const { error } = await db.from('contacts').insert({
+          ...(newId ? { id: newId } : {}),
           space_id: spaceId,
           email: ek,
           display_name: c.displayName || null,
@@ -367,6 +371,8 @@ async function commitToSpace(
         else {
           created++
           if (confirmed) subscribed++
+          // EMAIL-085: the owner's attestation is this contact's permission record.
+          if (confirmed && newId) await recordImportConsent(newId, spaceId, confirmed.consent_attestation)
           emails.add(ek)
           if (headroom !== null) headroom--
         }
@@ -405,6 +411,7 @@ async function commitToSpace(
         else {
           merged++
           if (confirmed) subscribed++
+          if (confirmed) await recordImportConsent(id, spaceId, confirmed.consent_attestation)
         }
       } catch {
         failed++
@@ -421,6 +428,18 @@ async function commitToSpace(
     ...(overAllowance > 0 ? { overAllowance } : {}),
     ...(subscribed > 0 ? { subscribed } : {}),
   }
+}
+
+/** EMAIL-085: store the import attestation as a contact_consents row (best-effort, never throws). */
+function recordImportConsent(contactId: string, spaceId: string, att: ConsentAttestation): Promise<boolean> {
+  return recordContactConsent({
+    contactId,
+    spaceId,
+    source: 'import_attestation',
+    formKey: 'contact_import',
+    wording: `${CONSENT_WORDING.import_attestation} Confirmed by ${att.by} on ${att.at}${att.file ? `, file ${att.file}` : ''}, import ${att.import}.`,
+    capturedAt: att.at,
+  })
 }
 
 /** Merge two meta objects per strategy: overwrite = incoming wins; fill_empty = only add
