@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-2534",
+  "title": "The Console has one Work page that rolls up to-dos and live Plans across the Frequency Space and every Space you run",
+  "status": "done",
+  "lane": "live",
+  "size": "S",
+  "priority": "P1",
+  "source": {
+    "file": "app/(main)/admin/work/page.tsx",
+    "ref": "Owner ruling 2026-11-24 22:48Z on the hub thread: 'Frequency Space + Console rollup'"
+  },
+  "detail": "Daniel asked for a more robust project manager in the Console and picked 'Frequency Space + Console rollup' on a decision card (2026-11-24). Frequency's own planning lives in the Frequency root Space like any Space's (Plans, to-dos, team room, @ and # tags); the Console gets one read-only page at /admin/work (Platform > Work) that rolls up the viewer's open to-dos (overdue first), unclaimed to-dos and live Plans (production, plan, pencil) from the root Space plus every Space they own or admin. Each row opens the Plan in its Space's calendar. No second task store: the rows are space_plans and crm_tasks. The pure shaping is lib/work/rollup-core.ts (tested); the reads are lib/work/rollup.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/live-2534-console-work.mjs",
+    "note": "Passes when the page reads the rollup, the rollup includes the root Space and operated Spaces, and the Work leaf sits in the Platform menu."
+  }
+}
