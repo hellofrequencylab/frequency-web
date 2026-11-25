@@ -5429,7 +5429,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "5eeb0e70f58ab322a68078138e1c6ff9d59a9d2b67705769ea85f174f71dabc9",
+          "sha256": "72e8baca077d13b710e6f13bd5f317224b907143e5694af1481800458b2a1844",
           "baseMode": "100644",
           "headMode": "100644"
         },
