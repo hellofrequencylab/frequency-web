@@ -89,3 +89,7 @@ export async function offerBarState(
   if (offer.status === 'expired' || !operatesSpaces) return null
   return (await (dueP ?? offerIsDue(profileId))) ? { endsAtMs: null, pending: true } : null
 }
+
+// The public seat count the offer page shows beside the plans (LIVE-2542). Re-exported here so the offer
+// page reads everything about the offer from its one server module.
+export { founderSeatsTaken, founderSeatFor } from '@/lib/billing/founder-seats'
