@@ -106,6 +106,7 @@ async function getCallbackUrl() {
   return `${origin}/auth/callback`
 }
 
+// authz-ok: the public front door: signing in is what an unauthenticated caller does here; throttled per IP and per mailbox (LIVE-043). The admin reach is the post-sign-in step (SEC-045), which runs only for the verified session.
 export async function signInWithMagicLink(formData: FormData) {
   const email = formData.get('email') as string
   const ip = await callerIp()
@@ -177,6 +178,7 @@ export async function signInWithMagicLink(formData: FormData) {
  * the visitor on the page for the photo-and-location step while it travels. Errors are our own
  * sentences (./errors.ts), never Supabase's.
  */
+// authz-ok: the public front door (signup send); throttled per IP and per mailbox like signInWithMagicLink.
 export async function sendSignupLink(formData: FormData): Promise<{ ok: true } | { ok: false; error: string }> {
   const email = String(formData.get('email') ?? '').trim()
   const mailbox = email.toLowerCase()
@@ -208,6 +210,7 @@ function isNoAccountError(error: { code?: string; message?: string }): boolean {
   return error.code === 'otp_disabled' || /signups not allowed/i.test(error.message ?? '')
 }
 
+// authz-ok: the public front door (OAuth hand-off); throttled per IP. It creates no session itself; the callback does.
 export async function signInWithGoogle(formData: FormData) {
   // IP only: the address is not known until Google hands it back, so there is no mailbox to
   // bucket by. A looser ceiling than the magic link's, because this path sends no mail of ours
@@ -275,6 +278,7 @@ function field(formData: FormData, name: string): string {
   return typeof v === 'string' ? v : ''
 }
 
+// authz-ok: the public front door: Supabase verifies the password, and finishSignIn (the admin reach) runs only after that, as the signed-in caller. Throttled per IP and per mailbox (SEC-045).
 export async function signInWithPassword(formData: FormData) {
   const email = field(formData, 'email').trim()
   const password = field(formData, 'password')
@@ -313,6 +317,7 @@ export async function signInWithPassword(formData: FormData) {
   redirect(destination)
 }
 
+// authz-ok: the public front door (sign-up): no session until the mailbox confirms. Throttled per IP and per mailbox (SEC-045).
 export async function signUpWithPassword(formData: FormData) {
   const email = field(formData, 'email').trim()
   const password = field(formData, 'password')
@@ -355,6 +360,7 @@ export async function signUpWithPassword(formData: FormData) {
   redirect('/sign-in/confirm?sent=signup')
 }
 
+// authz-ok: the public front door (reset email): the link goes only to the mailbox itself, and the answer never says whether it has an account. Throttled per IP and per mailbox (SEC-045).
 export async function requestPasswordReset(formData: FormData) {
   const email = field(formData, 'email').trim()
   const mailbox = email.toLowerCase()
