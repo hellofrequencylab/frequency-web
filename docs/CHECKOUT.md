@@ -333,6 +333,14 @@ module; a creator asks it and never restates the number.
   nothing (LIVE-2450). The opt-in for shop, membership and donation sales is LIVE-2472 (open).
 - **Donations carry no finder's fee.** `DONATION_FINDERS_FEE_CENTS` is 0 whoever the donor is
   (LIVE-2449); the card fee still passes through from the date.
+- **The Founding Year is paid now, never a trial.** Yearly Business ($441) or Collective ($990) bought
+  before February 1, 2027 by a Space with no locked price is the Founding Year (owner, 2026-11-23,
+  LIVE-2541). `lib/billing/founding-year.ts` holds the prices and the paid year (Feb 1, 2027 to Jan 31,
+  2028). The session charges a one-time Founding Year line today and holds the plan's yearly price with
+  `trial_end` on February 1, 2028, so Stripe files it `trialing`; `metadata.founding_year = 'prepay'` is
+  how the receipt, the trial-ending notice and the Founder record tell it from a real trial. The Founder
+  row is written from the paid session (`lib/billing/founding-year-record.ts`), never from the held
+  subscription.
 - **The server decides what is paid, never the browser.** The free door of a paid thing refuses on
   its own: `createBooking` refuses a service with a linked product while `bookingDepositsLive()` is
   true (SEC-029), `joinTier` refuses a paid membership tier while billing is live (SEC-028), and the
