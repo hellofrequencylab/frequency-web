@@ -59,6 +59,7 @@ import { notifyTrialEnding } from '@/lib/billing/trial-ending-notify'
 import { reconcileBundleSubscription } from '@/lib/billing/bundle-seats'
 import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
+import { recordFoundingYearFromSession } from '@/lib/billing/founding-year-record'
 import { lapseFoundingStatus } from '@/lib/founding/status'
 import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession, abandonTipFromSession, recordTipRefundFromCharge } from '@/lib/billing/tips'
@@ -217,6 +218,8 @@ export async function POST(req: Request) {
     // LIVE-781: a Space buying a domain. Only after the payment is confirmed does it buy at Vercel, and
     // it claims its `pending` row once, so a redelivery or the on-page settle cannot buy twice.
     await recordDomainPurchaseFromSession(s)
+    // LIVE-2541: a paid Founding Year marks the Space's Founder row. It no-ops on any other session.
+    await recordFoundingYearFromSession(s)
     // LIVE-348: the conversion. Recorded here, not on the buy click, because checkout
     // settles on Stripe (or an Elements form that never navigates). Idempotent per
     // session id so completed + async_payment_succeeded cannot double-count.

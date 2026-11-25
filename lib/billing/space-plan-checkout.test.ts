@@ -50,6 +50,7 @@ vi.mock('./stripe', () => ({
   stripeAccountId: () => Promise.resolve('acct_test'),
   appUrl: () => 'https://frequencylocal.com',
   stripe: {
+    prices: { retrieve: (id: string) => Promise.resolve({ id, unit_amount: 20000, currency: 'usd', nickname: 'Vera AI' }) },
     checkout: {
       sessions: {
         create: (args: {
@@ -134,9 +135,14 @@ vi.mock('@/lib/spaces/nonprofit-verification', () => ({
   getSpaceVerification: () => Promise.resolve(verification.status ? { status: verification.status } : null),
 }))
 
+// LIVE-2542: the Founder seats taken, controllable per test (0 by default).
+const seats = vi.hoisted(() => ({ taken: 0 as number | null }))
+vi.mock('./founder-seats', () => ({ founderSeatsTaken: () => Promise.resolve(seats.taken) }))
+
 import { createSpaceLoadoutCheckout } from './space-plan-checkout'
 
-const prices = () => created.at(-1)!.line_items.map((l) => l.price)
+// The RECURRING catalog lines only: a Founding Year session adds a one-time `price_data` line (LIVE-2541).
+const prices = () => created.at(-1)!.line_items.filter((l) => l.price).map((l) => l.price)
 
 beforeEach(() => {
   created.length = 0
@@ -332,5 +338,81 @@ describe('the Network checkout bills nonprofit_network only for a verified 501(c
     expect(prices()).toEqual(['price_collective_base_month'])
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month'])
+  })
+})
+
+// LIVE-2541 — THE FOUNDING YEAR (owner 2026-11-23): Business $441 and Collective $990, paid now, for the
+// year February 1, 2027 to January 31, 2028, with no 14-day trial.
+describe('the Founding Year checkout', () => {
+  const NOW = new Date('2026-12-01T18:00:00Z')
+  beforeEach(() => {
+    beta.active = false
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+  })
+  const last = () => created.at(-1)! as unknown as {
+    line_items: { price?: string; quantity: number; price_data?: { unit_amount: number; product_data: { name: string } } }[]
+    metadata: Record<string, string>
+    subscription_data: { metadata: Record<string, string>; trial_period_days?: number; trial_end?: number }
+    allow_promotion_codes?: boolean
+  }
+
+  it('charges Business $441 today, holds the $490 yearly price to February 1, 2028, and adds no trial', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    const s = last()
+    const oneTime = s.line_items.filter((l) => l.price_data)
+    expect(oneTime.map((l) => l.price_data!.unit_amount)).toEqual([44100])
+    expect(oneTime[0]!.price_data!.product_data.name).toContain('February 1, 2027 to January 31, 2028')
+    expect(prices()).toEqual(['price_business_base_year_list'])
+    expect(s.subscription_data.trial_period_days).toBeUndefined()
+    expect(s.subscription_data.trial_end).toBe(Date.parse('2028-02-01T08:00:00.000Z') / 1000)
+    expect(s.metadata.founding_year).toBe('prepay')
+    expect(s.subscription_data.metadata.founding_year).toBe('prepay')
+    expect(s.allow_promotion_codes).toBeUndefined()
+    vi.useRealTimers()
+  })
+
+  it('charges Collective $990 today and keeps its Founding yearly price for the renewal', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
+    const s = last()
+    expect(s.line_items.filter((l) => l.price_data).map((l) => l.price_data!.unit_amount)).toEqual([99000])
+    expect(prices()).toEqual(['price_collective_base_year'])
+    vi.useRealTimers()
+  })
+
+  it('pays an add-on for the same year instead of holding it free', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year', addons: ['ai'] })
+    expect(last().line_items.filter((l) => l.price_data).map((l) => l.price_data!.unit_amount)).toEqual([44100, 20000])
+    vi.useRealTimers()
+  })
+
+  it('stops selling once the 150 Founder seats are taken, and keeps selling on an unreadable count (LIVE-2542)', async () => {
+    seats.taken = 150
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBeUndefined()
+    expect(prices()).toEqual(['price_business_base_year_list'])
+    seats.taken = 149
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBe('prepay')
+    seats.taken = null
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBe('prepay')
+    seats.taken = 0
+    vi.useRealTimers()
+  })
+
+  it('is not sold monthly, to a Space with a locked price, or once the paid year has started', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
+    expect(last().metadata.founding_year).toBeUndefined()
+    expect(last().subscription_data.trial_period_days).toBe(14)
+    lock.priceId = 'price_locked'
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBeUndefined()
+    lock.priceId = null
+    vi.setSystemTime(new Date('2027-02-01T08:00:00.000Z'))
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBeUndefined()
+    expect(last().line_items.some((l) => l.price_data)).toBe(false)
+    vi.useRealTimers()
   })
 })

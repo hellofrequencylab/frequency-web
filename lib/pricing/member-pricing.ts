@@ -11,6 +11,7 @@
 // the client box (components/pricing/member-pricing-box.tsx) only draws what it is given. Copy follows
 // docs/CONTENT-VOICE.md: plain, no em dashes, and no "0%" or "no fee" without "plus card processing".
 
+import { foundingYearCents, foundingYearNote, foundingYearOpen } from '@/lib/billing/founding-year'
 import { NETWORK_PLAN, SPACE_PLAN_LABEL } from './plans'
 import { SPACE_PLAN_PRICE_CENTS, spacePlanPriceCents } from './feature-tiers'
 import { PLACEHOLDER_METER_LIMITS } from './meter-limits'
@@ -51,6 +52,9 @@ export interface PricingTier {
   listYearlyCents: number | null
   /** A one-sentence note under the price, per interval. */
   note: { month: string; year: string }
+  /** The Founding Year (LIVE-2541): yearly is paid today for February 1, 2027 to January 31, 2028, with no
+   *  trial. Set on Business and Collective while it can be bought; absent everywhere else. */
+  foundingYear?: { cents: number } | null
 }
 
 interface PricingCrew {
@@ -78,6 +82,8 @@ interface PricingBoxInput {
   takeRate: NetworkTakeRate
   /** Today's date, so a Founding note closes on time. */
   now?: Date
+  /** Founder seats left of the 150 (LIVE-2542); null or absent when the count is unknown. */
+  founderSeatsLeft?: number | null
 }
 
 const YES = '✓'
@@ -258,6 +264,10 @@ export function buildPricingBox(input: PricingBoxInput): PricingBoxData {
       ? `Beta pricing, ${dollars(colList)} a month at list. Offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}, and the price is yours for as long as you keep the plan. `
       : ''
 
+  // Open while it can be bought and a Founder seat is left (LIVE-2542). An unknown count keeps it open,
+  // the same way the checkout does.
+  const fyOpen = foundingYearOpen(now) && (input.founderSeatsLeft == null || input.founderSeatsLeft > 0)
+
   const netFounding = networkFoundingOpen(now)
     ? ` First-year Founding offer: ${NETWORK_PLAN.foundingYearMonths} months instead of ten, through ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`
     : ''
@@ -285,6 +295,15 @@ export function buildPricingBox(input: PricingBoxInput): PricingBoxData {
       nonprofitMonthlyCents: bizNp,
       nonprofitYearlyCents: yearlyFromMonthly(bizNp),
       note: paidNote,
+      // The Founding Year (LIVE-2541): nine months of the monthly price, paid today, for the year from February 1.
+      ...(fyOpen
+        ? {
+            yearlyCents: foundingYearCents('business'),
+            listYearlyCents: yearlyFromMonthly(bizNow),
+            note: { month: monthNote, year: foundingYearNote('business') },
+            foundingYear: { cents: foundingYearCents('business') },
+          }
+        : {}),
     }),
     tier('collective', 'Space', SPACE_PLAN_LABEL.collective, c.collective, {
       monthlyCents: colNow,
@@ -292,7 +311,8 @@ export function buildPricingBox(input: PricingBoxInput): PricingBoxData {
       listYearlyCents: colList > colNow ? yearlyFromMonthly(colList) : null,
       nonprofitMonthlyCents: colNp,
       nonprofitYearlyCents: yearlyFromMonthly(colNp),
-      note: { month: `${founding}${monthNote}`, year: `${founding}${yearNote}` },
+      note: { month: `${founding}${monthNote}`, year: fyOpen ? foundingYearNote('collective') : `${founding}${yearNote}` },
+      ...(fyOpen ? { yearlyCents: foundingYearCents('collective'), foundingYear: { cents: foundingYearCents('collective') } } : {}),
     }),
     tier('network', 'Space', SPACE_PLAN_LABEL.network, c.network, {
       from: true,
