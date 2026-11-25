@@ -8,6 +8,7 @@ import { TIME_VOTE_CHOICES, TIME_VOTE_WORDS, tallyLine, type TimeVoteChoice } fr
 import {
   addSuggestedTime,
   castTimeVote,
+  confirmPlanTime,
   inviteTimeVoteByEmail,
   loadFindATime,
   suggestPlanTimes,
@@ -30,6 +31,8 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
   // ASK SOMEONE OUTSIDE (EMAIL-092): an address, and what the last invite did.
   const [inviteEmail, setInviteEmail] = useState('')
   const [invited, setInvited] = useState<string | null>(null)
+  // CONFIRM (EMAIL-093): what the confirm did, once it has.
+  const [confirmed, setConfirmed] = useState<string | null>(null)
 
   useEffect(() => {
     let live = true
@@ -48,8 +51,30 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
   }, [slug, planId])
 
   if (!view) return error ? <p className="text-meta text-danger">{error}</p> : null
+  if (confirmed && view.options.length < 2) {
+    return (
+      <div className="grid gap-1" data-find-a-time>
+        <p className="font-medium">Find a time</p>
+        <p className="text-meta text-muted" role="status">
+          {confirmed}
+        </p>
+      </div>
+    )
+  }
   // A Plan with one date (or none) has nothing to vote between yet; Vera can still offer times.
   const polling = view.options.length >= 2
+
+  const confirm = (entryId: string) => {
+    setError(null)
+    start(async () => {
+      const res = await confirmPlanTime(slug, planId, entryId)
+      if (isError(res)) setError(res.error)
+      else {
+        setView(res.data.view)
+        setConfirmed(res.data.note)
+      }
+    })
+  }
 
   const invite = () => {
     if (!inviteEmail.trim()) return
@@ -131,10 +156,17 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
                 ))}
               </span>
             </div>
-            <p className="mt-1 text-meta text-muted" title={describeNames(o.names)}>
-              {tallyLine(o)}
-              {o.requiredNo ? ' · the Plan lead cannot make it' : ''}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-meta text-muted" title={describeNames(o.names)}>
+                {tallyLine(o)}
+                {o.requiredNo ? ' · the Plan lead cannot make it' : ''}
+              </p>
+              {o.answered > 0 && (
+                <Button type="button" size="sm" variant={o.best ? 'secondary' : 'ghost'} disabled={pending} onClick={() => confirm(o.entryId)}>
+                  Confirm this date
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>

@@ -6029,6 +6029,147 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5476,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346470000_hub_link_previews.sql",
+          "sha256": "1727190a3e9cf6cb7d3e6319fc9e437493e00118882c2e924e198a2944fef15b"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/messages/actions.ts",
+          "status": "modified",
+          "sha256": "d4846066c47df08d9ca3dc558916db3f53a16a53e235cdd422cc15bc285475f5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/messages/rooms/actions.ts",
+          "status": "modified",
+          "sha256": "b5290bd5e6e31353163a5457ae2ef824d4ce732f71aacbc89388dd6d9d995bad",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/frequency/members/messages/dm-thread.tsx",
+          "status": "modified",
+          "sha256": "a9caebc6c9e0f2ccafdb38b4b7a31c0907eb69173f4a21984f2ad8ffeb595ece",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/mentions/link-preview.tsx",
+          "status": "added",
+          "sha256": "69ae6dbadfd7439e35b31ddedc3296a9aba3d3857322a4a9808995cd2df163b6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/rooms/room-thread.tsx",
+          "status": "modified",
+          "sha256": "0ffd933b08a552ca1ad8bbedd59f4148546828bf8d32531db7199e19f5ed91a9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "content/help/connecting/messages.md",
+          "status": "modified",
+          "sha256": "a3e5c9468712d8a3c02446f4ba5fa8b611339ee182d7453beed9bda00099529a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2530.json",
+          "status": "modified",
+          "sha256": "06e621b87793cb55abc74e06ced6c088097aa765f99adb17f37a5a511c2b6a99",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "9e211227d00035cd26a03e60669d0e5b09792738e75ccd72cc309068da32337a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/actions.ts",
+          "status": "added",
+          "sha256": "a6de4471f524384c8b0c8caa85e18bb3d1d6979d4ae5a4135b52a431b84c106d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/core.test.ts",
+          "status": "added",
+          "sha256": "d2b3ed245a1ac02730d34740bc99439290b589fbf3231f57121a94bb7854f0eb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/core.ts",
+          "status": "added",
+          "sha256": "2dca4031435274e307033e1290b8c4c263a31caa4a21ba96c4b44d36d4ff6818",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/index.test.ts",
+          "status": "added",
+          "sha256": "0c03596e729be5169abbb086b0f07d99cbdb67829b015f1cdec67a993020d75c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/index.ts",
+          "status": "added",
+          "sha256": "17e4ab76592e7883813efe0ad0ccf7c9179b37d3b464f5bb0bf2c2228d39c882",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/link-preview/own-hosts.ts",
+          "status": "added",
+          "sha256": "b7aaa706b1b70318cce8d32c0452b541a47ffdfa3cb9d81f2d4fca4fa40268fb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "084e225769e3796f71e7aee7b95fca8fe279901a8e9b30bac8cc6c3c6e826c15",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346470000_hub_link_previews.sql",
+          "status": "added",
+          "sha256": "1727190a3e9cf6cb7d3e6319fc9e437493e00118882c2e924e198a2944fef15b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_link_previews.test.sql",
+          "status": "added",
+          "sha256": "fcd3e614bf2cf00a263aef7686374e9c88fe2252c5a168cf289f5d67d7aa8933",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
