@@ -34,7 +34,7 @@ const db = (): Untyped => createAdminClient() as unknown as Untyped
 
 export type ConsentSource = keyof typeof CONSENT_WORDING
 
-export interface ContactConsentInput {
+interface ContactConsentInput {
   contactId: string
   spaceId: string | null
   source: ConsentSource
