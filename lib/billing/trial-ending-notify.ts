@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { enqueueEmail } from '@/lib/email'
 import { buildTrialEndingEmail } from '@/lib/billing/trial-ending-email'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { isFoundingYearMetadata } from './founding-year'
 
 function trialEndLabel(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleDateString('en-US', {
@@ -21,6 +22,8 @@ function trialEndLabel(unixSeconds: number): string {
 export async function notifyTrialEnding(sub: Stripe.Subscription, admin: SupabaseClient): Promise<boolean> {
   const spaceId = sub.metadata?.space_id
   if (!spaceId || !sub.trial_end) return false
+  // A Founding Year is paid up front; its `trial_end` is the renewal date, not a trial (LIVE-2541).
+  if (isFoundingYearMetadata(sub.metadata)) return false
   try {
     const { data: spaceData } = await admin
       .from('spaces')
