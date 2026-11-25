@@ -29,6 +29,7 @@ import type { EntryRow } from '@/lib/calendar/entries'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { formatEventWhen } from '@/lib/time/zone'
 import { getSpaceById } from '@/lib/spaces/store'
+import { confirmTimeOption } from '@/lib/calendar/time-confirm'
 import { buildTimeVoteInviteEmail, enqueueEmail } from '@/lib/email'
 import { normalizeVoteEmail, signTimeVoteToken, timeVotePath } from '@/lib/calendar/time-vote-token'
 
@@ -310,4 +311,41 @@ export async function inviteTimeVoteByEmail(
     summary: `Asked ${email} to pick a date.`,
   })
   return ok({ email })
+}
+
+// ── CONFIRM THE DATE (EMAIL-093) ────────────────────────────────────────────────────────────────
+// The winner becomes the Plan's date, the other options are released (recoverable, LIVE-536), and
+// everyone who answered gets the date with a calendar invite attached.
+
+export async function confirmPlanTime(
+  slug: string,
+  planId: string,
+  entryId: string,
+): Promise<ActionResult<{ view: FindATimeView; note: string }>> {
+  const seat = await planSeat(slug, planId)
+  if ('error' in seat) return fail(seat.error)
+  if (typeof entryId !== 'string' || !UUID_RE.test(entryId)) return fail('That date is no longer an option.')
+  const space = await getSpaceById(seat.spaceId)
+  const res = await confirmTimeOption({
+    spaceId: seat.spaceId,
+    spaceSlug: seat.slug,
+    spaceName: space?.name ?? 'Your Space',
+    planId: seat.plan.id,
+    planTitle: seat.plan.title,
+    leadProfileId: seat.plan.ownerProfileId ?? seat.plan.createdBy,
+    entryId,
+  })
+  if ('error' in res) return fail(res.error)
+  await recordPlanActivity({
+    planId: seat.plan.id,
+    actorProfileId: seat.profileId,
+    actorSpaceId: seat.spaceId,
+    kind: 'field',
+    summary: `Confirmed ${res.data.whenLabel} and released ${res.data.released} other ${res.data.released === 1 ? 'date' : 'dates'}.`,
+  })
+  const sent = res.data.invited
+  return ok({
+    view: (await buildView(seat)).view,
+    note: `${res.data.whenLabel} is the date.${sent ? ` ${sent} ${sent === 1 ? 'invite' : 'invites'} sent with a calendar file.` : ''}`,
+  })
 }
