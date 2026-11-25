@@ -689,6 +689,8 @@ const nextConfig: NextConfig = {
       { source: '/admin/crm/deals/:path*', destination: '/admin/crm/pipeline/:path*', permanent: false },
       { source: '/admin/crm/graph', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/crm/inbox', destination: '/admin/crm/conversations', permanent: false },
+      // CRM Tasks folded into the Console Work page (SCAN-1346, owner ruling 2026-11-25).
+      { source: '/admin/crm/tasks', destination: '/admin/work', permanent: false },
       { source: '/admin/crm/playbooks', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/crm/today', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/demo/studio', destination: '/admin/demo', permanent: false },
