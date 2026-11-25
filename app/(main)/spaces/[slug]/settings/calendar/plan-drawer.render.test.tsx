@@ -484,6 +484,24 @@ describe('PlanDrawer: who does a to-do', () => {
     expect(select.value).toBe(people[1].value)
   })
 
+  it('lists open to-dos first, overdue at the top, and folds the done ones under Done (n)', async () => {
+    mocks.listPlanTodos.mockResolvedValue([
+      { ...task, id: 'later', title: 'Print the flyers', dueAt: '2999-01-02T00:00:00Z' },
+      { ...task, id: 'finished', title: 'Pick the venue', status: 'done' },
+      { ...task, id: 'late', title: 'Send the invite', dueAt: '2000-01-01T00:00:00Z' },
+    ])
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    const list = document.querySelector('[data-plan-todos]')!
+    const openTitles = [...list.querySelectorAll(':scope > ul .plan-todo-title')].map((n) => n.textContent)
+    expect(openTitles).toEqual(['Send the invite', 'Print the flyers'])
+    expect(list.querySelector('[data-overdue] .plan-todo-title')!.textContent).toBe('Send the invite')
+    const fold = list.querySelector('[data-plan-todos-done]') as HTMLDetailsElement
+    expect(fold.open).toBe(false)
+    expect(fold.querySelector('summary')!.textContent).toBe('Done (1)')
+    expect(fold.textContent).toContain('Pick the venue')
+  })
+
   it('the guest reads the shared Plan to-dos in the read-only drawer, with the picker and without the add form', async () => {
     mocks.listPlanTodos.mockResolvedValue([{ ...task, assigneeProfileId: people[0].value }])
     mocks.listPlanAssignees.mockResolvedValue({ data: people })

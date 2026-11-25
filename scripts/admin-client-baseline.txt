@@ -74,6 +74,10 @@
 #                                 canEditProfile itself before it writes
 # The session client cannot reach a zero-policy table by construction, so converging these is
 # not a matter of effort: it would mean giving those tables client-readable policies.
+# lib/billing/founder-seats.ts (added 2026-11-25, LIVE-2542): counts the Founder seats, a public number
+# (N of 150) computed over every Space's founding_members row. founding_members is service-role only
+# (lib/founding/status.ts) and the count is cross-tenant by nature; only the count and the caller's own
+# Space's seat number ever leave this file.
 # lib/billing/founding-year-record.ts (added 2026-11-25, LIVE-2541): writes the Space's founding_members row
 # when a Founding Year is PAID. The caller is the Stripe webhook (no session) or the on-page settle, which
 # re-fetches the session from Stripe; founding_members is reached only through the service role everywhere
@@ -847,6 +851,7 @@ lib/billing/checkout.ts
 lib/billing/connect.ts
 lib/billing/crew-grants.ts
 lib/billing/donation-receipt.ts
+lib/billing/founder-seats.ts
 lib/billing/founding-year-record.ts
 lib/billing/manual-agreements.ts
 lib/billing/payout-prompt-resolve.ts
@@ -1002,6 +1007,7 @@ lib/digest.ts
 lib/dispatches.ts
 lib/elements/store.ts
 lib/email-studio/analytics.ts
+lib/email-studio/consent.ts
 lib/email-studio/data-blocks.ts
 lib/email-studio/loom-actions.ts
 lib/email-studio/saved-sections-actions.ts

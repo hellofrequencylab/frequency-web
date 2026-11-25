@@ -5,6 +5,8 @@ import { resolvedNetworkRate } from '@/lib/billing/fees'
 import { spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { founderSeatsTaken } from '@/lib/billing/founder-seats'
+import { founderSeatsLeft } from '@/lib/billing/founding-year'
 import {
   buildPricingBox,
   type PricingBoxData,
@@ -19,8 +21,18 @@ import {
 
 /** The catalog half of the box: prices, copy, the comparison and the Crew amounts. */
 export async function loadPricingBoxData(): Promise<PricingBoxData> {
-  const [catalog, values, takeRate] = await Promise.all([loadCatalogConfig(), getPricingValues(), resolvedNetworkRate()])
-  return buildPricingBox({ crew: catalog.pwyw, trialDays: values.trial.days, takeRate })
+  const [catalog, values, takeRate, seatsTaken] = await Promise.all([
+    loadCatalogConfig(),
+    getPricingValues(),
+    resolvedNetworkRate(),
+    founderSeatsTaken(),
+  ])
+  return buildPricingBox({
+    crew: catalog.pwyw,
+    trialDays: values.trial.days,
+    takeRate,
+    founderSeatsLeft: seatsTaken === null ? null : founderSeatsLeft(seatsTaken),
+  })
 }
 
 /** Which Space plans sell right now. */

@@ -38,6 +38,12 @@ export const FOUNDING_YEAR = {
   yearEndsLabel: 'January 31, 2028',
   /** The checkout metadata value that marks a Founding Year purchase (session and subscription). */
   metadataValue: 'prepay',
+  /** The numbered Founder seats (owner 2026-11-23: "150, numbered and visible"). Once they are taken the
+   *  Founding Year stops selling and yearly is the plan's ordinary yearly price (LIVE-2542). */
+  seatCap: 150,
+  /** The Founder fee perk (owner 2026-11-23): no finder's fee on anyone through January 31, 2028. It
+   *  replaces the old 3% buy-down promise. Midnight Pacific February 1, 2028 (LIVE-2543). */
+  noFindersFeeUntil: '2028-02-01T08:00:00.000Z',
 } as const
 
 /** The metadata key a Founding Year session and its subscription carry. */
@@ -92,5 +98,46 @@ export function isFoundingYearMetadata(meta: Record<string, string> | null | und
 /** The plain sentence beside a Founding Year price. PURE. */
 export function foundingYearNote(plan: FoundingYearPlan): string {
   const renew = FOUNDING_YEAR.renewalCents[plan] / 100
-  return `Founding Year, paid today. Your paid year runs ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}, then renews at $${renew} a year. No trial, nothing more until then.`
+  return `Founding Year, paid today. Your paid year runs ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}, then renews at $${renew} a year. No trial, and no finder's fee on any sale through ${FOUNDING_YEAR.yearEndsLabel}.`
+}
+
+// ── FOUNDER SEATS (LIVE-2542) ─────────────────────────────────────────────────────────────────────────
+// A Founder is a Space that PAID its Founding Year, in cash or by card; comped Spaces do not count (the
+// launch milestones doc). The seat is not a stored number: it is the Space's place in payment order among
+// every founding_members row carrying `meta.founding_year`, so two payments landing at once can never be
+// handed the same number and no migration is needed. A row that later lapses keeps its seat (the number
+// is retired with it, never handed on), which is why the count reads every status.
+
+/** One Founding Year as the seat numbering reads it. */
+export interface FounderSeatRow {
+  spaceId: string
+  /** When the year was paid (ISO). The seat order. */
+  paidAt: string
+  /** The row id, the tiebreak for two payments in the same instant. */
+  id: string
+}
+
+/** Number the seats: payment order, then row id. Returns spaceId -> seat (1-based). PURE. */
+export function numberFounderSeats(rows: readonly FounderSeatRow[]): Map<string, number> {
+  const ordered = [...rows]
+    .filter((r) => r.spaceId && Number.isFinite(Date.parse(r.paidAt)))
+    .sort((a, b) => Date.parse(a.paidAt) - Date.parse(b.paidAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  const out = new Map<string, number>()
+  for (const r of ordered) if (!out.has(r.spaceId)) out.set(r.spaceId, out.size + 1)
+  return out
+}
+
+/** Seats left of the 150, never below zero. PURE. */
+export function founderSeatsLeft(taken: number): number {
+  return Math.max(0, FOUNDING_YEAR.seatCap - Math.max(0, Math.trunc(taken)))
+}
+
+// ── THE FOUNDER FEE PERK (LIVE-2543) ─────────────────────────────────────────────────────────────────
+
+/** Does a Space's sale skip the finder's fee because the Space is a Founder? True for an ACTIVE founder
+ *  row that holds a paid Founding Year, until the perk ends. A lapsed Founder pays the ordinary fee. PURE. */
+export function founderPaysNoFindersFee(input: { active: boolean; hasFoundingYear: boolean; now?: Date }): boolean {
+  if (!input.active || !input.hasFoundingYear) return false
+  const until = Date.parse(FOUNDING_YEAR.noFindersFeeUntil)
+  return Number.isFinite(until) && (input.now ?? new Date()).getTime() < until
 }

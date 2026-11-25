@@ -82,6 +82,8 @@ interface PricingBoxInput {
   takeRate: NetworkTakeRate
   /** Today's date, so a Founding note closes on time. */
   now?: Date
+  /** Founder seats left of the 150 (LIVE-2542); null or absent when the count is unknown. */
+  founderSeatsLeft?: number | null
 }
 
 const YES = '✓'
@@ -262,7 +264,9 @@ export function buildPricingBox(input: PricingBoxInput): PricingBoxData {
       ? `Beta pricing, ${dollars(colList)} a month at list. Offer ends ${COLLECTIVE_FOUNDING_ENDS_LABEL}, and the price is yours for as long as you keep the plan. `
       : ''
 
-  const fyOpen = foundingYearOpen(now)
+  // Open while it can be bought and a Founder seat is left (LIVE-2542). An unknown count keeps it open,
+  // the same way the checkout does.
+  const fyOpen = foundingYearOpen(now) && (input.founderSeatsLeft == null || input.founderSeatsLeft > 0)
 
   const netFounding = networkFoundingOpen(now)
     ? ` First-year Founding offer: ${NETWORK_PLAN.foundingYearMonths} months instead of ten, through ${COLLECTIVE_FOUNDING_ENDS_LABEL}.`

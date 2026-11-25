@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1342",
+  "title": "The Plan pop-up is split into Overview, To-dos, Talk and History, and names its owner",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25: one max-w-lg dialog holds about 12 blocks (summary, manifest fields, repeats, to-dos, Find a time, event repair, sharing, comments, activity, archive). The owner reads 'Assigned teammate' instead of a name, and every Plan is subtitled '<kind> production record' even at Pencil. Builds on LIVE-2544 (one line per to-do, PR #5499). Fix: four tabs; Overview carries stage, owner by name, dates and readiness; Find a time shows only when the Plan has two or more candidate dates; sharing sits behind one Share button; the subtitle drops 'production record' before Production.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1342",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

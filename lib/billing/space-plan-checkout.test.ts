@@ -135,6 +135,10 @@ vi.mock('@/lib/spaces/nonprofit-verification', () => ({
   getSpaceVerification: () => Promise.resolve(verification.status ? { status: verification.status } : null),
 }))
 
+// LIVE-2542: the Founder seats taken, controllable per test (0 by default).
+const seats = vi.hoisted(() => ({ taken: 0 as number | null }))
+vi.mock('./founder-seats', () => ({ founderSeatsTaken: () => Promise.resolve(seats.taken) }))
+
 import { createSpaceLoadoutCheckout } from './space-plan-checkout'
 
 // The RECURRING catalog lines only: a Founding Year session adds a one-time `price_data` line (LIVE-2541).
@@ -379,6 +383,21 @@ describe('the Founding Year checkout', () => {
   it('pays an add-on for the same year instead of holding it free', async () => {
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year', addons: ['ai'] })
     expect(last().line_items.filter((l) => l.price_data).map((l) => l.price_data!.unit_amount)).toEqual([44100, 20000])
+    vi.useRealTimers()
+  })
+
+  it('stops selling once the 150 Founder seats are taken, and keeps selling on an unreadable count (LIVE-2542)', async () => {
+    seats.taken = 150
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBeUndefined()
+    expect(prices()).toEqual(['price_business_base_year_list'])
+    seats.taken = 149
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBe('prepay')
+    seats.taken = null
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
+    expect(last().metadata.founding_year).toBe('prepay')
+    seats.taken = 0
     vi.useRealTimers()
   })
 

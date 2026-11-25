@@ -346,6 +346,8 @@ describe('commitImport — Space target, owner-confirmed consent', () => {
       import: 'imp1',
       file: 'subscribers.csv',
     })
+    // EMAIL-085: the attestation also lands as the contact's permission record.
+    expect(insertedRows[1]).toMatchObject({ contact_id: insertedRows[0].id, source: 'import_attestation', form_key: 'contact_import' })
     if (!isError(res)) expect(res.data).toMatchObject({ created: 1, subscribed: 1 })
   })
 

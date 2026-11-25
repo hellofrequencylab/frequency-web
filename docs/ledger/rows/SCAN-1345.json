@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1345",
+  "title": "One month grid draws the public, team and suite calendars",
+  "lane": "hygiene",
+  "priority": "P2",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "components/events/event-calendar.tsx",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25: Daniel ruled 2026-10-28 to merge the three month grids once the suite landed. They are still three: components/events/event-calendar.tsx (1,828 lines), the settings StaffCalendar (1,110) and components/calendar-suite/suite-month.tsx (322). A fix to one grid (a day band, a chip, a time zone) misses the others. Fix: one components/calendar/month-grid module both remaining surfaces import; StaffCalendar removed (with SCAN-1344).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1345",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
