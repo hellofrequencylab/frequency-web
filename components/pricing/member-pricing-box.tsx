@@ -409,7 +409,9 @@ export function MemberPricingBox({
   // ── the checkout's order summary ─────────────────────────────────────────────────────────────────
   const isCrewCheckout = action.kind === 'crew'
   const summaryCents = isCrewCheckout ? (crewValid ? (yearly ? crewAmount * 10 : crewAmount) : 0) : price ?? 0
-  const trial = !isCrewCheckout && data.trialDays > 0
+  // The Founding Year (LIVE-2541) is paid today, so it never shows the trial line.
+  const foundingYear = yearly && !nonprofit && !isCrewCheckout && tier.foundingYear ? tier.foundingYear : null
+  const trial = !isCrewCheckout && !foundingYear && data.trialDays > 0
   const total = trial ? 0 : summaryCents
   const sessionKey = isCrewCheckout ? `crew-${crewAmount}-${period}` : action.kind === 'space' ? `${action.plan}-${period}-${networkPackage}` : ''
   const liveSession = session && session.key === sessionKey ? session : null
@@ -582,6 +584,7 @@ export function MemberPricingBox({
                 {trial
                   ? `Free for ${data.trialDays} days, then ${money(summaryCents)}${yearly ? '/yr' : '/mo'}. Cancel before the trial ends and nothing is charged. `
                   : ''}
+                {foundingYear ? `${tier.note.year} ` : ''}
                 The price you start on is yours for as long as you keep the plan. Change or cancel any time in Billing.
               </p>
             </div>
