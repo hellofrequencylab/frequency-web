@@ -10,6 +10,7 @@ import {
 import type { PlanPlaybook } from './playbooks'
 import { planAnchorDayKey, type AnchorCandidate } from './relative-schedule'
 import { log } from '@/lib/log'
+import { dayKeyIn } from './day-grid-nav'
 
 // PLAN IO (ADR-1386). Caller session, so RLS on space_plans is the lock.
 //
@@ -378,6 +379,35 @@ export async function listPlanPencilEntryIds(spaceId: string): Promise<Record<st
     return out
   } catch (err) {
     planReadFailed('pencil_pairs', err)
+    return {}
+  }
+}
+
+/** Every unpublished Pencil date per Plan, as day keys in `zone` (SCAN-1340). What Console Work reads to
+ *  leave out a Pencil whose dates have all passed, the same rule the calendar's Plans views use. Fail-safe
+ *  to an empty map (nothing folds) with a log line, like the read above. */
+export async function listPlanPencilDays(spaceId: string, zone: string): Promise<Record<string, string[]>> {
+  try {
+    const { data, error } = await (await db())
+      .from('space_calendar_entries')
+      .select('plan_id, starts_at')
+      .eq('space_id', spaceId)
+      .eq('kind', 'pencil')
+      .is('removed_at', null)
+      .is('published_event_id', null)
+      .limit(1000)
+    if (error || !data) {
+      planReadFailed('pencil_days', error)
+      return {}
+    }
+    const out: Record<string, string[]> = {}
+    for (const row of data as unknown as { plan_id: string | null; starts_at: string | null }[]) {
+      if (!row.plan_id || !row.starts_at) continue
+      ;(out[row.plan_id] ??= []).push(dayKeyIn(zone, new Date(row.starts_at)))
+    }
+    return out
+  } catch (err) {
+    planReadFailed('pencil_days', err)
     return {}
   }
 }

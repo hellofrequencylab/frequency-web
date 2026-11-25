@@ -18,14 +18,11 @@ import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { formatEventWhen } from '@/lib/time/zone'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
-import { EventShareApprovals } from '@/components/events/event-share-approvals'
-import { SectionHeader } from '@/components/ui/section-header'
-import { SpaceEventsManager, type ManagedEvent } from './space-events-manager'
+import type { ManagedEvent } from './space-events-manager'
 import { listSpacePlans, listRecentlyCancelledPlans, listPlaybooks, listPlanPencilEntryIds, listIncomingPlanShareRows, listPlansSharedWith } from '@/lib/calendar/plans-store'
 import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
 import { incomingFromRow, type ShareSubject, type SharedPlanView } from '@/lib/calendar/plan-shares'
-import { SharedPlansPanel } from './shared-plans-panel'
-import { CalendarPlansPanel } from './calendar-plans-panel'
+import { CalendarDeskPanels, resolveCalendarDesk } from './calendar-desk'
 import { SpaceTodosPanel } from './space-todos-panel'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
@@ -37,6 +34,7 @@ import { wallMinutes } from '@/lib/calendar/planner/now'
 import { getSpaceTeam } from '@/lib/spaces/content-data'
 import { CalendarSuite } from '@/components/calendar-suite/calendar-suite'
 import { consoleBack } from '@/lib/spaces/console-back'
+import { readSpaceTeamRoomHref } from '@/lib/spaces/team-room-link'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -47,14 +45,17 @@ import { consoleBack } from '@/lib/spaces/console-back'
 
 export const metadata = { title: 'Calendar' }
 
+const firstOf = (v: string | string[] | undefined): string | undefined => (Array.isArray(v) ? v[0] : v)
+
 export default async function SpaceCalendarConsolePage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ plan?: string | string[]; view?: string | string[]; y?: string | string[]; m?: string | string[] }>
+  searchParams: Promise<{ plan?: string | string[]; view?: string | string[]; y?: string | string[]; m?: string | string[]; desk?: string | string[] }>
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
+  const desk = resolveCalendarDesk(firstOf(query.desk), Boolean(firstOf(query.plan)))
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -193,7 +194,7 @@ export default async function SpaceCalendarConsolePage({
         hostShares: sharedLayer?.hostShares,
         sharedSources: sharedLayer?.sources,
       })
-  const team = featureLocked ? [] : await getSpaceTeam(space.id)
+  const [team, teamRoomHref] = featureLocked ? [[], null] : await Promise.all([getSpaceTeam(space.id), readSpaceTeamRoomHref(space.id)])
   const teamForSuite = team.map((m) => ({ id: m.profileId, name: m.name, avatarUrl: m.avatarUrl }))
 
   return (
@@ -220,6 +221,7 @@ export default async function SpaceCalendarConsolePage({
           {adapted ? (
             <CalendarSuite
               slug={space.slug}
+              teamRoomHref={teamRoomHref}
               spaceId={space.id}
               brandName={brandName}
               todayKey={todayKey}
@@ -248,39 +250,30 @@ export default async function SpaceCalendarConsolePage({
             />
           ) : null}
 
-          <EventShareApprovals spaceId={space.id} />
-
-          {canManage && (
-            <div id="calendar-todos">
-              <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} />
-            </div>
-          )}
-
-          {canManage && (
-            <div id="calendar-shared-plans">
-              <SharedPlansPanel slug={space.slug} incoming={incomingShares} sharedPlans={sharedPlans} />
-            </div>
-          )}
-
-          {canManage && (
-            <div id="calendar-plans">
-            <CalendarPlansPanel
-              slug={space.slug}
-              spaceId={space.id}
-              plans={plans}
-              playbooks={playbooks}
-              pencilByPlan={pencilByPlan}
-              initialPlanId={Array.isArray(query.plan) ? query.plan[0] : query.plan}
-            />
-            </div>
-          )}
-
-          {managedEvents.length > 0 && (
-            <div className="pt-2" id="calendar-manage-events">
-              <SectionHeader title="Manage events" count={managedEvents.length} />
-              <SpaceEventsManager events={managedEvents} />
-            </div>
-          )}
+          <CalendarDeskPanels
+            teamTools={canManage}
+            desk={desk}
+            slug={space.slug}
+            spaceId={space.id}
+            query={Object.fromEntries(
+              (['y', 'm', 'view'] as const).flatMap((k) => {
+                const v = firstOf(query[k])
+                return v ? [[k, v]] : []
+              }),
+            )}
+            todosPanel={desk === 'todos' ? <SpaceTodosPanel slug={space.slug} tasks={todos} viewerId={viewerProfileId} /> : null}
+            openTodos={todos.filter((t) => t.status === 'open').length}
+            shared={{ slug: space.slug, incoming: incomingShares, sharedPlans }}
+            plans={{
+              slug: space.slug,
+              spaceId: space.id,
+              plans,
+              playbooks,
+              pencilByPlan,
+              initialPlanId: firstOf(query.plan),
+            }}
+            events={managedEvents}
+          />
         </div>
       )}
     </ConsoleFocusTemplate>

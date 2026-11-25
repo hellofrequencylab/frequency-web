@@ -149,6 +149,11 @@ describe('notificationHref', () => {
     }
   })
 
+  it('sends a deal thread bell to the Spaces the owner runs (LIVE-2527)', () => {
+    expect(notificationHref(notif({ type: 'item_comment', reference_type: 'deal', reference_id: UUID })))
+      .toBe('/spaces/operating')
+  })
+
   it('sends Circle and membership notices to the Circles index (both reference a UUID)', () => {
     expect(notificationHref(notif({ type: 'achievement', reference_type: 'circle', reference_id: UUID })))
       .toBe('/circles')
