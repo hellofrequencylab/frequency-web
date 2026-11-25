@@ -66,6 +66,8 @@ export interface OverdueTask {
   title: string
   planTitle: string
   assigneeProfileId: string | null
+  /** Who hears about it when nobody holds it (SCAN-1343): the Plan's owner, else the Space's owner. */
+  fallbackProfileId?: string | null
   /** The day it was due, yyyy-mm-dd (a to-do's `due_at` sliced to its day). */
   dueDay: string | null
   status: string
@@ -78,12 +80,14 @@ export function overdueNudges(tasks: readonly OverdueTask[], today: string, canW
   const yesterday = addDays(today, -1)
   const byPerson = new Map<string, { profileId: string; titles: string[]; planTitles: string[] }>()
   for (const t of tasks) {
-    if (!yesterday || t.status !== 'open' || !t.assigneeProfileId || t.dueDay !== yesterday) continue
-    if (!canWork(t.assigneeProfileId)) continue
-    const entry = byPerson.get(t.assigneeProfileId) ?? { profileId: t.assigneeProfileId, titles: [], planTitles: [] }
+    // Nobody holds it: the Plan's owner hears instead, so an overdue to-do always reaches someone.
+    const who = t.assigneeProfileId ?? t.fallbackProfileId ?? null
+    if (!yesterday || t.status !== 'open' || !who || t.dueDay !== yesterday) continue
+    if (!canWork(who)) continue
+    const entry = byPerson.get(who) ?? { profileId: who, titles: [], planTitles: [] }
     entry.titles.push(t.title)
     if (!entry.planTitles.includes(t.planTitle)) entry.planTitles.push(t.planTitle)
-    byPerson.set(t.assigneeProfileId, entry)
+    byPerson.set(who, entry)
   }
   return [...byPerson.values()]
 }

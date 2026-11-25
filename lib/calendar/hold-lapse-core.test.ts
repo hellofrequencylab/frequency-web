@@ -108,6 +108,11 @@ describe('who gets the overdue nudge', () => {
     expect(overdueNudges(none, today, everyone)).toEqual([])
   })
 
+  it('sends an unclaimed to-do to the Plan owner instead of nobody (SCAN-1343)', () => {
+    const out = overdueNudges([task({ assigneeProfileId: null, fallbackProfileId: 'owner' }), task({ id: 't2', assigneeProfileId: 'mara', fallbackProfileId: 'owner' })], today, everyone)
+    expect(out.map((n) => n.profileId).sort()).toEqual(['mara', 'owner'])
+  })
+
   it('skips an assignee who does not work this Space', () => {
     expect(overdueNudges([task({}), task({ id: 't2', assigneeProfileId: 'guest' })], today, (id) => id === 'mara').map((n) => n.profileId)).toEqual(['mara'])
   })
