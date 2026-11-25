@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1341",
+  "title": "The Space Calendar console is one workspace instead of seven panels stacked under the calendar",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/calendar/page.tsx",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25: the Calendar console renders CalendarSuite and then To-dos, Shared with you, Plans (a second Plans board that repeats the suite's own Kanban view), Playbooks, Private team feed, Manage events and the event share approvals, down one page. Daniel called the Plan pop-up overwhelming the same day; the page around it is the same problem at scale. Fix: To-dos becomes a suite view, Shared with you and share approvals move into Needs you, Playbooks into the Start a plan button, the private feed link into Settings, Manage events into the List view; the stacked panels leave the page.\n\nSEEN 2026-11-25 on prod (Chrome, signed in): the page is 6,387px tall at 1440 and 6,974px on a phone. On a phone the Agenda shows two items before the To-dos panel starts. One screen shows three different to-do counts: the Show filter says To-dos 15, the strip says 14 need you, the panel heading says To-dos 26.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1341",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

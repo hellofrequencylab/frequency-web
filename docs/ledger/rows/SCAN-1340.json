@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1340",
+  "title": "The 38 leftover test Pencils leave the owner's Space, and a Pencil whose dates have all passed folds out of the live Plans",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/work/rollup-core.ts",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25 in production: 38 of the 39 live Plans on /spaces/danieltyack are titled 'Browser pencil <timestamp>-<id>', dated Sep 22 to 24. They come from test/e2e/operator-calendar.spec.ts run against production in September; its afterEach cleanup (HYG-120) archives through the UI and missed these, likely runs from before the cleanup or ones that failed mid-test. None carries hold_until, so the hold sweep would never clear them. They fill the rail's Plans list, the Plans views and Work's Live Plans. Fix: the 38 test Plans are archived (reversible: archived_at), and a pure past-Pencil check folds any Pencil whose every date has passed out of Work and the Plans views.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1340",
+    "note": "Fails today; passes once Work and the Plans views fold past Pencils."
+  },
+  "wave": "W7"
+}
