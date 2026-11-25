@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/email-studio/send.ts",
     "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system, report https://claude.ai/artifact/3sCikNdCHC9khmwCJbubfk)"
   },
-  "detail": "Wave 2 of the permission-first contact plan. Resend's Acceptable Use Policy requires explicit opt-in and names 'assumed until they unsubscribe' as not consent. EMAIL-082 (#5380) stopped brand campaigns mailing the 511 imported contacts unless subscribed, but nothing records how a contact came to be subscribed. Work: a permission record per contact (source, captured_at, page or form, the consent wording shown), written by /subscribe confirm, /start, /join and the Space sign-up forms, and read by the Email Studio audience before a contact counts as mailable. Needs a migration (additive, through the serial gate in docs/DATABASE.md). Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.",
+  "detail": "Wave 2 of the permission-first contact plan. Resend's Acceptable Use Policy requires explicit opt-in and names 'assumed until they unsubscribe' as not consent. EMAIL-082 (#5380) stopped brand campaigns mailing the 511 imported contacts unless subscribed, but nothing records how a contact came to be subscribed. Work: a permission record per contact (source, captured_at, page or form, the consent wording shown), written by /subscribe confirm, /start, /join and the Space sign-up forms, and read by the Email Studio audience before a contact counts as mailable. Needs a migration (additive, through the serial gate in docs/DATABASE.md). Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.\n\ncontact_consents table (migration 20270346410000) holds source, page, form, time and wording; /subscribe confirm and confirmed imports write it; every Email Studio audience drops an account-less contact with no record.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/EMAIL-085.mjs",
     "note": "Fails until a migration stores a per-contact permission record and lib/email-studio reads it when it builds an audience."
   },
+  "closed": "2026-11-25",
   "wave": "W7"
 }
