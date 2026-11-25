@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { IconButton } from '@/components/ui/icon-button'
+import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { CalendarAudienceToggle } from './audience-toggle'
 import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
@@ -112,6 +112,7 @@ export function SuiteHeader({
   onAsk,
   onSettings,
   slug,
+  teamRoomHref,
 }: {
   view: SuiteView
   cursor: string
@@ -134,6 +135,8 @@ export function SuiteHeader({
   onSettings: () => void
   /** The Space, for the Team view / Public view toggle. */
   slug: string
+  /** The Space team room (SCAN-1350): one tap from the calendar to where the team talks. */
+  teamRoomHref: string | null
 }) {
   const ym = cursor.slice(0, 7)
   const plans = isPlanView(view)
@@ -214,6 +217,11 @@ export function SuiteHeader({
         />
       </div>
       <div className="cal-acts">
+        {teamRoomHref && (
+          <IconLink label="Team room" variant="tinted" href={teamRoomHref}>
+            <FqIcon name="message" size={16} />
+          </IconLink>
+        )}
         <IconButton label="Calendar settings" variant="tinted" onClick={onSettings}>
           <FqIcon name="settings" size={16} />
         </IconButton>

@@ -67,6 +67,8 @@ const serverNarrow = () => false
 
 export interface CalendarSuiteProps {
   slug: string
+  /** The Space team room's link, when the viewer is in it (SCAN-1350); null hides the door. */
+  teamRoomHref?: string | null
   spaceId: string
   brandName: string
   /** Today in the Space's zone. */
@@ -484,6 +486,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           onAsk={openCommand}
           onSettings={openSettings}
           slug={slug}
+          teamRoomHref={props.teamRoomHref ?? null}
         />
         <SuiteNeedsYou entries={needs} onOpen={openNeed} />
         <div className="cal-view">

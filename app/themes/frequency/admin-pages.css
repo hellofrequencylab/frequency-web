@@ -757,6 +757,43 @@ button.cal-tg-head:hover { background: var(--fq-track); }
 .cal-more { align-self: flex-start; background: none; padding: 0; }
 .cal-compose { display: flex; align-items: center; gap: 8px; }
 .cal-compose .input { flex: 1; min-width: 0; }
+/* The Plan pop-up's to-do list (plan-drawer.tsx, 2026-11-25): one calm line per to-do. Unlayered so it
+   beats the kit's layered 48px full-width `.input` / `.mu-select` inside the list only. The picker
+   shrinks to a quiet 32px chip; on a phone the meta wraps under the title rather than squeezing it. */
+.plan-todos { container-type: inline-size; }
+.plan-todo-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.plan-todo { border-radius: 12px; }
+.plan-todo:hover, .plan-todo:focus-within { background: var(--fq-track); }
+.plan-todo-line { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 2px 6px; }
+.plan-todo-check { flex: 1 1 auto; min-width: 0; }
+.plan-todo-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.35; font-size: var(--fq-text-body-s); color: var(--fq-text-strong); }
+.plan-todo[data-done] .plan-todo-title { color: var(--fq-text-muted); text-decoration: line-through; }
+.plan-todo-meta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: var(--fq-text-meta); color: var(--fq-text-muted); }
+.plan-todo-due { white-space: nowrap; }
+.plan-todo[data-overdue] .plan-todo-due { color: var(--fq-danger); font-weight: 600; }
+/* Who: a 28px circle of initials, dashed while nobody has it, with the native picker laid over it. */
+.plan-todo-who { position: relative; flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--fq-pa-soft); color: var(--fq-text-strong); font: 600 var(--fq-text-label)/1 var(--fq-font-sans); letter-spacing: 0.02em; }
+.plan-todo-who[data-empty] { background: transparent; color: var(--fq-text-muted); font-size: var(--fq-text-body-s); font-weight: 400; box-shadow: inset 0 0 0 1px var(--fq-border-strong); }
+.plan-todo-who:focus-within { outline: 2px solid var(--fq-focus-ring); outline-offset: 2px; }
+.plan-todo-who .mu-select { position: absolute; inset: 0; width: 100%; height: 100%; }
+.plan-todo-who .mu-select > svg { display: none; }
+[data-design="frequency"] .plan-todo-who select.input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; opacity: 0; cursor: pointer; }
+[data-design="frequency"] .plan-todo .plan-todo-notes { height: 28px; min-height: 0; padding: 0 8px; font-size: var(--fq-text-meta); white-space: nowrap; }
+/* No notes yet: the button waits for hover or focus on a mouse, and stays on a thumb. */
+@media (hover: hover) and (pointer: fine) {
+  .plan-todo-notes:not([data-has-notes]):not([aria-expanded="true"]) { opacity: 0; }
+  .plan-todo:hover .plan-todo-notes, .plan-todo:focus-within .plan-todo-notes { opacity: 1; }
+}
+/* A narrow drawer (a phone): the title takes the whole first line and the meta sits under it. */
+@container (max-width: 440px) {
+  .plan-todo-line { flex-wrap: wrap; row-gap: 0; padding-block: 4px; }
+  .plan-todo-check { flex-basis: 100%; }
+  .plan-todo-meta { margin-left: 30px; }
+  .plan-todo-meta .plan-todo-notes { order: 3; }
+}
+.plan-todo-fold { display: flex; flex-direction: column; gap: 8px; padding: 4px 6px 10px 36px; }
+.plan-todo-done > summary { cursor: pointer; padding: 6px; font-size: var(--fq-text-meta); color: var(--fq-text-muted); }
+.plan-todo-done[open] > summary { margin-bottom: 2px; }
 
 /* The sheets and the scrim */
 .cal-scrim { display: none; }
