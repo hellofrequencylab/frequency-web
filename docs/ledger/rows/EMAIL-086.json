@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/email-studio/send.ts",
     "ref": "Contact, funnel and tracking audit 2026-11-19 (project thread: Plan a permission-first contact system, report https://claude.ai/artifact/3sCikNdCHC9khmwCJbubfk)"
   },
-  "detail": "Wave 2 of the permission-first contact plan, building on EMAIL-081 (#5379: an edit puts a scheduled email back to draft). The server-side reset depends on every edit path calling it; a fingerprint makes the send itself the guard. Work: on approve or schedule, store a hash of subject, body, audience definition and links (approval_fingerprint); sendCampaignNow and the cron recompute it and refuse, leaving the campaign in draft, when it differs. Needs a migration. Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.",
+  "detail": "Wave 2 of the permission-first contact plan, building on EMAIL-081 (#5379: an edit puts a scheduled email back to draft). The server-side reset depends on every edit path calling it; a fingerprint makes the send itself the guard. Work: on approve or schedule, store a hash of subject, body, audience definition and links (approval_fingerprint); sendCampaignNow and the cron recompute it and refuse, leaving the campaign in draft, when it differs. Needs a migration. Filed 2026-11-20 by the verification sweep: the plan named this id but no row existed.\n\ncampaigns.approval_fingerprint (migration 20270346510000) is stamped on approve and schedule; sendCampaignNow, which the cron calls, recomputes it before the claim and puts a changed campaign back in draft.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/EMAIL-086.mjs",
     "note": "Fails until a migration adds an approval fingerprint and lib/email-studio/send.ts compares it before queueing."
   },
+  "closed": "2026-11-25",
   "wave": "W7"
 }
