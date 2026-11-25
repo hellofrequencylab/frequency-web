@@ -22,7 +22,7 @@ export const SIGN_IN_HINT_MAX_AGE = 60 * 60 * 24 * 365
 
 /** `password` is written only by a password sign-in (SEC-045, lib/auth/finish-sign-in.ts): Supabase records a
  *  password and an email link as the same `email` identity, so only the door itself knows which it was. */
-export type SignInMethod = 'google' | 'email' | 'password'
+type SignInMethod = 'google' | 'email' | 'password'
 
 interface SignInHint {
   method: SignInMethod

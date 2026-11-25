@@ -29,7 +29,7 @@ interface AuthUserLike {
   user_metadata?: Record<string, unknown>
 }
 
-export interface FinishedSignIn {
+interface FinishedSignIn {
   /** Where to send the person, already validated as a same-origin path. */
   destination: string
   /** The encoded last-sign-in hint for SIGN_IN_HINT_COOKIE, or null. */

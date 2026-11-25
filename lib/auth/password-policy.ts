@@ -24,7 +24,7 @@ export const PASSWORD_MIN_LENGTH = 12
  *  would be silently cut. Refusing it is honest; truncating it is not. */
 export const PASSWORD_MAX_BYTES = 72
 
-export type PasswordProblem = 'short' | 'long' | 'email'
+type PasswordProblem = 'short' | 'long' | 'email'
 
 /** The hint under every new-password field. */
 export const PASSWORD_HINT = `At least ${PASSWORD_MIN_LENGTH} characters. A short phrase you will remember works well.`
