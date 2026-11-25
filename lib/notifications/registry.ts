@@ -45,6 +45,7 @@ export type NotificationEvent =
   | 'community.joined'
   | 'message.direct'
   | 'item.mention'
+  | 'item.comment'
   | 'plan.bell'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
@@ -124,6 +125,10 @@ export interface NotificationContexts {
    *  caller proves the recipient can see the item, names it in the copy, and hands in the bell's
    *  destination as a reference the href mapper understands ('plan' → `<space slug>:<plan id>`). */
   'item.mention': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
+  /** A new word in the team thread under an event, a deal or a contact (LIVE-2527), to the people
+   *  who follow it: whoever owns the item and whoever has written in the thread. Tagged people hear
+   *  through 'item.mention' instead, never twice. */
+  'item.comment': { actorId: string; title: string; body: string; url: string; tag: string; referenceType: string; referenceId: string }
 }
 
 /** One bell row, in the shape of a `notifications` row (the table the bell and /notifications
@@ -450,6 +455,21 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
       inapp: {
         type: 'mention',
         body: `mentioned you: ${ctx.body}`,
+        actorId: ctx.actorId,
+        referenceType: ctx.referenceType,
+        referenceId: ctx.referenceId,
+      },
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  'item.comment': {
+    event: 'item.comment',
+    category: 'comments',
+    channels: ['inapp', 'push'],
+    render: (ctx) => ({
+      inapp: {
+        type: 'item_comment',
+        body: `wrote in a thread you follow: ${ctx.body}`,
         actorId: ctx.actorId,
         referenceType: ctx.referenceType,
         referenceId: ctx.referenceId,
