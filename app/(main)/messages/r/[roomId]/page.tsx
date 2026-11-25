@@ -203,7 +203,14 @@ export default async function RoomPage({
           <RoomMembers roomId={roomId} myProfileId={myProfileId} canRead={canRead} isMember={isMember} isAdmin={isAdmin} visibility={r.visibility} members={members} totalMembers={r.member_count} />
           {canRead ? (
             <div className="fa-room">
-              <RoomThread roomId={roomId} initialMessages={messages} myProfileId={myProfileId} canPost={canPost} visibility={r.visibility} />
+              <RoomThread
+                roomId={roomId}
+                initialMessages={messages}
+                myProfileId={myProfileId}
+                canPost={canPost}
+                visibility={r.visibility}
+                people={members.filter((m) => m.profile.id !== myProfileId).map((m) => ({ value: m.profile.id, label: m.profile.display_name }))}
+              />
             </div>
           ) : (
             <div className="fa-pane-empty">

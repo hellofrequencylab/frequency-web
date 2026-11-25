@@ -12729,6 +12729,54 @@ export type Database = {
           },
         ]
       }
+      mentions: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          source_id: string
+          source_type: string
+          space_id: string | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          source_id: string
+          source_type: string
+          space_id?: string | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          source_id?: string
+          source_type?: string
+          space_id?: string | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           blurb: string | null
@@ -13759,6 +13807,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          archived_at: string | null
           actor_id: string | null
           body: string | null
           created_at: string | null
@@ -13769,8 +13818,10 @@ export type Database = {
           reference_id: string | null
           reference_type: string | null
           type: string
+          snoozed_until: string | null
         }
         Insert: {
+          archived_at?: string | null
           actor_id?: string | null
           body?: string | null
           created_at?: string | null
@@ -13781,8 +13832,10 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           type: string
+          snoozed_until?: string | null
         }
         Update: {
+          archived_at?: string | null
           actor_id?: string | null
           body?: string | null
           created_at?: string | null
@@ -13793,6 +13846,7 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string | null
           type?: string
+          snoozed_until?: string | null
         }
         Relationships: [
           {

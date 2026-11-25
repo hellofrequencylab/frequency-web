@@ -10,6 +10,8 @@ import { notifyDirectMessage } from '@/lib/messages/dm-notify'
 import { dmThreadHref } from '@/lib/messages/dm-destination'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { extractReferences } from '@/lib/mentions/references'
+import { recordMessageReferences } from '@/lib/mentions/store'
 
 // ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
 // Fold a sent 1:1 DM onto the ONE interaction timeline (contact_interactions) so the contact card shows
@@ -224,6 +226,14 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   // intentionally not folded here (prioritize the 1:1 DM path per the Phase 1 plan).
   if (inserted?.id && others.length === 1) {
     await recordDmTouch(myProfileId, others[0], inserted.id as string)
+  }
+
+  // # links to items (LIVE-2525) are stored by id for the item's "mentioned in" backlink. An @ in a 1:1
+  // thread can only name the other person, who is told about the message anyway, so it is not
+  // stored; nobody outside the conversation is ever told about it.
+  if (inserted?.id) {
+    const refs = extractReferences(body).filter((r) => r.kind !== 'profile')
+    await recordMessageReferences(admin, { sourceType: 'direct_message', sourceId: inserted.id as string, createdBy: myProfileId, refs })
   }
 
   // Tell the recipient (EMAIL-055): bell, push and email per their own Mentions switches, once per burst.

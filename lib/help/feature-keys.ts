@@ -57,7 +57,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'messages', label: 'Direct messages & rooms', area: 'comms', routes: ['/messages'], core: true },
   // 2026-09-05 (scan2 L4-05): /notifications has no page (only actions.ts); the member-facing
   // notification settings live under /settings/notifications, so both prefixes are listed.
-  { key: 'notifications', label: 'Notifications', area: 'comms', routes: ['/notifications', '/settings/notifications'], core: true },
+  { key: 'notifications', label: 'Notifications', area: 'comms', routes: ['/notifications', '/inbox', '/settings/notifications'], core: true },
   { key: 'friends', label: 'Friends', area: 'comms', routes: ['/friends'], core: true },
 
   // ── Engagement (gamification) ────────────────────────────────────────────────

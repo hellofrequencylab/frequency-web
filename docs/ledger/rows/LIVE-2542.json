@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-2542",
+  "title": "The first 150 Spaces to pay a Founding Year hold numbered Founder seats, the offer closes at 150, and /offer shows how many are taken",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/(main)/offer/page.tsx",
+    "ref": "Launch milestones doc rulings 2026-11-23 (project thread: Build the Founding Year checkout; owner picked 'Start a thread now' 2026-11-25 00:09Z)"
+  },
+  "detail": "FOUND 2026-11-25: Founder seats do not exist. No count, number, cap or display anywhere. Owner ruling 2026-11-23: the Founder cap stays 150, numbered and visible; the milestones doc counts a Founder as a Space that paid its Founding Year in cash or by card (comped Spaces do not count). Fix: number the seats in payment order from founding_members.meta.founding_year (no new table), refuse the Founding Year once 150 are taken, and show the count on /offer.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/founding-year-2026-11-25.mjs LIVE-2542",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

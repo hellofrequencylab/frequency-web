@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/field'
+import { MentionTextarea, tagLabel, type MentionPerson } from '@/components/mentions/mention-textarea'
+import { MessageText } from '@/components/mentions/message-text'
 import { isError } from '@/lib/action-result'
 import { REMOVED_WORDS, authorWords, threadFor, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { shortDateLabel } from '@/lib/calendar/short-date'
@@ -12,7 +13,8 @@ import { postPlanComment, removePlanComment } from './plan-actions'
 // under one to-do. Oldest first, the composer under the latest word. Both sides of a share render
 // this: the host in its drawer, the guest in the same drawer opened read only, because the thread
 // is the one door the guest has from the start. A taken-back comment stays as a line that says so.
-// The composer is a textarea so Enter is a new line and never the Plan form's submit.
+// The composer is a textarea so Enter is a new line and never the Plan form's submit. Typing @
+// tags someone who works the Plan (LIVE-2524): they hear about it by name.
 
 export function PlanCommentThread({
   slug,
@@ -21,6 +23,7 @@ export function PlanCommentThread({
   comments,
   onChanged,
   placeholder,
+  people = [],
 }: {
   slug: string
   planId: string
@@ -28,12 +31,15 @@ export function PlanCommentThread({
   comments: PlanCommentView[]
   onChanged: () => Promise<void> | void
   placeholder: string
+  /** The people who work the Plan, offered when the writer types @. */
+  people?: readonly MentionPerson[]
 }) {
   const [pending, start] = useTransition()
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const thread = threadFor(comments, taskId)
   const label = taskId ? 'Write a note on this to-do' : 'Write a comment'
+  const names = new Map(people.map((p) => [p.value, tagLabel(p.label)]))
 
   const post = () => {
     if (pending || !draft.trim()) return
@@ -70,7 +76,9 @@ export function PlanCommentThread({
               {c.removed ? (
                 <p className="text-muted">{REMOVED_WORDS}</p>
               ) : (
-                <p className="whitespace-pre-wrap">{c.body}</p>
+                <p className="whitespace-pre-wrap">
+                  <MessageText body={c.body} names={names} />
+                </p>
               )}
               {c.mine && !c.removed && (
                 <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => takeBack(c.id)}>
@@ -82,13 +90,14 @@ export function PlanCommentThread({
         </ul>
       )}
       <div className="grid gap-1">
-        <Textarea
+        <MentionTextarea
           aria-label={label}
           rows={2}
           value={draft}
           placeholder={placeholder}
           disabled={pending}
-          onChange={(e) => setDraft(e.target.value)}
+          onValueChange={setDraft}
+          people={people}
         />
         <div className="flex justify-end">
           <Button type="button" size="sm" variant="secondary" disabled={pending || !draft.trim()} onClick={post}>

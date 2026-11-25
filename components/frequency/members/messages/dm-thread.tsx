@@ -9,6 +9,13 @@ import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
 import type { Message } from '@/components/messages/thread'
 import { Textarea } from '@/components/ui/field'
+import dynamic from 'next/dynamic'
+import { MessageText } from '@/components/mentions/message-text'
+
+// # links a Plan, to-do, event, deal or contact in a direct message (LIVE-2525), loaded on demand.
+// No @ here: a 1:1 thread already reaches the one other person.
+const TagPickerOverlay = dynamic(() => import('@/components/mentions/tag-picker-overlay'), { ssr: false })
+const NO_PEOPLE: readonly never[] = []
 import { FqIcon } from '@/components/frequency/icon'
 
 // HOME_TZ from lib/time/zone.ts, written out: that module carries tz-lookup, too heavy for a client bundle.
@@ -86,6 +93,7 @@ export function FqDmThread({
   // The server cannot know; it renders online, and the browser corrects it after hydration.
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true)
   const boxRef = useRef<HTMLTextAreaElement | null>(null)
+  const formRef = useRef<HTMLFormElement | null>(null)
   const byId = Object.fromEntries(participants.map((p) => [p.id, p]))
   const { typingNames, notifyTyping, stopTyping } = useTypingIndicator({
     scope: `conv:${conversationId}`,
@@ -177,7 +185,8 @@ export function FqDmThread({
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     // Enter sends, Shift+Enter is a new line; never mid-composition (an IME's Enter picks a word).
-    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    // A key the # picker took (LIVE-2525) is already prevented and is never a send.
+    if (e.defaultPrevented || e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
     e.preventDefault()
     send()
   }
@@ -203,7 +212,7 @@ export function FqDmThread({
                 <div className={mine ? 'fa-bub me' : 'fa-bub'}>
                   <span>
                     <span className="sr-only">{mine ? 'You: ' : `${byId[m.sender_id]?.display_name ?? 'Them'}: `}</span>
-                    {m.body}
+                    <MessageText body={m.body} />
                   </span>
                   <small>
                     {who ? `${who} · ` : ''}
@@ -232,7 +241,8 @@ export function FqDmThread({
           {error}
         </p>
       )}
-      <form className="row fa-pane-f" onSubmit={submit}>
+      <form ref={formRef} className="row fa-pane-f relative" onSubmit={submit}>
+        <TagPickerOverlay hostRef={formRef} value={body} onValueChange={setBody} people={NO_PEOPLE} />
         <Textarea
           ref={boxRef}
           className="grow fqm-composer"

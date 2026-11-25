@@ -12,6 +12,7 @@ import {
   calendarSettingsPath,
   planAssignCopy,
   planCommentCopy,
+  planMentionCopy,
   planShareCopy,
   recipientsWithoutActor,
   type PlanShareMoment,
@@ -53,6 +54,8 @@ type PlanMomentInput =
       actorProfileId: string
       taskId: string | null
       body: string
+      /** People already told by a mention notice for this comment: not told twice. */
+      skipProfileIds?: readonly string[]
     }
   | {
       event: 'plan.assign'
@@ -128,7 +131,9 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
   const todo = input.taskId ? await getTaskInPlans(input.taskId, [input.planId]) : null
   const copy = planCommentCopy(author?.name ?? 'Someone on the Plan', input.planTitle, todo?.title ?? null, input.body)
   const tag = `plan-comment:${input.planId}:${input.taskId ?? 'plan'}`
-  const sent = new Set<string>()
+  // The bell and Inbox row (LIVE-2526): the bell prints the author's name first.
+  const bell = { kind: 'plan_comment' as const, planId: input.planId, actorId: input.actorProfileId, body: todo ? `left a note on "${todo.title}" in "${input.planTitle}"` : `commented on "${input.planTitle}"` }
+  const sent = new Set<string>(input.skipProfileIds ?? [])
   for (const spaceId of otherSpaceIds) {
     const space = await getSpaceById(spaceId)
     if (!space) continue
@@ -141,6 +146,7 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
         { profileId, subject: { subjectType: 'space', subjectId: space.id } },
         { ...copy, url: calendarSettingsPath(space.slug), tag },
       )
+      await routeNotification('plan.bell', { profileId, subject: { subjectType: 'space', subjectId: space.id } }, bell)
       out.recipients += 1
       out.enqueued += routed.enqueuedCount
     }
@@ -154,6 +160,7 @@ async function notifyComment(input: Extract<PlanMomentInput, { event: 'plan.comm
         { profileId: todo.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
         { ...copy, url: calendarSettingsPath(home.slug), tag },
       )
+      await routeNotification('plan.bell', { profileId: todo.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } }, bell)
       out.recipients += 1
       out.enqueued += routed.enqueuedCount
     }
@@ -174,9 +181,103 @@ async function notifyAssign(input: Extract<PlanMomentInput, { event: 'plan.assig
     { profileId: input.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
     { ...copy, url: calendarSettingsPath(home.slug), tag: `plan-assign:${input.planId}` },
   )
+  // The bell and Inbox row (LIVE-2526): a hand-over is Priority there.
+  await routeNotification(
+    'plan.bell',
+    { profileId: input.assigneeProfileId, subject: { subjectType: 'space', subjectId: home.id } },
+    { kind: 'plan_assign', planId: input.planId, actorId: input.actorProfileId, body: `handed you "${input.todoTitle}" on "${input.planTitle}"` },
+  )
   out.recipients = 1
   out.enqueued = routed.enqueuedCount
   return out
+}
+
+/**
+ * WHO A TAG IN A COMMENT MAY REACH (LIVE-2524). The people tagged, kept only when they work the
+ * Plan: the owner or an active member of the host Space or of a Space holding an accepted share.
+ * Anyone else is dropped silently, so a tag never tells a stranger a Plan exists. Each kept person
+ * maps to the Space their link opens in. The author is never on the list.
+ */
+export async function planMentionTargets(input: {
+  planId: string
+  hostSpaceId: string
+  actorProfileId: string
+  profileIds: readonly string[]
+}): Promise<Map<string, { id: string; slug: string }>> {
+  const out = new Map<string, { id: string; slug: string }>()
+  const ids = [...new Set(input.profileIds)].filter((id) => id !== input.actorProfileId).slice(0, 20)
+  if (ids.length === 0) return out
+  try {
+    const shares = await listPlanShareRows(input.planId)
+    const teams = [input.hostSpaceId, ...shares.filter((s) => s.status === 'accepted').map((s) => s.guest_space_id)]
+    for (const profileId of ids) {
+      const home = await teamOf(profileId, teams)
+      if (home) out.set(profileId, home)
+    }
+  } catch (err) {
+    log.warn('calendar.plan_notify.mention_targets_failed', { plan_id: input.planId, error: err instanceof Error ? err.message : String(err) })
+  }
+  return out
+}
+
+/** Tell each tagged person, on the team their link opens in. Never throws; returns who was told. */
+export async function notifyPlanMentions(input: {
+  planId: string
+  planTitle: string
+  actorProfileId: string
+  taskId: string | null
+  body: string
+  targets: ReadonlyMap<string, { id: string; slug: string }>
+}): Promise<string[]> {
+  const told: string[] = []
+  if (input.targets.size === 0) return told
+  try {
+    const author = await recipientFor(input.actorProfileId)
+    const todo = input.taskId ? await getTaskInPlans(input.taskId, [input.planId]) : null
+    const copy = planMentionCopy(author?.name ?? 'Someone on the Plan', input.planTitle, todo?.title ?? null, input.body)
+    for (const [profileId, home] of input.targets) {
+      const path = `${calendarSettingsPath(home.slug)}?plan=${input.planId}`
+      await routeNotification(
+        'item.mention',
+        { profileId, subject: { subjectType: 'space', subjectId: home.id } },
+        {
+          ...copy,
+          url: path,
+          tag: `plan-mention:${input.planId}:${input.taskId ?? 'plan'}`,
+          actorId: input.actorProfileId,
+          referenceType: 'plan',
+          referenceId: input.planId,
+        },
+      )
+      told.push(profileId)
+    }
+  } catch (err) {
+    log.warn('calendar.plan_notify.mention_failed', { plan_id: input.planId, error: err instanceof Error ? err.message : String(err) })
+  }
+  return told
+}
+
+/**
+ * Where a tag on a Plan opens for this person (LIVE-2524): the Plan's drawer in the calendar console
+ * of the team they work it from, host first, then an accepted guest. The bell row carries only the
+ * Plan id (notifications.reference_id is a uuid), so the "Spaces you run" hub resolves it on arrival.
+ * Null when the person works the Plan from no Space, and the hub simply shows.
+ */
+export async function planHrefForViewer(planId: string, profileId: string | null): Promise<string | null> {
+  if (!profileId) return null
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin.from('space_plans').select('space_id').eq('id', planId).maybeSingle()
+    const hostSpaceId = (data as { space_id: string } | null)?.space_id
+    if (!hostSpaceId) return null
+    const { data: shares } = await admin.from('space_plan_shares').select('guest_space_id, status').eq('plan_id', planId)
+    const guests = ((shares ?? []) as { guest_space_id: string; status: string }[]).filter((s) => s.status === 'accepted').map((s) => s.guest_space_id)
+    const home = await teamOf(profileId, [hostSpaceId, ...guests])
+    return home ? `${calendarSettingsPath(home.slug)}?plan=${planId}` : null
+  } catch (err) {
+    log.warn('calendar.plan_notify.plan_href_failed', { plan_id: planId, error: err instanceof Error ? err.message : String(err) })
+    return null
+  }
 }
 
 /** The people who work a Space's calendar: its owner and its active editors, moderators and admins. */

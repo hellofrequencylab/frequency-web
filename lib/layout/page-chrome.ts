@@ -572,6 +572,7 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // (owner directive, 2026-06-20: the right rail shows on every member page).
   { route: '/settings', label: 'Settings', area: 'Member' },
   { route: '/notifications', label: 'Notifications', area: 'Member' },
+  { route: '/inbox', label: 'Inbox', area: 'Member' },
   { route: '/settings/profile', label: 'Profile editor', area: 'Member' },
   { route: '/codes', label: 'Personal codes / QR hub', area: 'Member' },
   { route: '/journal', label: 'Journal (Capture)', area: 'Member' },

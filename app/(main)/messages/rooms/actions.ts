@@ -9,6 +9,8 @@ import { canEditRoomVisibility } from '@/lib/messages/room-settings-policy'
 import { type ActionResult, ok, fail, safeErrorMessage } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 import { belongsToRoomScope, isScopedRoomVisibility, scopedRoomRefusal } from '@/lib/messages/room-scope'
+import { extractReferences } from '@/lib/mentions/references'
+import { notifyRoomMentions, recordMessageReferences } from '@/lib/mentions/store'
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
 
@@ -230,12 +232,44 @@ export async function sendRoomMessage(roomId: string, body: string) {
     if (!membership) throw new Error('You must join the room before posting')
   }
 
-  const { error } = await admin.from('room_messages').insert({
-    room_id: roomId,
-    author_id: caller.id,
-    body: trimmed,
-  })
+  const { data: inserted, error } = await admin
+    .from('room_messages')
+    .insert({
+      room_id: roomId,
+      author_id: caller.id,
+      body: trimmed,
+    })
+    .select('id')
+    .single()
   if (error) throw new Error(error.message)
+
+  // @ and # (LIVE-2525): keep only people who are members of this room, store every tag by id, and
+  // tell each person tagged. A tag on someone outside the room is plain text and tells nobody.
+  const refs = extractReferences(trimmed)
+  if (inserted?.id && refs.length > 0) {
+    const tagged = refs.filter((r) => r.kind === 'profile').map((r) => r.id)
+    const { data: memberRows } = tagged.length
+      ? await admin.from('room_members').select('profile_id').eq('room_id', roomId).in('profile_id', tagged)
+      : { data: [] as { profile_id: string }[] }
+    const inRoom = new Set(((memberRows ?? []) as { profile_id: string }[]).map((m) => m.profile_id))
+    const kept = refs.filter((r) => r.kind !== 'profile' || (inRoom.has(r.id) && r.id !== caller.id))
+    await recordMessageReferences(admin, { sourceType: 'room_message', sourceId: inserted.id as string, createdBy: caller.id, refs: kept })
+    const people = kept.filter((r) => r.kind === 'profile').map((r) => r.id)
+    if (people.length > 0) {
+      const [{ data: roomRow }, { data: me }] = await Promise.all([
+        admin.from('rooms').select('name').eq('id', roomId).maybeSingle(),
+        admin.from('profiles').select('display_name').eq('id', caller.id).maybeSingle(),
+      ])
+      await notifyRoomMentions({
+        roomId,
+        roomName: (roomRow as { name: string | null } | null)?.name ?? 'a room',
+        authorId: caller.id,
+        authorName: (me as { display_name: string | null } | null)?.display_name?.trim() || 'Someone',
+        body: trimmed,
+        profileIds: people,
+      })
+    }
+  }
 
   revalidatePath(`/messages/r/${roomId}`)
 }
