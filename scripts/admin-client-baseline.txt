@@ -997,6 +997,8 @@ lib/digest.ts
 lib/dispatches.ts
 lib/elements/store.ts
 lib/email-studio/analytics.ts
+# EMAIL-085: lib/email-studio/consent.ts writes and reads contact_consents, a service-role-only table (RLS on, no policy); anonymous /subscribe confirms and the send cron have no member session.
+lib/email-studio/consent.ts
 lib/email-studio/data-blocks.ts
 lib/email-studio/loom-actions.ts
 lib/email-studio/saved-sections-actions.ts
