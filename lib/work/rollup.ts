@@ -1,7 +1,9 @@
 import 'server-only'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
-import { listSpacePlans } from '@/lib/calendar/plans-store'
+import { listPlanPencilDays, listSpacePlans } from '@/lib/calendar/plans-store'
+import { dayKeyIn } from '@/lib/calendar/day-grid-nav'
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 import { buildWorkRollup, type WorkRollup, type WorkSpace } from './rollup-core'
 
@@ -26,11 +28,12 @@ export async function loadWorkRollup(profileId: string): Promise<{ rollup: WorkR
   const shown = spaces.slice(0, MAX_SPACES)
   const input = await Promise.all(
     shown.map(async (space) => {
-      const [plans, tasks] = await Promise.all([
+      const [plans, tasks, pencilDays] = await Promise.all([
         listSpacePlans(space.id).catch(() => []),
         listTasksWithShared(space.id).catch(() => []),
+        listPlanPencilDays(space.id, HOME_TZ).catch(() => ({})),
       ])
-      return { space, plans, tasks }
+      return { space, plans, tasks, pencilDays, todayKey: dayKeyIn(HOME_TZ) }
     }),
   )
   return { rollup: buildWorkRollup(input, profileId), spaces: shown }

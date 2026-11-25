@@ -8,6 +8,7 @@
 import type { SpacePlan, PlanStage } from '@/lib/calendar/plans'
 import type { CrmTask } from '@/lib/crm/tasks-core'
 import { isOverdue } from '@/lib/crm/tasks-core'
+import { isPastPencil } from '@/lib/calendar/past-pencil'
 
 export interface WorkSpace {
   id: string
@@ -43,6 +44,8 @@ export interface WorkRollup {
   /** Live (not archived) Plans, production first, then plan, then pencil; newest touched first. */
   plans: WorkPlan[]
   counts: { mine: number; overdue: number; unassigned: number; plans: number }
+  /** Pencils whose dates all passed, left out of `plans` (SCAN-1340). */
+  datesPassed: number
 }
 
 const STAGE_ORDER: Record<PlanStage, number> = { production: 0, plan: 1, pencil: 2 }
@@ -62,10 +65,18 @@ function byDue(a: WorkTodo, b: WorkTodo): number {
 
 /**
  * Shape one rollup from each Space's Plans and to-dos. A to-do counted twice (a shared Plan's to-do
- * read from both Spaces) is kept once. Done and snoozed to-dos, and archived Plans, are left out.
+ * read from both Spaces) is kept once. Done and snoozed to-dos, and archived Plans, are left out, and so
+ * is a Pencil whose dates have all passed (SCAN-1340): it is counted in `datesPassed`, not listed.
  */
 export function buildWorkRollup(
-  input: readonly { space: WorkSpace; plans: readonly SpacePlan[]; tasks: readonly CrmTask[] }[],
+  input: readonly {
+    space: WorkSpace
+    plans: readonly SpacePlan[]
+    tasks: readonly CrmTask[]
+    /** Each Pencil Plan's dates as day keys, and the Space's today; absent = nothing folds. */
+    pencilDays?: Readonly<Record<string, readonly string[]>>
+    todayKey?: string
+  }[],
   viewerId: string,
   now: number = Date.now(),
 ): WorkRollup {
@@ -74,8 +85,9 @@ export function buildWorkRollup(
   const plans: WorkPlan[] = []
   const seenTodo = new Set<string>()
   const seenPlan = new Set<string>()
+  let datesPassed = 0
 
-  for (const { space, plans: spacePlans, tasks } of input) {
+  for (const { space, plans: spacePlans, tasks, pencilDays, todayKey } of input) {
     const planTitle = new Map(spacePlans.map((p) => [p.id, p.title]))
     const openByPlan = new Map<string, number>()
     for (const t of tasks) {
@@ -98,6 +110,10 @@ export function buildWorkRollup(
     for (const p of spacePlans) {
       if (p.archivedAt || seenPlan.has(p.id)) continue
       seenPlan.add(p.id)
+      if (todayKey && isPastPencil(p.stage, pencilDays?.[p.id] ?? [], todayKey)) {
+        datesPassed += 1
+        continue
+      }
       plans.push({
         id: p.id,
         title: p.title,
@@ -123,5 +139,6 @@ export function buildWorkRollup(
       unassigned: unassigned.length,
       plans: plans.length,
     },
+    datesPassed,
   }
 }

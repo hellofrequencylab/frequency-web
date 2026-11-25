@@ -1,4 +1,5 @@
 import { KINDS, HEALTH_TONES } from './kinds'
+import { isPastPencil } from '../past-pencil'
 import { dayLabel } from './days'
 import { holdLine, isHoldLapsed } from './hold'
 import { isInvitePending, isShared } from './day-items'
@@ -28,7 +29,7 @@ export function stageLabel(stage: string): string {
   return STAGES.find((s) => s.key === stage)?.label ?? stage
 }
 
-type HealthKey = 'on-track' | 'overdue' | 'holding' | 'hold-lapsed' | 'needs-date' | 'cancelled'
+type HealthKey = 'on-track' | 'overdue' | 'holding' | 'hold-lapsed' | 'needs-date' | 'cancelled' | 'date-passed'
 
 export interface Health {
   key: HealthKey
@@ -69,6 +70,8 @@ export function planStats(
   // A Plan that was called off is Cancelled even with no dates left (putting a Plan away drops them).
   if (plan.stage === 'cancelled') health = { key: 'cancelled', label: 'Cancelled', ...HEALTH_TONES.holding }
   else if (!items.length) health = { key: 'needs-date', label: 'Needs a date', ...HEALTH_TONES.needsDate }
+  // Every candidate date went by with none picked (SCAN-1340): pick a new date or let it go.
+  else if (isPastPencil(plan.stage, items.map((i) => i.date), today)) health = { key: 'date-passed', label: 'Date passed', ...HEALTH_TONES.needsDate }
   else if (late) health = { key: 'overdue', label: `${late} overdue`, ...HEALTH_TONES.overdue }
   else if (plan.stage === 'pencil') {
     health = isHoldLapsed(plan.hold, today)
@@ -142,7 +145,9 @@ export function buildBoard(data: PlannerData, today: string, ownSpaceId: string)
           shared: isShared(plan, ownSpaceId),
           invitePending: isInvitePending(plan, ownSpaceId),
         }
-      }),
+      })
+      // A Pencil whose dates all passed sinks to the bottom of its column (SCAN-1340), so the live ones lead.
+      .sort((a, b) => Number(a.health.key === 'date-passed') - Number(b.health.key === 'date-passed')),
   }))
 }
 

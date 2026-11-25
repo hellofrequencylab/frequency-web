@@ -1768,6 +1768,7 @@ export async function createBooking(
   note?: string,
   serviceTypeId?: string | null,
   answers?: Record<string, string> | null,
+  bookerTimeZone?: string | null,
 ): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to book a time.')
@@ -1793,6 +1794,7 @@ export async function createBooking(
     serviceTypeId: serviceTypeId ?? null,
     answers: answers ?? null,
     rescheduledFrom: null,
+    bookerTimeZone: bookerTimeZone ?? null,
   })
   if (!placed.ok) return fail(placed.error)
 
@@ -1866,6 +1868,8 @@ interface GuestBookingInput {
   answers?: Record<string, string> | null
   /** The guest ticked "Keep me posted". The ONLY thing that makes their CRM contact mailable. */
   optIn?: boolean
+  /** BOOK-009: the time zone the guest's browser reported, so their emails state their own time. */
+  timeZone?: string | null
 }
 
 /**
@@ -1909,6 +1913,7 @@ export async function createGuestBooking(input: GuestBookingInput): Promise<Acti
     answers: input.answers ?? null,
     rescheduledFrom: null,
     guestHold: hold,
+    bookerTimeZone: input.timeZone ?? null,
   })
   if (!placed.ok) return fail(placed.error)
 
@@ -1926,6 +1931,7 @@ export async function createGuestBooking(input: GuestBookingInput): Promise<Acti
       serviceName: placed.serviceName,
       confirmUrl: await siteConfirmBookingUrl(space, hold.token),
       holdMinutes: GUEST_HOLD_MINUTES,
+      bookerTimeZone: cleanBookerTimeZone(input.timeZone),
     })
   } catch {
     /* fail-soft */
@@ -2060,6 +2066,14 @@ interface PlacedBooking {
   serviceName: string | null
 }
 
+/** BOOK-009: the booker's browser zone, kept only when it is a real IANA zone (at most 64 characters),
+ *  else null. Pure. */
+export function cleanBookerTimeZone(tz: string | null | undefined): string | null {
+  const t = typeof tz === 'string' ? tz.trim() : ''
+  if (!t || t.length > 64) return null
+  return isValidTimeZone(t) ? t : null
+}
+
 /**
  * The shared validate-then-insert core for createBooking AND rescheduleBooking. Re-derives the Space's
  * published slots under the full P1/P2 context (service duration, buffers, notice, overrides, window),
@@ -2083,6 +2097,9 @@ export async function validateAndPlaceBooking(params: {
    *  checkout sells) instead of a confirmed booking. The settle webhook confirms it (confirmBookingByOrder).
    *  Never together with guestHold. */
   paidHold?: { productId: string } | null
+  /** BOOK-009: the zone the booker's browser reported. Stored for the booker's emails; a reschedule
+   *  without one inherits the old booking's (a database trigger). Ignored when not a real IANA zone. */
+  bookerTimeZone?: string | null
 }): Promise<PlacedBooking | { ok: false; error: string }> {
   const { space, booker, startsAtISO, serviceTypeId, rescheduledFrom } = params
   const guestHold = params.guestHold ?? null
@@ -2170,6 +2187,9 @@ export async function validateAndPlaceBooking(params: {
   if (rescheduledFrom) optional.rescheduled_from = rescheduledFrom
   if (serviceTypeId) optional.service_type_id = serviceTypeId
   const hasOptional = Object.keys(optional).length > 0
+  // BOOK-009: the booker's zone rides apart from the P3 columns, so a database without the column drops
+  // only the zone, never the service, the answers or the reschedule link.
+  const zone = cleanBookerTimeZone(params.bookerTimeZone)
 
   // The bookings-a-month meter (space_bookings, LIVE-749). A reschedule moves a booking the Space
   // already counted, so it never asks.
@@ -2180,9 +2200,12 @@ export async function validateAndPlaceBooking(params: {
 
   try {
     let res = await bookingsTable()
-      .insert([{ ...baseRow, ...optional }])
+      .insert([{ ...baseRow, ...optional, ...(zone ? { booker_time_zone: zone } : {}) }])
       .select(BOOKING_COLS)
       .maybeSingle()
+    if (res.error && zone) {
+      res = await bookingsTable().insert([{ ...baseRow, ...optional }]).select(BOOKING_COLS).maybeSingle()
+    }
     if (res.error && hasOptional) {
       // Likely a missing P3 column (or a duplicate; a duplicate retry fails again -> friendly message).
       res = await bookingsTable().insert([baseRow]).select(BOOKING_COLS).maybeSingle()

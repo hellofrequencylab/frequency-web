@@ -13,6 +13,8 @@ import { SignInSubmit } from './submit'
 import { safeNextPath } from '@/lib/auth/safe-next'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySignIn } from './frequency-sign-in'
+import { CreateAccountView, ForgotPasswordView, NewPasswordView } from './password-views'
+import { maskEmail } from '@/lib/auth/sign-in-hint'
 
 export const metadata: Metadata = {
   title: 'Sign in',
@@ -24,9 +26,9 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string; email?: string; step?: string }>
+  searchParams: Promise<{ error?: string; next?: string; email?: string; step?: string; method?: string }>
 }) {
-  const { error, next, email, step } = await searchParams
+  const { error, next, email, step, method } = await searchParams
 
   // ALREADY SIGNED IN → straight into the app. The header no longer offers a member this page
   // (the auth cluster follows the viewer now), but a bookmark, a stale tab, an old email and the
@@ -46,6 +48,19 @@ export default async function SignInPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  // SET A NEW PASSWORD (SEC-045) is the one step a signed-in person is shown: the reset link signs them
+  // in, and this is where they land to choose the password. Without a session there is nothing to set
+  // it on, so they are sent to ask for a link. The action re-checks that the session is fresh.
+  if (step === 'new-password') {
+    if (!user) redirect('/sign-in?step=forgot&error=reset')
+    return (
+      <NewPasswordView
+        errorMessage={signInErrorMessage(error)}
+        email={user.email ?? ''}
+        maskedEmail={maskEmail(user.email)}
+      />
+    )
+  }
   if (user) redirect(nextTarget || '/feed')
 
   // `?error=` carries a CODE and this page owns the sentence. Rendering the raw value let anyone
@@ -77,6 +92,19 @@ export default async function SignInPage({
   const pendingNewEmail = jar.get(NEW_ACCOUNT_EMAIL_COOKIE)?.value
   const newAccountEmail = step === 'new-account' && isEmail(pendingNewEmail) ? pendingNewEmail : null
 
+  // THE OTHER PASSWORD STEPS (SEC-045): create an account, and forgot (or never had) a password. The
+  // create step prefills from the "no account for that email yet" cookie when it is there.
+  if (step === 'create') {
+    const prefill = isEmail(pendingNewEmail) ? pendingNewEmail : emailValue
+    return <CreateAccountView errorMessage={errorMessage} nextValue={nextValue} emailValue={prefill} />
+  }
+  if (step === 'forgot') return <ForgotPasswordView errorMessage={errorMessage} emailValue={emailValue} />
+
+  // WHICH EMAIL FORM (SEC-045): the one asked for, else the one this device used last time, else the
+  // magic link. A closed pair, so the query cannot pick anything else.
+  const signInView =
+    method === 'password' || method === 'link' ? method : hint?.method === 'password' ? 'password' : 'link'
+
   // FREQUENCY (ADR-1737, build-time): the same answers, drawn in the doorway frame. DAWN is unchanged.
   if (SITE_DESIGN === 'frequency') {
     return (
@@ -86,6 +114,7 @@ export default async function SignInPage({
         emailValue={emailValue}
         hintSentence={hint ? signInHintSentence(hint) : null}
         newAccountEmail={newAccountEmail}
+        method={signInView}
       />
     )
   }
