@@ -7,12 +7,28 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { getSpacePlan } from '@/lib/calendar/plans-store'
 import { resolveCommentAuthors } from '@/lib/calendar/plan-comments-store'
-import { listPlanTimeOptionRows, listTimeVoteRows, setMyTimeVoteRow } from '@/lib/calendar/time-votes-store'
+import {
+  joinOptionGroupRows,
+  listPlanTimeOptionRows,
+  listSpaceYesVotes,
+  listTimeVoteRows,
+  setMyTimeVoteRow,
+} from '@/lib/calendar/time-votes-store'
+import { insertCalendarEntries, listSpaceCalendarEntries } from '@/lib/calendar/entries-store'
+import { MAX_CANDIDATE_DATES, parseEntryInput } from '@/lib/calendar/entries'
+import { listSpaceEventSpans } from '@/lib/calendar/admin-calendar'
+import { availabilityWindow } from '@/lib/calendar/availability'
+import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
+import { shortDateLabel } from '@/lib/calendar/short-date'
+import { suggestTimes, wallSpanOf, type PastYes, type SuggestPerson, type WallSpan } from '@/lib/calendar/suggest-times'
+import { listTasks } from '@/lib/crm/tasks'
+import { dayInZone } from '@/lib/time/zone'
 import { notifyTimeVote } from '@/lib/calendar/time-vote-notify'
 import { countVoters, parseTimeVote, rankTimeOptions, voterKey, type TimeOptionTally } from '@/lib/calendar/time-votes'
 import type { EntryRow } from '@/lib/calendar/entries'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import { formatEventWhen } from '@/lib/time/zone'
+import { getSpaceById } from '@/lib/spaces/store'
 
 // FIND A TIME (LIVE-2531): the Plan drawer's poll. The Space's team answers each candidate date
 // Yes, If need be or No, and the drawer lists the dates best first. Every read and write runs on the
@@ -102,5 +118,148 @@ export async function castTimeVote(slug: string, planId: string, raw: unknown): 
       whenLabel: optionWhen(row),
     })
   }
+  return ok((await buildView(seat)).view)
+}
+
+// ── VERA SUGGESTS TIMES (LIVE-2532) ─────────────────────────────────────────────────────────────
+// Three dates and times for the people this Plan needs, each with one line of why. A proposal only
+// (ADR-1386): "Add as an option" pencils one in beside the Plan's other candidate dates, where the
+// team votes on it like any other. Nothing is booked and nobody is invited.
+
+export interface TimeSuggestionView {
+  /** The people Vera planned around, by name. */
+  forNames: string[]
+  options: { startsAt: string; durationMin: number; whenLabel: string; reason: string }[]
+  /** How many more options the Plan can take before it holds three. */
+  room: number
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Who has to be there: the Plan's lead, everyone a to-do of the Plan is handed to, and everyone on
+ *  the team who has answered its Find a time. */
+async function planPeople(seat: PlanSeat, optionIds: readonly string[]): Promise<{ people: SuggestPerson[]; todos: Awaited<ReturnType<typeof listTasks>> }> {
+  const [planTodos, votes, spaceTodos] = await Promise.all([
+    listTasks({ spaceId: seat.spaceId, planId: seat.plan.id, limit: 200 }),
+    listTimeVoteRows(optionIds),
+    listTasks({ spaceId: seat.spaceId, limit: 500 }),
+  ])
+  const ids = new Set<string>()
+  const lead = seat.plan.ownerProfileId ?? seat.plan.createdBy
+  if (lead) ids.add(lead)
+  for (const t of planTodos) if (t.assigneeProfileId) ids.add(t.assigneeProfileId)
+  for (const v of votes) if (v.voter_profile_id) ids.add(v.voter_profile_id)
+  const names = await resolveCommentAuthors([...ids])
+  return {
+    people: [...ids].slice(0, 12).map((id) => ({ id, name: names.get(id) ?? 'Someone on the team' })),
+    todos: spaceTodos,
+  }
+}
+
+export async function suggestPlanTimes(slug: string, planId: string): Promise<ActionResult<TimeSuggestionView>> {
+  const seat = await planSeat(slug, planId)
+  if ('error' in seat) return fail(seat.error)
+  const [options, space] = await Promise.all([listPlanTimeOptionRows(seat.spaceId, seat.plan.id), getSpaceById(seat.spaceId)])
+  const zone = options[0]?.time_zone ?? space?.timeZone ?? null
+  const today = dayInZone(new Date(), zone)
+  const window = availabilityWindow(today, 30)
+  const [{ people, todos }, entries, events, pastYesRows] = await Promise.all([
+    planPeople(seat, options.map((o) => o.id)),
+    listSpaceCalendarEntries(seat.spaceId, window.fromDay, window.toDay),
+    listSpaceEventSpans(seat.spaceId),
+    listSpaceYesVotes(seat.spaceId),
+  ])
+
+  // The Space's calendar, the Plan's own candidate dates included, so Vera never offers one twice.
+  const spaceBusy: WallSpan[] = [
+    ...entries.filter((e) => e.status !== 'cancelled').map((e) => wallSpanOf(e.starts_at, e.ends_at)),
+    ...events.filter((e) => !e.is_cancelled).map((e) => wallSpanOf(e.starts_at, e.ends_at)),
+  ].filter((s): s is WallSpan => s !== null)
+
+  // Each person's own time: a to-do with a start minute is a block of their day; any open to-do
+  // due on a day makes that day a heavier one for them.
+  const personBusy: Record<string, WallSpan[]> = {}
+  const personDueDays: Record<string, string[]> = {}
+  for (const t of todos) {
+    if (t.status !== 'open' || !t.assigneeProfileId || !t.dueAt) continue
+    const day = t.dueAt.slice(0, 10)
+    ;(personDueDays[t.assigneeProfileId] ??= []).push(day)
+    if (typeof t.startMinute === 'number') {
+      const start = Date.parse(`${day}T00:00:00Z`) + t.startMinute * 60_000
+      ;(personBusy[t.assigneeProfileId] ??= []).push({ startMs: start, endMs: start + (t.estMinutes || 30) * 60_000 })
+    }
+  }
+
+  const pastYes: PastYes[] = pastYesRows
+    .filter((v) => !v.allDay)
+    .map((v) => {
+      const d = new Date(Date.parse(v.startsAt))
+      return { profileId: v.profileId, weekday: d.getUTCDay(), startMin: d.getUTCHours() * 60 + d.getUTCMinutes() }
+    })
+
+  // As long as the Plan's own date runs, else an hour.
+  const first = options.find((o) => !o.all_day)
+  const firstSpan = first ? wallSpanOf(first.starts_at, first.ends_at) : null
+  const durationMin = firstSpan ? Math.round((firstSpan.endMs - firstSpan.startMs) / 60_000) : 60
+
+  const picks = suggestTimes({ people, fromDayKey: today, durationMin, spaceBusy, personBusy, personDueDays, pastYes })
+  return ok({
+    forNames: people.map((p) => p.name),
+    options: picks.map((p) => ({
+      startsAt: p.startsAt,
+      durationMin,
+      whenLabel: formatEventWhen(p.startsAt, zone, { style: 'full' }),
+      reason: p.reason,
+    })),
+    room: Math.max(0, MAX_CANDIDATE_DATES - options.length),
+  })
+}
+
+/** Pencil one of Vera's suggested times in as another candidate date of the Plan. */
+export async function addSuggestedTime(
+  slug: string,
+  planId: string,
+  raw: { startsAt?: unknown; durationMin?: unknown },
+): Promise<ActionResult<FindATimeView>> {
+  const seat = await planSeat(slug, planId)
+  if ('error' in seat) return fail(seat.error)
+  const span = typeof raw?.startsAt === 'string' ? wallSpanOf(raw.startsAt, null) : null
+  const duration = typeof raw?.durationMin === 'number' && Number.isInteger(raw.durationMin) ? raw.durationMin : 60
+  if (!span || duration < 15 || duration > 8 * 60) return fail('That time is not one Vera offered.')
+  const options = await listPlanTimeOptionRows(seat.spaceId, seat.plan.id)
+  if (options.length >= MAX_CANDIDATE_DATES) return fail(`A Plan can hold ${MAX_CANDIDATE_DATES} dates at most. Remove one first.`)
+  const start = new Date(span.startMs)
+  const day = start.toISOString().slice(0, 10)
+  const startMin = start.getUTCHours() * 60 + start.getUTCMinutes()
+  const endMin = Math.min(startMin + duration, 1439)
+  const space = await getSpaceById(seat.spaceId)
+  const zone = options[0]?.time_zone ?? space?.timeZone ?? ''
+  const parsed = parseEntryInput({
+    kind: 'pencil',
+    title: seat.plan.title,
+    allDay: false,
+    startDate: day,
+    endDate: day,
+    startTime: `${pad(Math.floor(startMin / 60))}:${pad(startMin % 60)}`,
+    endTime: `${pad(Math.floor(endMin / 60))}:${pad(endMin % 60)}`,
+    timeZone: zone,
+    stage: 'pencil',
+    blocksTime: false,
+    showPublicly: false,
+    planId: seat.plan.id,
+  })
+  if ('error' in parsed) return fail(parsed.error)
+  const group = options.find((o) => o.option_group)?.option_group ?? crypto.randomUUID()
+  const loose = options.filter((o) => o.option_group !== group).map((o) => o.id)
+  if (!(await joinOptionGroupRows(seat.spaceId, loose, group))) return fail('The date could not be added.')
+  const res = await insertCalendarEntries(seat.spaceId, [parsed.data], seat.profileId, group)
+  if ('error' in res) return fail(res.error)
+  await recordPlanActivity({
+    planId: seat.plan.id,
+    actorProfileId: seat.profileId,
+    actorSpaceId: seat.spaceId,
+    kind: 'date_added',
+    summary: `Added a date Vera suggested: ${shortDateLabel(day)}.`,
+  })
   return ok((await buildView(seat)).view)
 }

@@ -5923,6 +5923,112 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5491,
+      "expiresAt": "2026-12-09T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346410000_contact_consents.sql",
+          "sha256": "8d6a7d6ff19ed75b2960615aedcc6c1a0dc237bb65fee91deda4f9ce8cb21c41"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/EMAIL-085.json",
+          "status": "modified",
+          "sha256": "38935860a2eb926ed502c07116daf970f3e5f467e67bf661cc8c54c35067c2c4",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/import/commit.test.ts",
+          "status": "modified",
+          "sha256": "7ee554a9eddf20de78853010867f12f062e4f737bf84fc0fac84c2e94bfdb3de",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/import/commit.ts",
+          "status": "modified",
+          "sha256": "1a6490b40f543ca58d21827a3b46172ea4946c09b3b2e74acfddca1f34760894",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/optin/store.ts",
+          "status": "modified",
+          "sha256": "78fc1e60c2579b9071dfc797c0dce2edc70f425e3af4df9966131ff5901e62c0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/consent.test.ts",
+          "status": "added",
+          "sha256": "563b0c58824a79893d1916bb65fca171ccb3c25cd6943568b427fa8d803e0714",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/consent.ts",
+          "status": "added",
+          "sha256": "0d8898978a8af182fd38264e8b46189ef1b77202931b65066f8f37e1380ae0de",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/send.ts",
+          "status": "modified",
+          "sha256": "3ef52a7be50739d4643529eb7ff454f8d3166514075bcf6b37221f7e3d0d9614",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "a82555f995bc165fab684083e3cbd813ae1aeaf843829666ef65354d1dbbc6c1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "ef68ec5a4b0d4c6084fd7fc548d7ca5d152932d003d5cddd96f03d2f62cbe4b2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/rls-deny-all.txt",
+          "status": "modified",
+          "sha256": "c76a734147f4b3b7776a4c4060d663dc579278bd151ec0765283c57fad667cb3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/table-grants.txt",
+          "status": "modified",
+          "sha256": "80bbf9796a92fe85012aba41acdb3f6d47e39d15c547990245d388c9a477d50f",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346410000_contact_consents.sql",
+          "status": "added",
+          "sha256": "8d6a7d6ff19ed75b2960615aedcc6c1a0dc237bb65fee91deda4f9ce8cb21c41",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
