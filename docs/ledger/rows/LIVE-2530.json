@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P3",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/messages/room-scope.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: chat shows links as bare text; the only outside-page fetcher is the business importer. Fix: Frequency item links render a live card under the viewer's own access; outside links get a link_previews cache (title, image, fetched_at, kept 7 days) filled by a server fetcher that refuses private addresses.",
+  "detail": "FOUND 2026-11-24: chat shows links as bare text; the only outside-page fetcher is the business importer. Fix: Frequency item links render a live card under the viewer's own access; outside links get a link_previews cache (title, image, fetched_at, kept 7 days) filled by a server fetcher that refuses private addresses.\n\nlink_previews caches title, description, image and site name per URL for 7 days, filled after a room or DM send through lib/net/pinned-fetch plus an isPublicHost pre-check; cards render under the viewer's session, and links to our own events and Spaces read live under RLS. Migration 20270346470000.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2530",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2530"
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }
