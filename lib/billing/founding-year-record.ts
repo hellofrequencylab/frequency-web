@@ -20,7 +20,7 @@ type Row = Record<string, unknown>
 
 /** The Founding Year facts kept on `founding_members.meta.founding_year`. Read back by the Founder seat
  *  count and the finder's fee perk (LIVE-2542, LIVE-2543). */
-export interface FoundingYearMeta {
+interface FoundingYearMeta {
   plan: 'business' | 'collective'
   paid_cents: number
   method: 'card' | 'cash'
