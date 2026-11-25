@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1350",
+  "title": "The calendar and each Plan open the Space team room in one tap",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "components/calendar-suite/suite-header.tsx",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25: every Space has a team room (LIVE-2529, lib/spaces/team-room.ts) but nothing on the calendar, a Plan or the Space console links to it; the only way in is /messages. Fix: a Team room button in the calendar header and a 'Talk in team room' link on the Plan's Talk tab.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1350",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
