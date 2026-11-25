@@ -93,7 +93,7 @@ export default async function WorkPage() {
 
       <AdminSection
         title="Live Plans"
-        description={`Production first, then Plan, then Pencil.${datesPassed ? ` ${datesPassed === 1 ? '1 Pencil' : `${datesPassed} Pencils`} whose dates all passed ${datesPassed === 1 ? 'is' : 'are'} left out.` : ''}`}
+        description={`Production first, then Planning, then Pencil.${datesPassed ? ` ${datesPassed === 1 ? '1 Pencil' : `${datesPassed} Pencils`} whose dates all passed ${datesPassed === 1 ? 'is' : 'are'} left out.` : ''}`}
       >
         {plans.length ? (
           <div className="stack" style={{ gap: 8 }}>
