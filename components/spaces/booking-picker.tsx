@@ -58,6 +58,16 @@ function useViewerTimezone(fallback: string): string {
   )
 }
 
+/** BOOK-009: the zone this browser reports, sent with a booking so the booker's emails state their own
+ *  time. Null when the browser will not say; the server checks it is a real zone either way. */
+function browserTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null
+  } catch {
+    return null
+  }
+}
+
 export function BookingPicker({
   spaceId,
   slots,
@@ -151,6 +161,7 @@ export function BookingPicker({
           answers,
           optIn,
           company,
+          timeZone: browserTimeZone(),
         })
         if (isError(result)) {
           setError(result.error)
@@ -179,7 +190,7 @@ export function BookingPicker({
       }
       const result = isReschedule
         ? await rescheduleBooking(rescheduleBookingId!, target.startsAt, serviceTypeId)
-        : await createBooking(spaceId, target.startsAt, note.trim() || undefined, serviceTypeId, answers)
+        : await createBooking(spaceId, target.startsAt, note.trim() || undefined, serviceTypeId, answers, browserTimeZone())
       if (isError(result)) {
         setError(result.error)
         return
