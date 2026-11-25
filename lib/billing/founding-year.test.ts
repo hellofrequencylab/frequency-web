@@ -6,6 +6,8 @@ import {
   foundingYearCents,
   foundingYearOpen,
   foundingYearRenewsAtUnix,
+  founderSeatsLeft,
+  numberFounderSeats,
   isFoundingYearMetadata,
 } from './founding-year'
 import { yearlyFromMonthly } from './pricing-keys'
@@ -46,5 +48,31 @@ describe('the Founding Year', () => {
     expect(isFoundingYearMetadata({ founding_year: 'prepay' })).toBe(true)
     expect(isFoundingYearMetadata({ kind: 'space_plan' })).toBe(false)
     expect(isFoundingYearMetadata(null)).toBe(false)
+  })
+})
+
+// LIVE-2542 — 150 numbered Founder seats, in payment order.
+describe('the Founder seats', () => {
+  it('numbers seats in payment order, ties broken by row id, one seat per Space', () => {
+    const seats = numberFounderSeats([
+      { spaceId: 'c', paidAt: '2026-12-03T00:00:00Z', id: '3' },
+      { spaceId: 'a', paidAt: '2026-12-01T00:00:00Z', id: '1' },
+      { spaceId: 'b', paidAt: '2026-12-01T00:00:00Z', id: '2' },
+      { spaceId: 'a', paidAt: '2026-12-05T00:00:00Z', id: '9' },
+      { spaceId: 'x', paidAt: 'not a date', id: '4' },
+    ])
+    expect([...seats.entries()]).toEqual([
+      ['a', 1],
+      ['b', 2],
+      ['c', 3],
+    ])
+  })
+
+  it('caps at 150 and never goes below zero', () => {
+    expect(FOUNDING_YEAR.seatCap).toBe(150)
+    expect(founderSeatsLeft(0)).toBe(150)
+    expect(founderSeatsLeft(149)).toBe(1)
+    expect(founderSeatsLeft(150)).toBe(0)
+    expect(founderSeatsLeft(160)).toBe(0)
   })
 })

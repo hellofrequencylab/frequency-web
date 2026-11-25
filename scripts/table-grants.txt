@@ -65,6 +65,7 @@ community_book_submissions           internal
 connection_settings                  public
 consent_records                      authenticated
 contact_channel_preferences          authenticated
+contact_consents                     internal
 contact_import                       authenticated
 contact_interactions                 authenticated
 contact_relationships                authenticated
@@ -457,3 +458,7 @@ space_calendar_sync_connections       authenticated
 
 # LIVE-2524: @ tags by id; the author writes and withdraws, the tagged person and the author read (RLS).
 mentions                              authenticated
+
+# LIVE-2527: team threads on an event, deal or contact, and per-person read marks (RLS: the Space team).
+item_comments                         authenticated
+thread_reads                          authenticated

@@ -38,6 +38,7 @@ import {
   type FoundingYearPlan,
 } from './founding-year'
 import { recordFoundingYearFromSession } from './founding-year-record'
+import { founderSeatsTaken } from './founder-seats'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -324,9 +325,16 @@ export async function createSpaceLoadoutCheckout(
   // January 31, 2028, with no trial. Decided before any line item resolves (./founding-year.ts).
   const baseItemKey = catalogItems[0] ? itemKeyForCatalogKey(catalogItems[0].key) : null
   const baseLocked = baseItemKey ? Boolean((await readLockedPriceId(spaceId, baseItemKey))?.trim()) : false
-  const foundingYear: FoundingYearPlan | null = offerClosed
+  let foundingYear: FoundingYearPlan | null = offerClosed
     ? null
     : foundingYearApplies({ plan: loadout.plan, interval, baseLocked })
+  // THE 150 FOUNDER SEATS (LIVE-2542). Once they are taken the Founding Year is gone and yearly is the
+  // ordinary yearly price. An unreadable count (null) keeps selling: one checkout past a transient read
+  // error costs a seat at most, and refusing would stop every Founding Year sale on a blip.
+  if (foundingYear) {
+    const taken = await founderSeatsTaken()
+    if (taken !== null && taken >= FOUNDING_YEAR.seatCap) foundingYear = null
+  }
   const lineItems: { price: string; quantity: number }[] = []
   for (const { key } of catalogItems) {
     const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant, offerClosed)

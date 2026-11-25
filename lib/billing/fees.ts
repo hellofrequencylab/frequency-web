@@ -38,7 +38,8 @@ export function platformFeeCents(grossCents: number): number {
 // when the buyer is the seller's own audience; that short-circuits before any IO below. A buyer who
 // has paid this seller before IS their own audience, so the fee is charged once per customer. A plan
 // finds its rung through `takeRateRungForPlan`. The individual-seller rungs are default-deny values
-// only: the payments gate refuses those sellers (LIVE-753). A Founding Business keeps its locked 3%.
+// only: the payments gate refuses those sellers (LIVE-753). A Founding Business keeps its locked 3%, and a
+// Founder who paid the Founding Year pays no finder's fee at all through January 31, 2028 (LIVE-2543).
 //
 // The pure math lives in lib/billing/pricing-keys.ts (sourceAwareTakeRateCents); this IO wrapper reads the
 // operator rates and applies them. FAIL-SAFE in two layers: `networkTakeRateFromStored` rebuilds the vector
@@ -75,7 +76,12 @@ async function foundingLockedTakeBps(spaceId: string): Promise<number | null> {
   try {
     const { getFoundingStatus } = await import('@/lib/founding/status')
     const f = await getFoundingStatus({ spaceId })
-    return f && f.kind === 'business' && f.status === 'active' ? f.lockedTakeBps : null
+    if (!f || f.kind !== 'business' || f.status !== 'active') return null
+    // THE FOUNDER FEE PERK (LIVE-2543, owner 2026-11-23): a Space that paid its Founding Year pays no
+    // finder's fee on anyone through January 31, 2028. A 0 here buys the rung down to nothing.
+    const { founderPaysNoFindersFee } = await import('./founding-year')
+    if (founderPaysNoFindersFee({ active: true, hasFoundingYear: f.foundingYear })) return 0
+    return f.lockedTakeBps
   } catch {
     return null
   }

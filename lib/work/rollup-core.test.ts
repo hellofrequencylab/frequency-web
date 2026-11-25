@@ -64,3 +64,21 @@ describe('buildWorkRollup', () => {
     expect(planHref('frequency', null)).toBe('/spaces/frequency/settings/calendar')
   })
 })
+
+describe('a Pencil whose dates all passed (SCAN-1340)', () => {
+  it('leaves the live Plans and is counted instead', () => {
+    const r = buildWorkRollup(
+      [{
+        space: freq,
+        plans: [plan('old', 'pencil'), plan('soon', 'pencil'), plan('nodate', 'pencil'), plan('run', 'plan')],
+        tasks: [],
+        pencilDays: { old: ['2026-09-22', '2026-09-24'], soon: ['2026-09-22', '2026-12-01'], run: ['2026-09-01'] },
+        todayKey: '2026-11-25',
+      }],
+      'me',
+      NOW,
+    )
+    expect(r.plans.map((p) => p.id).sort()).toEqual(['nodate', 'run', 'soon'])
+    expect(r.datesPassed).toBe(1)
+  })
+})

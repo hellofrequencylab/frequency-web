@@ -9991,6 +9991,50 @@ export type Database = {
           },
         ]
       }
+      item_comments: {
+        Row: {
+          author_profile_id: string | null
+          body: string
+          created_at: string
+          id: string
+          removed_at: string | null
+          removed_by: string | null
+          space_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Insert: {
+          author_profile_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Update: {
+          author_profile_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id?: string
+          subject_id?: string
+          subject_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_comments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_completions: {
         Row: {
           completed_at: string
@@ -22149,6 +22193,27 @@ export type Database = {
           },
         ]
       }
+      thread_reads: {
+        Row: {
+          last_read_at: string
+          profile_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Insert: {
+          last_read_at?: string
+          profile_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Update: {
+          last_read_at?: string
+          profile_id?: string
+          subject_id?: string
+          subject_type?: string
+        }
+        Relationships: []
+      }
       tips: {
         Row: {
           amount_cents: number
@@ -24847,6 +24912,7 @@ export type Database = {
         Returns: undefined
       }
       release_guest_seat: { Args: { p_token: string }; Returns: string }
+      remove_item_comment: { Args: { p_comment_id: string }; Returns: boolean }
       remove_plan_comment: { Args: { p_comment_id: string }; Returns: boolean }
       remove_profile_meta_keys: {
         Args: { p_keys: string[]; p_profile_id: string }

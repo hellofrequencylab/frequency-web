@@ -19,7 +19,8 @@ import type { WorkTodo } from '@/lib/work/rollup-core'
 
 export const dynamic = 'force-dynamic'
 
-const STAGE_LABEL = { pencil: 'Pencil', plan: 'Plan', production: 'Production' } as const
+// The canon's stage words (NAMING: Pencil, Planning, Production); the stored stage is `plan`.
+const STAGE_LABEL = { pencil: 'Pencil', plan: 'Planning', production: 'Production' } as const
 
 function dueLabel(iso: string | null): string | null {
   if (!iso) return null
@@ -51,7 +52,7 @@ function TodoRows({ todos }: { todos: WorkTodo[] }) {
 export default async function WorkPage() {
   const { profileId } = await requireAdmin('janitor')
   const { rollup, spaces } = await loadWorkRollup(profileId)
-  const { mine, unassigned, plans, counts } = rollup
+  const { mine, unassigned, plans, counts, datesPassed } = rollup
 
   return (
     <AdminTemplate
@@ -91,7 +92,10 @@ export default async function WorkPage() {
         )}
       </AdminSection>
 
-      <AdminSection title="Live Plans" description="Production first, then Plan, then Pencil.">
+      <AdminSection
+        title="Live Plans"
+        description={`Production first, then Planning, then Pencil.${datesPassed ? ` ${datesPassed === 1 ? '1 Pencil' : `${datesPassed} Pencils`} whose dates all passed ${datesPassed === 1 ? 'is' : 'are'} left out.` : ''}`}
+      >
         {plans.length ? (
           <div className="stack" style={{ gap: 8 }}>
             {plans.map((p) => (
