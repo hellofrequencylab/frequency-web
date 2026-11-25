@@ -1700,6 +1700,55 @@ Unsubscribe from these emails: ${unsubscribeUrl}
   }
 }
 
+// FIND A TIME BY EMAIL (EMAIL-092). An outside collaborator (a venue, a guest teacher) gets one link
+// that opens the Plan's candidate dates with no account; the link itself is the authorisation
+// (lib/calendar/time-vote-token.ts). Transactional and one to one, asked for by the Space's team, so
+// it carries no unsubscribe: there is no list to leave. The sender is the platform; the Space is named.
+interface TimeVoteInviteEmailParams {
+  to: string
+  recipientName: string | null
+  spaceName: string
+  planTitle: string
+  /** The dates on offer, already formatted ("Sat, Dec 6, 7:00 PM"). */
+  whenLabels: string[]
+  /** The signed link's path (timeVotePath). */
+  votePath: string
+  /** The member who asked, by name. */
+  askedBy: string | null
+}
+
+export function buildTimeVoteInviteEmail(params: TimeVoteInviteEmailParams): EmailPayload {
+  const { to, recipientName, spaceName, planTitle, whenLabels, votePath, askedBy } = params
+  const url = `${BASE_URL}${votePath}`
+  const subject = `Which date works for ${planTitle}?`
+  const who = askedBy ? `${askedBy} at ${spaceName}` : spaceName
+  const lead = `${who} is picking a date for ${planTitle} and wants to know what works for you. Mark each date yes, if need be or no. No account needed, and it takes a minute.`
+  const hi = recipientName ? `Hi ${recipientName}, ` : 'Hi, '
+  const list = whenLabels.map((w) => `<li style="margin:0 0 6px;">${escapeHtml(w)}</li>`).join('')
+  return {
+    to,
+    subject,
+    html: emailShell(`
+      ${emailKicker('Find a time')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(hi + lead)}</p>
+      <ul style="${pStyle}padding-left:20px;">${list}</ul>
+      ${emailButton('Pick your dates', url)}
+      <p data-fq="fq-p" style="${pStyle}">The link is yours alone and works for three weeks.</p>
+    `),
+    text: `${subject}
+
+${hi}${lead}
+
+${whenLabels.map((w) => `- ${w}`).join('\n')}
+
+Pick your dates: ${url}
+
+The link is yours alone and works for three weeks.
+`,
+  }
+}
+
 export async function sendBookingCancelledEmail(params: {
   to: string
   recipientName: string

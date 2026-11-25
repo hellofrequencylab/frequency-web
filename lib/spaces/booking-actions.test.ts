@@ -109,6 +109,11 @@ describe('createGuestBookingAction', () => {
     await createGuestBookingAction({ ...input, optIn: true })
     expect(m.createGuest.mock.calls[0][0]).toMatchObject({ optIn: true })
   })
+
+  it("passes on the zone the guest's browser reported (BOOK-009)", async () => {
+    await createGuestBookingAction({ ...input, timeZone: 'America/New_York' })
+    expect(m.createGuest.mock.calls[0][0]).toMatchObject({ timeZone: 'America/New_York' })
+  })
 })
 
 describe('listGuestOpenSlotsAction', () => {

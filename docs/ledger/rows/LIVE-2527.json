@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "L",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/calendar/plan-comments-store.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: space_plan_comments hangs off a Plan, a to-do or a calendar entry only; deals and contacts have a timeline but no team thread, and dispatch_comments and listing_comments are separate comment systems. Fix: generalize to one thread table keyed by subject_type and subject_id; creating, being assigned or being mentioned follows the thread. Retire the parallel comment tables over time.",
+  "detail": "FOUND 2026-11-24: space_plan_comments hangs off a Plan, a to-do or a calendar entry only; deals and contacts have a timeline but no team thread, and dispatch_comments and listing_comments are separate comment systems. Fix: generalize to one thread table keyed by subject_type and subject_id; creating, being assigned or being mentioned follows the thread. Retire the parallel comment tables over time.\n\nitem_comments carries the team thread for events, deals and contacts (Plans, to-dos and entries keep space_plan_comments); shown on event Manage, the Space CRM contact and each deal; owners, writers and tagged teammates are told. Migration 20270346460000.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2527",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2527"
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }
