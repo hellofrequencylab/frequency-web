@@ -9,7 +9,9 @@ import { SIGN_IN_ERRORS, type SignInErrorCode } from './errors'
 // 🔴 A 'use server' module may export ONLY async functions: exporting this constant from here failed the
 // production build ("The module has no exports at all"), which tsc and vitest cannot see. It lives in
 // the pure helper instead.
-import { NEW_ACCOUNT_EMAIL_COOKIE } from '@/lib/auth/sign-in-hint'
+import { NEW_ACCOUNT_EMAIL_COOKIE, SIGN_IN_HINT_COOKIE, SIGN_IN_HINT_MAX_AGE } from '@/lib/auth/sign-in-hint'
+import { passwordProblem } from '@/lib/auth/password-policy'
+import { finishSignIn } from '@/lib/auth/finish-sign-in'
 import { safeNextPath } from '@/lib/auth/safe-next'
 import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
 
@@ -234,4 +236,169 @@ export async function signInWithGoogle(formData: FormData) {
   }
 
   redirect(data.url)
+}
+
+// ── PASSWORDS (SEC-045) ─────────────────────────────────────────────────────────────────────────────
+//
+// The third door, beside the magic link and Google. Frequency was passwordless from its first commit
+// (ADR-071/082/510); the owner asked for a normal email and password on 2026-11-25. Every rule below is
+// the existing front door's rule applied to one more form: the same limiter with the same fail-OPEN opt
+// (LIVE-043), the same closed error vocabulary (./errors.ts), the same validated `next`.
+//
+// WHAT KEEPS IT SAFE, and where each piece lives:
+//   · breached passwords: Supabase leaked-password protection (HaveIBeenPwned, OWN-007) → `weak`.
+//   · the length rule: lib/auth/password-policy.ts here, and the matching dashboard minimum.
+//   · enumeration: a wrong address and a wrong password read the same; sign-up and reset always say
+//     "check your email", whether or not the address has an account.
+//   · account takeover by sign-up: "Confirm email" is ON in the live project (mailer_autoconfirm=false,
+//     read 2026-11-25), so a password sign-up gets NO session until its mailbox clicks the link, and
+//     Supabase only joins identities whose email is verified.
+//   · guessing: a per-mailbox bucket (five tries per ten minutes) on top of the per-IP one and
+//     Supabase's own limits.
+//   · reset: a recovery session must be fresh to set a password, and setting one signs every OTHER
+//     session out.
+
+/** Five password tries per mailbox per window. A person who mistyped gets five; a guesser gets five. */
+const PASSWORD_EMAIL_LIMIT = 5
+/** How recent a sign-in must be to set a new password with it: the recovery link's own lifetime. */
+const RESET_FRESH_MS = 60 * 60 * 1000
+
+/** Bounce to a password form with a CODE. `fail` (above) always lands on /sign-in; these forms each
+ *  have their own page, so the error comes back to the form that raised it. */
+function bounce(path: string, code: SignInErrorCode, next = ''): never {
+  const sep = path.includes('?') ? '&' : '?'
+  redirect(`${path}${sep}error=${code}${next ? `&next=${encodeURIComponent(next)}` : ''}`)
+}
+
+function field(formData: FormData, name: string): string {
+  const v = formData.get(name)
+  return typeof v === 'string' ? v : ''
+}
+
+export async function signInWithPassword(formData: FormData) {
+  const email = field(formData, 'email').trim()
+  const password = field(formData, 'password')
+  const mailbox = email.toLowerCase()
+  const next = safeNext(formData.get('next'))
+  const back = '/sign-in?method=password'
+  if (!(await rateLimitOk('signin:pw-ip', await callerIp(), IP_LIMIT * 2, WINDOW, OPEN_WHEN_UNSET))) {
+    bounce(back, 'rate', next)
+  }
+  if (mailbox && !(await rateLimitOk('signin:pw-email', mailbox, PASSWORD_EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) {
+    bounce(back, 'rate', next)
+  }
+  if (!mailbox || !password) bounce(back, 'credentials', next)
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    if (isProviderThrottle(error)) bounce(back, 'rate', next)
+    if (error.code === 'email_not_confirmed') bounce(back, 'unconfirmed', next)
+    // Never log the address or the password: a failed sign-in is routine, and a log line is a copy.
+    bounce(back, 'credentials', next)
+  }
+
+  const { destination, hint } = await finishSignIn(supabase, next || null)
+  const jar = await cookies()
+  jar.delete(POST_LOGIN_COOKIE)
+  if (hint) {
+    jar.set(SIGN_IN_HINT_COOKIE, hint, {
+      httpOnly: true,
+      secure: SECURE_COOKIE,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: SIGN_IN_HINT_MAX_AGE,
+    })
+  }
+  redirect(destination)
+}
+
+export async function signUpWithPassword(formData: FormData) {
+  const email = field(formData, 'email').trim()
+  const password = field(formData, 'password')
+  const mailbox = email.toLowerCase()
+  const next = safeNext(formData.get('next'))
+  const back = '/sign-in?step=create'
+  // This path SENDS MAIL, so it shares the magic link's buckets: one mailbox cannot be flooded by
+  // alternating between the two forms.
+  if (!(await rateLimitOk('signin:ip', await callerIp(), IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) bounce(back, 'rate', next)
+  if (mailbox && !(await rateLimitOk('signin:email', mailbox, EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) {
+    bounce(back, 'rate', next)
+  }
+  if (!mailbox) bounce(back, 'send', next)
+  const problem = passwordProblem(password, email)
+  if (problem) bounce(back, problem, next)
+
+  await stashNext(next)
+  const seq = safeSeq(formData.get('seq'))
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: await getCallbackUrl(),
+      ...(seq ? { data: { funnel_seq: seq } } : {}),
+    },
+  })
+  if (error) {
+    if (isProviderThrottle(error)) bounce(back, 'rate', next)
+    if (error.code === 'weak_password') bounce(back, 'weak', next)
+    // `user_already_exists` only comes back when confirmations are OFF. With them on (live), Supabase
+    // answers an existing address with a look-alike success, which is what keeps this form from
+    // telling a stranger who has an account. Either way the screen below says the same thing.
+    if (error.code !== 'user_already_exists') {
+      console.error('[sign-in] password sign-up failed:', error.code ?? error.message)
+      bounce(back, 'send', next)
+    }
+  }
+  ;(await cookies()).delete({ name: NEW_ACCOUNT_EMAIL_COOKIE, path: '/sign-in' })
+  redirect('/sign-in/confirm?sent=signup')
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const email = field(formData, 'email').trim()
+  const mailbox = email.toLowerCase()
+  const back = '/sign-in?step=forgot'
+  if (!(await rateLimitOk('signin:ip', await callerIp(), IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) bounce(back, 'rate')
+  if (mailbox && !(await rateLimitOk('signin:email', mailbox, EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) bounce(back, 'rate')
+  if (!mailbox) bounce(back, 'send')
+
+  // The recovery link lands on the bare /auth/callback like every other link (the redirect allow-list
+  // is that one URL), and the stashed destination carries the person on to the new-password form.
+  await stashNext('/sign-in?step=new-password')
+  const supabase = await createClient()
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: await getCallbackUrl() })
+  if (error && isProviderThrottle(error)) bounce(back, 'rate')
+  if (error) console.error('[sign-in] password reset send failed:', error.code ?? error.message)
+  // Same screen whether or not the address has an account, and whether or not the send worked for an
+  // unknown address: the reset form must not be a way to test which emails are members.
+  redirect('/sign-in/confirm?sent=reset')
+}
+
+export async function setNewPassword(formData: FormData) {
+  const password = field(formData, 'password')
+  const back = '/sign-in?step=new-password'
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  // A fresh sign-in only: the recovery link (or a sign-in a moment ago). An old session on a shared or
+  // unlocked device must not be able to take the account over by changing its password.
+  const at = user?.last_sign_in_at ? Date.parse(user.last_sign_in_at) : NaN
+  if (!user || Number.isNaN(at) || Date.now() - at > RESET_FRESH_MS) bounce('/sign-in?step=forgot', 'reset')
+  const problem = passwordProblem(password, user.email)
+  if (problem) bounce(back, problem)
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) {
+    if (error.code === 'weak_password') bounce(back, 'weak')
+    if (error.code === 'same_password') bounce(back, 'same')
+    if (error.code === 'reauthentication_needed') bounce('/sign-in?step=forgot', 'reset')
+    if (isProviderThrottle(error)) bounce(back, 'rate')
+    console.error('[sign-in] set password failed:', error.code ?? error.message)
+    bounce(back, 'send')
+  }
+  // A new password ends every OTHER session: whoever knew the old one is signed out everywhere.
+  await supabase.auth.signOut({ scope: 'others' }).catch(() => {})
+  redirect('/sign-in/confirm?sent=password-saved')
 }
