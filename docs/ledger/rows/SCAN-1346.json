@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/(main)/admin/crm/tasks/page.tsx",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25 in production: crm_tasks holds 29 rows and every one is a Plan to-do (plan_id set); zero are CRM call-backs. /admin/crm/tasks lists every Frequency-Space crm_tasks row under 'Your follow-up list', so it shows the same to-dos as /admin/work under a different name and description. Fix: /admin/crm/tasks redirects to /admin/work, the crm-tasks row leaves lib/nav/studio.ts, and a call-back made from a contact is a to-do that lands in Work.",
+  "detail": "FOUND 2026-11-25 in production: crm_tasks holds 29 rows and every one is a Plan to-do (plan_id set); zero are CRM call-backs. /admin/crm/tasks lists every Frequency-Space crm_tasks row under 'Your follow-up list', so it shows the same to-dos as /admin/work under a different name and description. Fix: /admin/crm/tasks redirects to /admin/work, the crm-tasks row leaves lib/nav/studio.ts, and a call-back made from a contact is a to-do that lands in Work.\n\nDONE 2026-11-25: /admin/crm/tasks redirects to /admin/work; the crm-tasks leaf left lib/nav/studio.ts (STUDIO_LEAVES and the CRM Engine row); task actions revalidate /admin/work. The contact follow-up button still writes a crm_tasks row, which Work lists under the root Space. TasksWorkspace stays on disk for the admin-selection-state probe and can go in a later sweep.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1346",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Passes while the old page redirects and the menu has no CRM Tasks row."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-25"
 }
