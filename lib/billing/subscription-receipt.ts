@@ -28,6 +28,7 @@ import 'server-only'
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from './stripe'
+import { asFoundingYearPlan, FOUNDING_YEAR, foundingYearCents, isFoundingYearMetadata } from './founding-year'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import {
   displayNameFor,
@@ -220,8 +221,13 @@ export async function sendSpacePlanReceipt(opts: {
       return
     }
     const planLabel = SPACE_PLAN_LABEL[opts.plan] ?? opts.plan
-    const price = subscriptionPriceLabel(opts.sub)
-    const trialing = opts.sub.status === 'trialing'
+    // A Founding Year (LIVE-2541) is paid up front and only HELD as `trialing` until February 1, 2028,
+    // so it must never read as a trial with nothing charged.
+    const fyPlan = isFoundingYearMetadata(opts.sub.metadata) ? asFoundingYearPlan(opts.plan) : null
+    const price = fyPlan
+      ? `$${foundingYearCents(fyPlan) / 100} Founding Year, ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}`
+      : subscriptionPriceLabel(opts.sub)
+    const trialing = !fyPlan && opts.sub.status === 'trialing'
     await sendMoneyReceipt({
       profileId: space.ownerProfileId,
       subject: `${space.name} is on the ${planLabel} plan`,
@@ -237,9 +243,11 @@ export async function sendSpacePlanReceipt(opts: {
           { label: 'Started', value: receiptDate() },
         ],
         closing: [
-          trialing
-            ? 'Billing starts when the trial ends. Cancel before then and nothing is charged.'
-            : 'It renews on its own until you cancel it.',
+          fyPlan
+            ? `Your Founding Year is paid. It renews on February 1, 2028 at $${FOUNDING_YEAR.renewalCents[fyPlan] / 100} a year until you cancel it.`
+            : trialing
+              ? 'Billing starts when the trial ends. Cancel before then and nothing is charged.'
+              : 'It renews on its own until you cancel it.',
           'Everything about the plan, including cancelling, is in Plan and billing for this Space.',
         ],
         actionLabel: 'Open Plan and billing',
