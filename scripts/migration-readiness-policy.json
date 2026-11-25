@@ -5972,7 +5972,7 @@
         {
           "file": "lib/email-studio/consent.ts",
           "status": "added",
-          "sha256": "9cfa8129459a952ef184af8984cba56e9411447fa8e3d1aecb99c353e2a29f75",
+          "sha256": "0d8898978a8af182fd38264e8b46189ef1b77202931b65066f8f37e1380ae0de",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -5986,7 +5986,7 @@
         {
           "file": "scripts/admin-client-baseline.txt",
           "status": "modified",
-          "sha256": "aba729afb6737d771e66237002d4127cb029f6bef98f8be9f2ee713922b0e9a8",
+          "sha256": "6efd1fd09e46247dec05efd8068c671cb50d4b8e9cd62194028f67e967720822",
           "baseMode": "100644",
           "headMode": "100644"
         },
