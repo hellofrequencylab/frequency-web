@@ -34,6 +34,7 @@ import { wallMinutes } from '@/lib/calendar/planner/now'
 import { getSpaceTeam } from '@/lib/spaces/content-data'
 import { CalendarSuite } from '@/components/calendar-suite/calendar-suite'
 import { consoleBack } from '@/lib/spaces/console-back'
+import { readSpaceTeamRoomHref } from '@/lib/spaces/team-room-link'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -193,7 +194,7 @@ export default async function SpaceCalendarConsolePage({
         hostShares: sharedLayer?.hostShares,
         sharedSources: sharedLayer?.sources,
       })
-  const team = featureLocked ? [] : await getSpaceTeam(space.id)
+  const [team, teamRoomHref] = featureLocked ? [[], null] : await Promise.all([getSpaceTeam(space.id), readSpaceTeamRoomHref(space.id)])
   const teamForSuite = team.map((m) => ({ id: m.profileId, name: m.name, avatarUrl: m.avatarUrl }))
 
   return (
@@ -220,6 +221,7 @@ export default async function SpaceCalendarConsolePage({
           {adapted ? (
             <CalendarSuite
               slug={space.slug}
+              teamRoomHref={teamRoomHref}
               spaceId={space.id}
               brandName={brandName}
               todayKey={todayKey}

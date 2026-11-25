@@ -19,7 +19,8 @@ import type { WorkTodo } from '@/lib/work/rollup-core'
 
 export const dynamic = 'force-dynamic'
 
-const STAGE_LABEL = { pencil: 'Pencil', plan: 'Plan', production: 'Production' } as const
+// The canon's stage words (NAMING: Pencil, Planning, Production); the stored stage is `plan`.
+const STAGE_LABEL = { pencil: 'Pencil', plan: 'Planning', production: 'Production' } as const
 
 function dueLabel(iso: string | null): string | null {
   if (!iso) return null
