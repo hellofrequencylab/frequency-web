@@ -41,3 +41,21 @@ describe('fees for Collective member Spaces', () => {
     expect(state.waived).not.toHaveBeenCalled()
   })
 })
+describe('the Founder fee perk (LIVE-2543)', () => {
+  it('a Space that paid its Founding Year pays no finder\u2019s fee before February 1, 2028', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2027-06-01T00:00:00Z'))
+    state.founding.mockResolvedValue({ kind: 'business', status: 'active', lockedTakeBps: null, foundingYear: true })
+    expect(await spaceNetworkBps('business', 'founder')).toBe(0)
+    expect(await spaceTakeRateCents(10000, 'business', 'network', 'founder')).toBe(0)
+    vi.setSystemTime(new Date('2028-02-01T08:00:00Z'))
+    expect(await spaceNetworkBps('business', 'founder')).toBe(1000)
+    vi.useRealTimers()
+  })
+  it('a lapsed Founder, or a founding row with no paid year, pays the ordinary fee', async () => {
+    state.founding.mockResolvedValue({ kind: 'business', status: 'lapsed', lockedTakeBps: null, foundingYear: true })
+    expect(await spaceNetworkBps('business', 'founder')).toBe(1000)
+    state.founding.mockResolvedValue({ kind: 'business', status: 'active', lockedTakeBps: null, foundingYear: false })
+    expect(await spaceNetworkBps('business', 'founder')).toBe(1000)
+  })
+})
