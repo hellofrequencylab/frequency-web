@@ -473,6 +473,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import {
   cleanServiceLocation,
+  cleanBookerTimeZone,
   normalizeWindow,
   generateOpenSlots,
   slotLengthAt,
@@ -2031,5 +2032,17 @@ describe('cleanServiceLocation (BOOK-010)', () => {
   })
   it('caps a value at 500 characters', () => {
     expect(cleanServiceLocation('in_person', 'x'.repeat(600))?.value.length).toBe(500)
+  })
+})
+
+describe("cleanBookerTimeZone keeps only a real zone (BOOK-009, pure)", () => {
+  it('keeps an IANA zone', () => {
+    expect(cleanBookerTimeZone(' America/New_York ')).toBe('America/New_York')
+  })
+  it('drops a made-up, empty or overlong zone', () => {
+    expect(cleanBookerTimeZone('Pacific')).toBeNull()
+    expect(cleanBookerTimeZone('')).toBeNull()
+    expect(cleanBookerTimeZone(null)).toBeNull()
+    expect(cleanBookerTimeZone('A'.repeat(65))).toBeNull()
   })
 })

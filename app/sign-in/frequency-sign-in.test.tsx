@@ -66,11 +66,29 @@ describe('sign-in under Frequency', () => {
 })
 
 describe('check your email under Frequency', () => {
-  it('is the same frame with the way back home', () => {
-    const d = doc(<ConfirmPage />)
+  const confirm = async (sent?: string) => doc(await ConfirmPage({ searchParams: Promise.resolve({ sent }) }))
+
+  it('is the same frame with the way back home', async () => {
+    const d = await confirm()
     expect(d.querySelector('main.fqa h1')?.textContent).toBe('Check your email')
     expect(d.querySelector('a[href="/sign-in"]')).toBeTruthy()
     expect(d.querySelector('button.btn')?.textContent).toContain('Back to home')
+  })
+
+  it('says what was sent for a password sign-up and a reset, and retries on the right form (SEC-045)', async () => {
+    const signup = await confirm('signup')
+    expect(signup.querySelector('h1')?.textContent).toBe('Confirm your email')
+    expect(signup.querySelector('a[href="/sign-in?step=create"]')).toBeTruthy()
+    const reset = await confirm('reset')
+    expect(reset.querySelector('.fqa-lead')?.textContent).toMatch(/If that address has a Frequency account/)
+    expect(reset.querySelector('a[href="/sign-in?step=forgot"]')).toBeTruthy()
+    expect((await confirm('password-saved')).querySelector('a.btn.pa')?.getAttribute('href')).toBe('/feed')
+  })
+
+  it('never renders words off the URL', async () => {
+    const d = await confirm('Your account is locked. Call 555-0100')
+    expect(d.textContent).not.toContain('555-0100')
+    expect(d.querySelector('h1')?.textContent).toBe('Check your email')
   })
 })
 

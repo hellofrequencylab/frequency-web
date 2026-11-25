@@ -11,7 +11,7 @@ import type { Reference } from './references'
 // already checked: people who can read the conversation, items the sender picked from a list their
 // own session produced. Best effort: a failed write costs the backlink, never the message.
 
-type SourceType = 'room_message' | 'direct_message'
+type SourceType = 'room_message' | 'direct_message' | 'item_thread'
 
 export async function recordMessageReferences(
   admin: SupabaseClient,

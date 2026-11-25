@@ -5429,7 +5429,7 @@
         {
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
-          "sha256": "5eeb0e70f58ab322a68078138e1c6ff9d59a9d2b67705769ea85f174f71dabc9",
+          "sha256": "72e8baca077d13b710e6f13bd5f317224b907143e5694af1481800458b2a1844",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5746,7 +5746,7 @@
       "expiresAt": "2026-12-01T23:59:59Z",
       "migrations": [
         {
-          "file": "supabase/migrations/20270346310000_hub_item_threads.sql",
+          "file": "supabase/migrations/20270346460000_hub_item_threads.sql",
           "sha256": "14e0cad7cd6a03f955854b0ab2fb2d9b85ae44f223e9fae13eaa88c334d87eee"
         }
       ],
@@ -5761,7 +5761,7 @@
         {
           "file": "app/(main)/spaces/[slug]/settings/calendar/plan-drawer.tsx",
           "status": "modified",
-          "sha256": "0435e6e28e794b4ee10081f63775ad085b17d75fddac488cb7a5a88f3d9740ff",
+          "sha256": "487ccb8cbb2f7f95ca462b51995bfa80262888e27773dbd8040aa85262f0678b",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5775,7 +5775,7 @@
         {
           "file": "components/threads/use-thread-live.ts",
           "status": "added",
-          "sha256": "9d43a935b36958bf67cfd8c782de3967c3ff835055d4c7d789177af268fa7b9a",
+          "sha256": "870d58c9bc5aa11a3aa1ceba4bebc37de973738404eae0e67ad074750de80c9a",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -5789,14 +5789,14 @@
         {
           "file": "docs/ledger/rows/LIVE-2527.json",
           "status": "modified",
-          "sha256": "33a22ec1f153ef4ff73b96441da0aadb20298b51a64cdf4bf0f323787f375e49",
+          "sha256": "4e29adc0061e9c8c3624812c8a9b8d33c0b3ce55a45190566513efb0fd19aec5",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
           "file": "docs/ledger/rows/LIVE-2528.json",
           "status": "modified",
-          "sha256": "4ad400200d7d63cfe7b3ea09ccc31b3e2a298127b70766a3ed18feb0b48f6f96",
+          "sha256": "9ee987d5fc684ac2af53a9f16b34b02eada051af16498988c17987422d277c7f",
           "baseMode": "100644",
           "headMode": "100644"
         },
@@ -5866,7 +5866,7 @@
         {
           "file": "lib/threads/subjects.ts",
           "status": "added",
-          "sha256": "7fd904c776f8bd628c594da2c63f1a91f62dd9004ff96a615db29e8d36add1b8",
+          "sha256": "81303ab16c36141e469804b1f44448e1b6af27d17d8b4107cd60b73f094eb961",
           "baseMode": "000000",
           "headMode": "100644"
         },
@@ -5894,12 +5894,12 @@
         {
           "file": "scripts/table-grants.txt",
           "status": "modified",
-          "sha256": "3048cbf6c6534af33acc5bc59468a2e26c5a16c8774afd71dba28bd60477dea5",
+          "sha256": "0f1fda3e63c826e59015d9e60ab2557ce51cf9d1e30a6531b1252125dd18f2e6",
           "baseMode": "100644",
           "headMode": "100644"
         },
         {
-          "file": "supabase/migrations/20270346310000_hub_item_threads.sql",
+          "file": "supabase/migrations/20270346460000_hub_item_threads.sql",
           "status": "added",
           "sha256": "14e0cad7cd6a03f955854b0ab2fb2d9b85ae44f223e9fae13eaa88c334d87eee",
           "baseMode": "000000",
@@ -5908,7 +5908,7 @@
         {
           "file": "supabase/tests/hub_item_threads.test.sql",
           "status": "added",
-          "sha256": "90d9d93a783c84d0a4daa14d66c3b729604c222c8151146d7d1b2a6788dad761",
+          "sha256": "6b096e965c196ee07afa32f6f045f056d9e989dc9ee81c57f15b1fc92da990f4",
           "baseMode": "000000",
           "headMode": "100644"
         }
