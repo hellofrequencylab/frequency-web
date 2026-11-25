@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1340",
+  "title": "A Pencil whose dates have all passed folds out of the live Plans on its own",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/work/rollup-core.ts",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25 in production: 38 of the 39 live Plans on /spaces/danieltyack are Pencils whose every date fell on Sep 22 to 24. None carries hold_until, so the hold sweep (lib/calendar/hold-lapse.ts) would never release them even with CALENDAR_HOLDS_ENABLED on. Work counts them as live Plans and the Kanban, List and Timeline views show them all. Fix: a pure check (every non-removed date of a Pencil is before the Space's today) that Work and the Plans views use to fold them under 'Date passed', one tap to pick a new date or let it go. No data change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1340",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1343",
+  "title": "An overdue to-do nobody holds nudges the Plan owner, so every overdue to-do reaches someone",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/calendar/hold-lapse.ts",
+    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
+  },
+  "detail": "FOUND 2026-11-25 in production: 14 of 29 to-dos are overdue (7 on the Frequency Space, 7 on danieltyack) and the notifications table holds zero plan.* notices ever. The nudge in runCalendarHoldSweep only reads to-dos with an assignee, and the cron is behind CALENDAR_HOLDS_ENABLED (RUNBOOKS 'Calendar holds', owner gate). Fix: an overdue to-do with no assignee nudges the Plan's owner (else the Space owner), once per person per Space per day, in the Inbox Priority view. Then the owner flips the switch (decision card, 2026-11-25).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1343",
+    "note": "Fails today; passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
