@@ -19,6 +19,8 @@
 // PURE: no React, no server imports, so the page, the two actions and /auth/callback all read one
 // table and the guard test can import it.
 
+import { PASSWORD_MIN_LENGTH } from '@/lib/auth/password-policy'
+
 export const SIGN_IN_ERRORS = {
   /** The limiter said no. Same words as the subscribe form's throttle, deliberately. */
   rate: 'Too many tries. Give it a few minutes and try again.',
@@ -32,6 +34,23 @@ export const SIGN_IN_ERRORS = {
   expired: 'That link has expired. Links work once and only for a short while, so ask for a new one.',
   /** The person backed out of Google's consent screen (`access_denied` with no OTP code). */
   denied: 'Google sign-in was cancelled. Try again, or use the email link.',
+  /** Wrong email or password. One sentence for both, so the form never says which half was wrong
+   *  (that would tell a stranger which addresses have accounts). SEC-045. */
+  credentials: 'That email and password do not match. Try again, or get a magic link instead.',
+  /** The account exists but its email was never confirmed (Supabase `email_not_confirmed`). */
+  unconfirmed: 'Confirm your email first. Open the link we sent when you signed up, or get a magic link instead.',
+  /** Under the length floor (lib/auth/password-policy.ts). */
+  short: `That password is too short. Use at least ${PASSWORD_MIN_LENGTH} characters. A short phrase works well.`,
+  /** Over bcrypt's 72-byte ceiling. */
+  long: 'That password is too long. Keep it under 72 characters.',
+  /** The password was the email address. */
+  email: 'Pick a password that is not your email address.',
+  /** Supabase refused it: found in a known data breach, or below the dashboard rule. */
+  weak: 'That password has shown up in a data breach, so it is not safe to use. Pick another.',
+  /** The new password is the one already set. */
+  same: 'That is already your password. Pick a new one.',
+  /** The reset session is missing or too old to change a password with. */
+  reset: 'That reset link has expired. Ask for a new one.',
 } as const
 
 export type SignInErrorCode = keyof typeof SIGN_IN_ERRORS
