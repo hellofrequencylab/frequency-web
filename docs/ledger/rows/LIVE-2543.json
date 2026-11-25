@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2543",
+  "title": "A Founder pays no finder's fee on any sale through Jan 31, 2028",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/fees.ts",
+    "ref": "Launch milestones doc rulings 2026-11-23 (project thread: Build the Founding Year checkout; owner picked 'Start a thread now' 2026-11-25 00:09Z)"
+  },
+  "detail": "FOUND 2026-11-25: the Founder fee perk is stale. Founding Businesses keep a locked 3% buy-down, and nothing waives the 10% finder's fee (capped $20, ADR-1978) for a Founding Year buyer. Owner ruling 2026-11-23: no finder's fee on anyone through January 31, 2028, replacing the old 3% promise. Fix: one pure rule in founding-year.ts that fees.ts asks, so every Space sale path (tickets, memberships, shop) charges 0 to a Founder until Feb 1, 2028.\n\nDONE 2026-11-25: FOUNDING_YEAR.noFindersFeeUntil = 2028-02-01T08:00Z and founderPaysNoFindersFee (pure) in lib/billing/founding-year.ts. lib/billing/fees.ts foundingLockedTakeBps answers 0 for an ACTIVE founder row carrying meta.founding_year (getFoundingStatus now exposes foundingYear), so spaceNetworkBps and spaceTakeRateCents charge nothing on every Space sale path (tickets, memberships, shop) and the receipt records the same 0. A lapsed Founder pays the ordinary fee; from Feb 1, 2028 the fee returns. The Founding Year note says so. Tests: lib/billing/fees-collective.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/founding-year-2026-11-25.mjs LIVE-2543",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "wave": "W7",
+  "closed": "2026-11-25"
+}

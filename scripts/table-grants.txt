@@ -65,6 +65,7 @@ community_book_submissions           internal
 connection_settings                  public
 consent_records                      authenticated
 contact_channel_preferences          authenticated
+contact_consents                     internal
 contact_import                       authenticated
 contact_interactions                 authenticated
 contact_relationships                authenticated
