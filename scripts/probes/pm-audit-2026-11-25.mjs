@@ -71,7 +71,12 @@ const PROBES = {
   // CRM Tasks folds into Work.
   'SCAN-1346': () => {
     const f = []
-    if (!/redirect\(\s*'\/admin\/work'/.test(code('app/(main)/admin/crm/tasks/page.tsx'))) f.push('/admin/crm/tasks still lists the same to-dos as Work')
+    // A redirect page or a next.config redirect both count (HYG-043 prefers next.config for a static one).
+    const page = 'app/(main)/admin/crm/tasks/page.tsx'
+    const redirected = has(page)
+      ? /redirect\(\s*'\/admin\/work'/.test(code(page))
+      : /source:\s*'\/admin\/crm\/tasks',\s*destination:\s*'\/admin\/work'/.test(code('next.config.ts'))
+    if (!redirected) f.push('/admin/crm/tasks still lists the same to-dos as Work')
     if (/id:\s*'crm-tasks'/.test(code('lib/nav/studio.ts'))) f.push('the Console menu still carries a CRM Tasks row beside Work')
     return f
   },
