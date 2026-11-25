@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { startOperatorOffer } from '@/lib/offers/operator-offer-server'
+import { founderSeatFor, founderSeatsTaken, startOperatorOffer } from '@/lib/offers/operator-offer-server'
 import { BETA_ENDS_LABEL } from '@/lib/core/beta-notices'
 import { BillingBody } from '../spaces/[slug]/settings/billing/billing-body'
+import { StatCard } from '@/components/ui/stat-card'
+import { FOUNDING_YEAR, founderSeatsLeft, foundingYearOpen } from '@/lib/billing/founding-year'
 
 // THE BETA OFFER, full page. Reached automatically once a new Space owner has built something, and from
 // the countdown strip afterwards. Opening it starts the person's clock (once, ever); the plan ladder
@@ -26,7 +28,7 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
   const db = await createClient()
   const { data: spaces } = await db
     .from('spaces')
-    .select('slug, name')
+    .select('id, slug, name')
     .eq('owner_profile_id', caller.id)
     .order('created_at', { ascending: true })
   const mine = spaces ?? []
@@ -35,6 +37,10 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
 
   const offer = await startOperatorOffer(caller.id)
   if (offer.status !== 'live') redirect(`/spaces/${space.slug}/settings/billing`)
+
+  // THE FOUNDER SEATS (LIVE-2542, owner 2026-11-23: "150, numbered and visible"). Both reads fail safe to
+  // null, which hides the count rather than printing a number we could not read.
+  const [taken, mySeat] = await Promise.all([founderSeatsTaken(), founderSeatFor(space.id)])
 
   const endsLabel = new Date(offer.endsAtMs).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: HOME_TZ })
 
@@ -46,7 +52,26 @@ export default async function OfferPage({ searchParams }: { searchParams: Promis
       back={{ href: `/spaces/${space.slug}`, label: 'Back to your Space' }}
       width="wide"
     >
+      <FounderSeats taken={taken} mySeat={mySeat} />
       <BillingBody slug={space.slug} />
     </FocusTemplate>
+  )
+}
+
+/** The public Founders seat count, and this Space's own number once it holds one. */
+function FounderSeats({ taken, mySeat }: { taken: number | null; mySeat: number | null }) {
+  if (taken === null) return null
+  const cap = FOUNDING_YEAR.seatCap
+  const left = founderSeatsLeft(taken)
+  const shown = Math.min(taken, cap)
+  const detail = mySeat
+    ? `Your Space is one of the Founders: seat ${mySeat} of ${cap}.`
+    : left > 0 && foundingYearOpen()
+      ? `${left} left. A seat is yours when you pay the Founding Year: pick Yearly below.`
+      : 'All 150 seats for Founders are taken.'
+  return (
+    <section aria-label="Seats for Founders" className="mb-6 max-w-sm">
+      <StatCard label="Seats taken by Founders" value={`${shown} of ${cap}`} detail={detail} />
+    </section>
   )
 }

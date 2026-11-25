@@ -199,6 +199,10 @@ describe('the pricing box data', () => {
       const biz = after.tiers.find((t) => t.key === 'business')!
       expect(biz.yearlyCents).toBe(49000)
       expect(biz.foundingYear ?? null).toBeNull()
+      // LIVE-2542: once the 150 Founder seats are gone, yearly is the catalog yearly again.
+      const full = buildPricingBox({ crew: PWYW_CONFIG_DEFAULT, trialDays: 14, takeRate: NETWORK_TAKE_RATE_DEFAULT, now: new Date('2026-12-01T00:00:00Z'), founderSeatsLeft: 0 })
+      expect(full.tiers.find((t) => t.key === 'business')!.yearlyCents).toBe(49000)
+      expect(full.tiers.find((t) => t.key === 'collective')!.foundingYear ?? null).toBeNull()
     })
 
     it('gives Crew no single price and carries the catalog amounts', () => {
