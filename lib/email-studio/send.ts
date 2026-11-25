@@ -20,6 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
+import { keepConsentedRecipients } from '@/lib/email-studio/consent'
 import { loadCampaignPurpose, sendCategoryForPurpose } from '@/lib/email-studio/campaign-purpose'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
@@ -515,7 +516,8 @@ export interface AudienceResult {
 /** Resolve an explicit segment key to a count (used by the send-panel preview). */
 export async function countAudience(segment: SegmentKey): Promise<ActionResult<AudienceResult>> {
   try {
-    const recipients = await resolveSegment(segment)
+    // EMAIL-085: an account-less contact counts only with a permission record (contact_consents).
+    const recipients = await keepConsentedRecipients(await resolveSegment(segment))
     return ok({ segment, count: recipients.length, dailyLimit: parseDailyLimit(process.env.EMAIL_DAILY_SEND_LIMIT) })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not resolve that audience.')
@@ -821,7 +823,8 @@ export async function sendCampaignNow(
   // send STARTED, not from each enqueue — otherwise a slow render would stretch the stagger.
   const fanOutStartedAt = new Date()
   try {
-    const recipients = await resolveSegment(row.segment)
+    // EMAIL-085: an account-less contact is mailed only with a permission record (contact_consents).
+    const recipients = await keepConsentedRecipients(await resolveSegment(row.segment))
     // The send-gate category depends on the campaign's PURPOSE first (a promotion is marketing whoever it is
     // addressed to, lib/email-studio/campaign-purpose), then on the AUDIENCE (sendCategoryForSegment):
     // `subscribed_members` is the opt-IN marketing audience → 'marketing' (email_marketing, opt-in);
