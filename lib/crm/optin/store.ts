@@ -16,6 +16,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getRootSpaceId } from '@/lib/crm/import/store'
 import { recordConsent } from '@/lib/consent/consent'
 import { logTouchpoint } from '@/lib/crm/lead-capture'
+import { recordContactConsent } from '@/lib/email-studio/consent'
 
 /** The address-level marketing-consent state on the `contacts` hub (matches lib/crm/contact-consent.ts). */
 export type ContactConsentState = 'unknown' | 'subscribed' | 'unsubscribed'
@@ -260,6 +261,20 @@ export async function confirmOptin(email: string): Promise<{
   }
 
   const profileId = existing?.profile_id ?? null
+
+  // EMAIL-085: the permission record (where, when, the wording on the confirm page). Best-effort; only on a
+  // brand-new yes, so a reload of the confirm page does not stack duplicate records.
+  const consentContactId = existing?.id ?? insertedId
+  if (firstConfirmation && consentContactId) {
+    await recordContactConsent({
+      contactId: consentContactId,
+      spaceId: await getRootSpaceId(),
+      source: 'subscribe_confirm',
+      pagePath: '/subscribe/confirm',
+      formKey: 'subscribe_optin',
+      capturedAt: nowIso,
+    })
+  }
 
   // Grant the marketing consent scope in the ledger for the linked member, so the unified send-gate
   // (resolveSendGate('marketing')) passes. A pure lead with no profile is reachable via the contact
