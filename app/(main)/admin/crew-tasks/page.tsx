@@ -56,7 +56,7 @@ export default async function AdminCrewTasksPage() {
 
   return (
     <AdminTemplate
-      title="Crew Tasks"
+      title="Crew tasks"
       eyebrow="Community"
       description="Define the tasks members can complete to earn Zaps. Changes apply immediately across the app."
       width="wide"
