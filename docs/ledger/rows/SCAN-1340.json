@@ -1,6 +1,6 @@
 {
   "id": "SCAN-1340",
-  "title": "A Pencil whose dates have all passed folds out of the live Plans on its own",
+  "title": "The operator calendar browser test cleans up its Pencils, and a Pencil whose dates have all passed folds out of the live Plans",
   "lane": "live",
   "priority": "P1",
   "size": "S",
@@ -9,11 +9,11 @@
     "file": "lib/work/rollup-core.ts",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25 in production: 38 of the 39 live Plans on /spaces/danieltyack are Pencils whose every date fell on Sep 22 to 24. None carries hold_until, so the hold sweep (lib/calendar/hold-lapse.ts) would never release them even with CALENDAR_HOLDS_ENABLED on. Work counts them as live Plans and the Kanban, List and Timeline views show them all. Fix: a pure check (every non-removed date of a Pencil is before the Space's today) that Work and the Plans views use to fold them under 'Date passed', one tap to pick a new date or let it go. No data change.",
+  "detail": "FOUND 2026-11-25 in production: 38 of the 39 live Plans on /spaces/danieltyack are titled 'Browser pencil <timestamp>-<id>', dated Sep 22 to 24. They come from test/e2e/operator-calendar.spec.ts, which pencils a date on PW_SPACE_SLUG and never removes it; it was pointed at production. None carries hold_until, so the hold sweep would never clear them. They fill the rail's Plans list, the Plans views and Work's Live Plans. Fix: the spec archives every Plan it made (afterEach), the 38 test Plans are archived (reversible: archived_at), and a pure past-Pencil check folds any Pencil whose every date has passed out of Work and the Plans views.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1340",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Fails today; passes once the spec cleans up after itself and Work folds past Pencils."
   },
   "wave": "W7"
 }

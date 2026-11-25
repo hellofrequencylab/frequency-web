@@ -9,7 +9,7 @@
     "file": "app/(main)/admin/work/page.tsx",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25: /admin/work labels the middle stage 'Plan' (NAMING: Planning); the Plan pop-up reads 'Assigned teammate' and '<kind> production record'; /admin/crew-tasks is titled 'Crew Tasks' while the menu and /lead say 'Crew tasks'; the Space Calendar module line says 'Your events on a calendar, create a new one, and share a subscribe link' with no word for Plans or to-dos, so nobody finds Plans from the menu.",
+  "detail": "FOUND 2026-11-25: /admin/work labels the middle stage 'Plan' (NAMING: Planning); the Plan pop-up reads 'Assigned teammate' and '<kind> production record'; /admin/crew-tasks is titled 'Crew Tasks' while the menu and /lead say 'Crew tasks'; the Space Calendar module line says 'Your events on a calendar, create a new one, and share a subscribe link' with no word for Plans or to-dos, so nobody finds Plans from the menu.\n\nSEEN 2026-11-25 on prod: the calendar rail has its own heading 'Inbox' (undated items to drop on a day) while /inbox is the member Inbox; the rail one needs another word (for example 'Not scheduled').",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1351",

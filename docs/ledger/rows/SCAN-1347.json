@@ -9,7 +9,7 @@
     "file": "lib/notifications/inbox.ts",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25: /admin/work is the only cross-Space to-do list and it is staff only (requireAdmin janitor). A Space owner or teammate who is not staff can only find their to-dos one Space calendar at a time. Fix: a To-dos view in /inbox beside Priority, Other and Snoozed, reading the same rollup (lib/work/rollup-core.ts) for the viewer's Spaces; Work stays the staff rollup (owner ruling 2026-11-24). Owner call pending on a decision card in the audit thread (2026-11-25); park this row if Daniel picks the other option.",
+  "detail": "FOUND 2026-11-25: /admin/work is the only cross-Space to-do list and it is staff only (requireAdmin janitor). A Space owner or teammate who is not staff can only find their to-dos one Space calendar at a time. Fix: a To-dos view in /inbox beside Priority, Other and Snoozed, reading the same rollup (lib/work/rollup-core.ts) for the viewer's Spaces; Work stays the staff rollup (owner ruling 2026-11-24).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1347",

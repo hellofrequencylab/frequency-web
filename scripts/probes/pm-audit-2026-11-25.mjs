@@ -22,6 +22,7 @@ const PROBES = {
   // A Pencil whose every date has passed folds out of the live Plans (Work, Kanban, List) on its own.
   'SCAN-1340': () => {
     const f = []
+    if (!/archive|archived_at|afterEach|afterAll/.test(code('test/e2e/operator-calendar.spec.ts'))) f.push('the operator calendar browser test leaves every Pencil it makes on the Space')
     if (!/datesPassed|allDatesPast|isPastPencil/.test(code(ROLLUP))) f.push('Work counts a Pencil whose dates all passed as a live Plan')
     if (!/datesPassed|allDatesPast|isPastPencil/.test(code('lib/calendar/planner/board.ts') + code('lib/calendar/planner/adapters.ts')))
       f.push('the calendar Plans views still list Pencils whose dates all passed')

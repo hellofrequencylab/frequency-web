@@ -9,7 +9,7 @@
     "file": "components/spaces/calendar-workspace.tsx",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25: a Space's team sees two different team calendars. The public tab (/spaces/<slug>/calendar) renders CalendarWorkspace with the older StaffCalendar (Workflow and List), and the console renders CalendarSuite. They share data but not behaviour, so a team member learns two tools. Fix: the tab is the guest calendar for everyone plus an 'Open team calendar' button to the console; StaffCalendar leaves the tab. Reverses the 2026-10-29 ruling that kept team tools on the tab. Owner call pending on a decision card in the audit thread (2026-11-25); park this row if Daniel picks the other option.",
+  "detail": "FOUND 2026-11-25: a Space's team sees two different team calendars. The public tab (/spaces/<slug>/calendar) renders CalendarWorkspace with the older StaffCalendar (Workflow and List), and the console renders CalendarSuite. They share data but not behaviour, so a team member learns two tools. Fix: the tab is the guest calendar for everyone plus an 'Open team calendar' button to the console; StaffCalendar leaves the tab. Reverses the 2026-10-29 ruling that kept team tools on the tab. Supersedes the 2026-10-29 ruling that kept team tools on the tab.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1344",
