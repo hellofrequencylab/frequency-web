@@ -34,6 +34,7 @@ comment on table public.contact_consents is
   'EMAIL-085: one row per marketing yes (source, page or form, time, the wording shown). A contact with no account is mailable by Email Studio only with a row here. Service-role only.';
 
 create index if not exists contact_consents_contact_idx on public.contact_consents (contact_id, captured_at desc);
+create index if not exists contact_consents_space_id_idx on public.contact_consents (space_id) where space_id is not null;
 
 alter table public.contact_consents enable row level security;
 -- No policies: written and read through the service-role client only.
