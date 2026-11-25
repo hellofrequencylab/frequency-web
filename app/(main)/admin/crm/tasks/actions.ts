@@ -39,7 +39,7 @@ export async function createTaskAction(input: {
     spaceId,
   )
   if (!res) return fail('Could not save the task. Try again.')
-  revalidatePath('/admin/crm/tasks')
+  revalidatePath('/admin/work')
   if (input.contactId) revalidatePath('/admin/crm/conversations')
   return ok(res)
 }
@@ -54,6 +54,6 @@ export async function setTaskStatusAction(
   if (!taskId) return fail('Pick a task first.')
   const done = await updateTaskStatus(taskId, status, { dueAt: opts?.dueAt ?? null })
   if (!done) return fail('Could not update the task. Try again.')
-  revalidatePath('/admin/crm/tasks')
+  revalidatePath('/admin/work')
   return ok()
 }
