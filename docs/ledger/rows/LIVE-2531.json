@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P1",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/calendar/entries-store.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; owner ask 2026-11-24 17:35Z: AI meeting and date management so everyone can brainstorm the best date and time)"
   },
-  "detail": "FOUND 2026-11-24: Pencil it in already holds up to three candidate dates per Plan (option_group), but only the person who pencilled them can see which one works; co-hosts and collaborators have no way to say yes, if need be or no. Best practice (Doodle, When2meet, Calendly polls): each person marks every option, the options rank by yes then if-need-be, ties break on who must attend. Fix: a votes table keyed by entry and person, rankTimeOptions, a Find a time panel on the Plan and in the thread; a vote notifies the Plan owner through the LIVE-2526 Inbox.",
+  "detail": "FOUND 2026-11-24: Pencil it in already holds up to three candidate dates per Plan (option_group), but only the person who pencilled them can see which one works; co-hosts and collaborators have no way to say yes, if need be or no. Best practice (Doodle, When2meet, Calendly polls): each person marks every option, the options rank by yes then if-need-be, ties break on who must attend. Fix: a votes table keyed by entry and person, rankTimeOptions, a Find a time panel on the Plan and in the thread; a vote notifies the Plan owner through the LIVE-2526 Inbox.\n\nDONE 2026-11-24: public.space_calendar_time_votes (migration 20270346400000, one yes / if need be / no per person per candidate date, team reads, member writes own, email votes server-only), rankTimeOptions (yes, then yes+maybe, then fewest no, a lead's no sinks the option), the Find a time panel in the Plan drawer, and a plain notifications row to the Plan's lead on each answer.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2531",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Passes once a migration creates the votes table and lib/calendar exports rankTimeOptions."
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }

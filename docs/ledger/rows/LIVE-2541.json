@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2541",
+  "title": "A Space owner can pay the Founding Year now: Business $441 and Collective $990, no trial, the paid year runs Feb 1, 2027 to Jan 31, 2028",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/space-plan-checkout.ts",
+    "ref": "Launch milestones doc rulings 2026-11-23 (project thread: Build the Founding Year checkout; owner picked 'Start a thread now' 2026-11-25 00:09Z)"
+  },
+  "detail": "FOUND 2026-11-25: main cannot sell Business at $441. The nine-for-twelve Founding deal exists only for Network (a coupon in space-plan-checkout.ts), Business yearly charges $490, and every Space checkout adds the 14-day trial. Owner rulings 2026-11-23: Business Founding Year $441 and Collective $990, both paid now; the paid year runs February 1, 2027 to January 31, 2028; no trial. Fix: yearly Business or Collective bought before Feb 1, 2027 by a Space with no locked price sells a one-time Founding Year line charged today and holds the yearly price until Feb 1, 2028 (trial_end), no promotion codes; the paid session marks the Space's Founder row; the pricing box, plan receipt and trial-ending notice stop calling it a trial.\n\nDONE 2026-11-25: yearly Business or Collective bought before Feb 1, 2027 by a Space with no locked price is the Founding Year. lib/billing/founding-year.ts holds the facts (Business $441, Collective $990, paid year Feb 1, 2027 to Jan 31, 2028); createSpaceLoadoutCheckout sells a one-time Founding Year line charged today plus the yearly price held to Feb 1, 2028 (trial_end), no trial_period_days, no promotion codes, add-ons paid for the same year. The paid session marks the Space's founding_members row (meta.founding_year) from both webhook paths and the on-page settle (lib/billing/founding-year-record.ts). The pricing box shows $441 / $990 with no trial line; the plan receipt and trial-ending notice no longer call it a trial. Tests: lib/billing/founding-year.test.ts, founding-year-record.test.ts, space-plan-checkout.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/founding-year-2026-11-25.mjs LIVE-2541",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-25",
+  "wave": "W7"
+}

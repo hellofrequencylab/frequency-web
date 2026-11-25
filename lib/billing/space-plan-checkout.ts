@@ -28,6 +28,16 @@ import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { routeSpaceSubscription } from './space-subscriptions'
 import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
+import {
+  FOUNDING_YEAR,
+  FOUNDING_YEAR_METADATA_KEY,
+  foundingYearApplies,
+  foundingYearCents,
+  foundingYearLineName,
+  foundingYearRenewsAtUnix,
+  type FoundingYearPlan,
+} from './founding-year'
+import { recordFoundingYearFromSession } from './founding-year-record'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
@@ -308,8 +318,17 @@ export async function createSpaceLoadoutCheckout(
   // Build one line item per catalog item, charging the locked / founding / list price per
   // `resolveLoadoutPriceId`. Every item bills quantity 1 (no catalog item is per-seat since ADR-1810).
   // An item with no synced price is skipped (never charged at the wrong price).
+  const catalogItems = catalogKeysForLoadout(loadout, { nonprofitVerified })
+  // THE FOUNDING YEAR (LIVE-2541, owner 2026-11-23): yearly Business or Collective, bought before the paid
+  // year starts, by a Space with no locked base price, is paid TODAY for the year February 1, 2027 to
+  // January 31, 2028, with no trial. Decided before any line item resolves (./founding-year.ts).
+  const baseItemKey = catalogItems[0] ? itemKeyForCatalogKey(catalogItems[0].key) : null
+  const baseLocked = baseItemKey ? Boolean((await readLockedPriceId(spaceId, baseItemKey))?.trim()) : false
+  const foundingYear: FoundingYearPlan | null = offerClosed
+    ? null
+    : foundingYearApplies({ plan: loadout.plan, interval, baseLocked })
   const lineItems: { price: string; quantity: number }[] = []
-  for (const { key } of catalogKeysForLoadout(loadout, { nonprofitVerified })) {
+  for (const { key } of catalogItems) {
     const priceId = await resolveLoadoutPriceId(spaceId, key, interval, hasBetaGrant, offerClosed)
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
@@ -351,7 +370,53 @@ export async function createSpaceLoadoutCheckout(
   }
 
   const plan = asSpacePlan(loadout.plan)
-  const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval, ...(await checkoutGaMetadata()) }
+  const metadata: Record<string, string> = {
+    kind: 'space_plan',
+    space_id: spaceId,
+    plan,
+    billing_interval: interval,
+    ...(foundingYear ? { [FOUNDING_YEAR_METADATA_KEY]: FOUNDING_YEAR.metadataValue } : {}),
+    ...(await checkoutGaMetadata()),
+  }
+
+  if (foundingYear) {
+    // TWO HALVES (./founding-year.ts). The recurring lines above stay on the subscription, held until the
+    // paid year is over (`trial_end`, February 1, 2028), and renew at their yearly price from then. The
+    // year itself is a ONE-TIME line charged today: the Founding Year price for the base, and each add-on's
+    // own yearly amount (an add-on held to 2028 with nothing paid would be fourteen free months).
+    const oneTime: { price_data: { currency: string; unit_amount: number; product_data: { name: string } }; quantity: number }[] = [
+      { price_data: { currency: 'usd', unit_amount: foundingYearCents(foundingYear), product_data: { name: foundingYearLineName(foundingYear) } }, quantity: 1 },
+    ]
+    for (const line of lineItems.slice(1)) {
+      const price = (await stripe.prices.retrieve(line.price)) as { unit_amount?: number | null; currency?: string; nickname?: string | null }
+      if (typeof price.unit_amount !== 'number' || price.unit_amount <= 0) return null // never sell an add-on we cannot price
+      oneTime.push({
+        price_data: {
+          currency: price.currency ?? 'usd',
+          unit_amount: price.unit_amount,
+          product_data: { name: `${price.nickname || 'Add-on'}, ${FOUNDING_YEAR.yearStartsLabel} to ${FOUNDING_YEAR.yearEndsLabel}` },
+        },
+        quantity: line.quantity,
+      })
+    }
+    const fySession = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [...lineItems, ...oneTime],
+      ...(customer ? { customer } : { customer_email: ownerEmail }),
+      client_reference_id: spaceId,
+      metadata,
+      // NO trial_period_days: the year is paid now. `trial_end` only holds the yearly renewal until the
+      // paid year ends. No promotion codes: a code that zeroed the year would be a Founder who paid nothing.
+      subscription_data: { metadata, trial_end: foundingYearRenewsAtUnix() },
+      ...checkoutReturnFields(ui, {
+        successUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
+      }),
+    })
+    const fyHanded = resolveCheckoutSession(fySession, ui, 'space_plan')
+    if (fyHanded.error) return null
+    return { url: fyHanded.url, clientSecret: fyHanded.clientSecret, sessionId: fySession.id }
+  }
   // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
   // subscription in `trialing`, which the reconciler treats as active, so the plan is granted during the
   // trial and auto-converts when it ends. Proration is Stripe's default for a multi-item subscription.
@@ -409,5 +474,7 @@ export async function recordSpacePlanFromSessionId(sessionId: string): Promise<b
   if (!sub || typeof sub === 'string') return false
 
   await routeSpaceSubscription(sub)
+  // A Founding Year is recorded from the paid session, not the (held) subscription (LIVE-2541).
+  await recordFoundingYearFromSession(session)
   return true
 }
