@@ -6466,6 +6466,84 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5510,
+      "expiresAt": "2026-12-10T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346510000_campaign_approval_fingerprint.sql",
+          "sha256": "6c137ec6ba63b6f479cb7b78be6865362b118c676d4e065284519fca8c123700"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "docs/ledger/rows/EMAIL-086.json",
+          "status": "modified",
+          "sha256": "efa472a59769a50ed116a8b931cc1c9709724b8b60e6cba7973abbf843a335ff",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/approval-fingerprint.test.ts",
+          "status": "added",
+          "sha256": "df80d5a094ae0cafd9190f58e55389d252630fb61119d31212b4238c7e26ece9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/approval-fingerprint.ts",
+          "status": "added",
+          "sha256": "58f8feec0b825e0da5a10ace0fef2a0bf960f0e8e44a58f9e4d704784b5c9024",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-studio/send.ts",
+          "status": "modified",
+          "sha256": "08c5a8436b7599f21009bd500714c3682ef2df7c00e0449c1df5e736481c675a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/outbound/approvals.ts",
+          "status": "modified",
+          "sha256": "051fdd0dcf061bab06ebc4b830a062aa3640efff60afd6c1a25db1952a29ca09",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/admin-client-baseline.txt",
+          "status": "modified",
+          "sha256": "e86a6fa4896126059b66858d988c1f5a5b9b18792fc682f5fd0fcedbe69ed3ae",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "0bf55f59bd5c65b5d8aa99570e9720320a894030264d2144f588990b8960bb87",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346510000_campaign_approval_fingerprint.sql",
+          "status": "added",
+          "sha256": "6c137ec6ba63b6f479cb7b78be6865362b118c676d4e065284519fca8c123700",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
