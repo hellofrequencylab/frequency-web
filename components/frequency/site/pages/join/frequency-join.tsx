@@ -50,6 +50,8 @@ import '@/app/themes/active/site-pages-b'
 import { joinEmailHasAccount, stashPendingInduction } from '@/app/join/(induction)/actions'
 import { captureLead, updateLead } from '@/app/join/(induction)/lead-actions'
 import { sendSignupLink } from '@/app/sign-in/actions'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
+import { BOT_CHECK_FIELD } from '@/lib/auth/bot-check'
 import { Input } from '@/components/ui/field'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { reversePlace, searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
@@ -146,6 +148,9 @@ export function FrequencyJoin({
   const [step, setStep] = useState(0)
   const [name, setName] = useState(initialName)
   const [email, setEmail] = useState('')
+  // SEC-047: the invisible bot check. A token works once, so each send remounts the widget for a fresh one.
+  const [botToken, setBotToken] = useState('')
+  const [botRound, setBotRound] = useState(0)
   /** Latched: once the email field has slid in it stays, even if the name is cleared. */
   const [emailShown, setEmailShown] = useState(!!initialName)
   const [handle, setHandle] = useState(initialHandle)
@@ -249,6 +254,7 @@ export function FrequencyJoin({
     const fd = new FormData()
     fd.set('email', address)
     fd.set('next', destinationUrl ? `${COMPLETE_PATH}?to=${encodeURIComponent(destinationUrl)}` : COMPLETE_PATH)
+    if (botToken) fd.set(BOT_CHECK_FIELD, botToken)
     return sendSignupLink(fd)
   }
 
@@ -430,6 +436,8 @@ export function FrequencyJoin({
     startTransition(async () => {
       const address = email.trim()
       const res = await send(address)
+      setBotToken('')
+      setBotRound((n) => n + 1)
       if (!res.ok) return setError(res.error)
       if (sentTo === address) setResent(true)
       else setAnnounce('Sent. Check your email to activate.')
@@ -731,6 +739,7 @@ export function FrequencyJoin({
                     Sent again.
                   </p>
                 )}
+                <BotCheck key={botRound} onToken={setBotToken} />
                 <div className="jb-act">
                   {back}
                   {email && !sentTo ? (

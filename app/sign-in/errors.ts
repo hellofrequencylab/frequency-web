@@ -51,6 +51,8 @@ export const SIGN_IN_ERRORS = {
   same: 'That is already your password. Pick a new one.',
   /** The reset session is missing or too old to change a password with. */
   reset: 'That reset link has expired. Ask for a new one.',
+  /** The invisible bot check had not finished, or Supabase refused its token (SEC-047). */
+  bot: 'We could not finish a quick security check. Wait a second and try again.',
   /** A two-step code that did not verify (wrong, expired, or not six digits). SEC-046. */
   code: 'That code did not work. Codes change every 30 seconds, so enter the one showing now.',
   /** The two-step setup went stale (another tab started a new one). SEC-046. */

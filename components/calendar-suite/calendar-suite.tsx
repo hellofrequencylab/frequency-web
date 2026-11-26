@@ -23,6 +23,7 @@ import {
   SUITE_VIEWS,
   suiteKeyAction,
   viewCookieValue,
+  type PlanLayout,
   type SuiteView,
 } from '@/lib/calendar/planner/suite-model'
 import type { PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
@@ -182,6 +183,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   const narrow = useSyncExternalStore(subscribeNarrow, readNarrow, serverNarrow)
   const [chosen, setChosen] = useState<SuiteView | null>(() => (props.initialView ? resolveSuiteView(props.initialView, null, false) : null))
   const view: SuiteView = chosen ?? resolveSuiteView(null, null, narrow)
+  // The Plans tab reopens the layout used last (SCAN-1349).
+  const [planLayout, setPlanLayout] = useState<PlanLayout>(() => (isPlanView(view) ? view : 'board'))
   const [cursor, setCursor] = useState(openYm === todayYm ? todayKey : `${openYm}-01`)
   const [hidden, setHidden] = useState<Partial<Record<PlannerLayer, boolean>>>({})
   const [pickedSel, setSel] = useState<SuiteSelection>(() => (props.initialPlanId ? { kind: 'plan', id: props.initialPlanId } : null))
@@ -234,6 +237,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   const chooseView = useCallback(
     (next: SuiteView) => {
       setChosen(next)
+      if (isPlanView(next)) setPlanLayout(next)
       try {
         document.cookie = `${calendarViewCookieName(slug)}=${viewCookieValue(next)}; Path=/; Max-Age=31536000; SameSite=Lax`
       } catch {
@@ -259,7 +263,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
 
   const page = useCallback(
     (delta: -1 | 1) => {
-      // List, Kanban and Timeline hold every Plan, not a stretch of time: there is nothing to page.
+      // List, Board and Timeline hold every Plan, not a stretch of time: there is nothing to page.
       if (isPlanView(view)) return
       if (view === 'month') goToMonth(shiftMonth(activeYm, delta))
       else if (view === 'day') setCursor((c) => addDays(c, delta))
@@ -466,6 +470,7 @@ export function CalendarSuite(props: CalendarSuiteProps) {
       <div className="cal-main">
         <SuiteHeader
           view={view}
+          planLayout={planLayout}
           cursor={cursor}
           todayYm={todayYm}
           minYm={minYm}
