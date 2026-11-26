@@ -1173,6 +1173,33 @@ project's own settings. Keep these set in the Supabase dashboard (Frequency Comm
 Symptom: a member says the reset link "did not work". The link is PKCE, so it must be opened in the
 browser that asked for it, inside an hour. Send them to `/sign-in?step=forgot` for a fresh one.
 
+## Invisible bot check
+
+Sign-in, sign-up and password reset carry a Cloudflare Turnstile token (SEC-047, [ADR-1981](DECISIONS.md), owner
+ruling 2026-11-26 "Yes, invisible check"). Supabase checks it, so a script calling the auth API directly with the
+public key is refused. Google sign-in needs none (Google is the check). The widget is
+`components/frequency/auth/bot-check.tsx`, and `app/sign-in/actions.ts` passes the token as `captchaToken`.
+
+**Switch-on order. Never reverse steps 2 and 3:** Supabase's toggle alone refuses every email sign-in that
+carries no token.
+
+1. Cloudflare dashboard, Turnstile, Add widget: name Frequency, hostnames `frequencylocal.com` (add
+   `localhost` for local testing), Widget Mode **Invisible**. Keep both keys.
+2. Vercel (Production and Preview): set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the **site key** and redeploy.
+   Check that `/sign-in` still sends a magic link. Supabase ignores the token while its captcha is off.
+3. Supabase (Frequency Community), Authentication, Attack Protection: Enable Captcha protection, provider
+   **Turnstile**, paste the **secret key**, save. Send a magic link and a password sign-in again.
+
+**Roll back:** turn the Supabase toggle off first, then blank the variable.
+
+**Before step 3:** the native app (`mobile/`) signs in by calling Supabase directly with no token, so step 3
+stops native sign-in until the app sends one. The iOS build is parked, so nothing ships that way today.
+Re-check before the app ships.
+
+Symptom: a member sees "We could not finish a quick security check". The widget had not finished, or a
+blocker stopped `challenges.cloudflare.com`. A retry is usually enough. If it happens for everyone, the site
+key and the secret key are from different widgets, or the hostname is missing from the widget: do the roll back.
+
 ## Two-step codes for staff
 
 Every staff account (web_role admin or janitor, or any `team_members` row) must prove a code from an
