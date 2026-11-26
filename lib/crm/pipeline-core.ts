@@ -50,7 +50,7 @@ export type CrmDeal = {
   member: PersonLite | null
 }
 
-/** One activity on a deal: a note, a logged touch, or a task (kind='task'). */
+/** One item on a deal's timeline: a note or a logged touch (crm_activities), or a task (crm_tasks, HYG-251). */
 export type CrmActivity = {
   id: string
   deal_id: string | null
@@ -75,7 +75,7 @@ export type CrmContact = {
   custom?: Record<string, string>
 }
 
-/** One task: a crm_activities row with kind='task', labeled with what it points at. */
+/** One Space CRM task: a crm_tasks row with no Plan (HYG-251), labeled with what it points at. */
 export type SpaceTask = {
   id: string
   title: string
