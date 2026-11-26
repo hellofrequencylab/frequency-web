@@ -6262,6 +6262,210 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5477,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346500000_hub_quiet_hours.sql",
+          "sha256": "a756ebdd2a77e8b7215f8b45a6f4c90dd3ab4ec4cdd97d9a5d06bc4d98927dcf"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/settings/notifications/quiet-actions.ts",
+          "status": "added",
+          "sha256": "8d46088be35569dc46baabf6660f5a61c5388c46cacb31bb9af217f2122ab997",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/settings/notifications/quiet-form.tsx",
+          "status": "added",
+          "sha256": "bf4ec22d76b787939cdeda1fa7887125f698fff97144f6b310dc2ae758849ff6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/settings/notifications/section.tsx",
+          "status": "modified",
+          "sha256": "dc340d09c21acea10752230aaed9a800b098823fa754f656d2a3d2592f435982",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "content/help/getting-started/notifications.md",
+          "status": "modified",
+          "sha256": "d7e395116ee0392b4871d224dba76b6e1d9439fddfe9806292e1d4840c7009c5",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/EMAIL-090.json",
+          "status": "modified",
+          "sha256": "5afeb9ec474f2f52e6eb4d8ef205cd791f5661be79751320cbe21caebe8302a3",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/EMAIL-091.json",
+          "status": "modified",
+          "sha256": "84281edf03cf2730e20e265267cc9a6d64e6086ba31d870ba2c22460c3d79ab9",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/plan-notify.ts",
+          "status": "modified",
+          "sha256": "2939896c21ebdfebf450fd26a5ab70ef126555f996feaf2e31a578689bd2a44c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/comms/inbound.ts",
+          "status": "modified",
+          "sha256": "bad6369e44a7b722cea647fcca3b56670e7463bead44715d5e2839a9d2909055",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/comms/reply-address.ts",
+          "status": "modified",
+          "sha256": "b8732c5abc06f91f9a25077de421e5662037c216235c3eac40cfb3bd929ccb2b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/comms/thread-reply-address.test.ts",
+          "status": "added",
+          "sha256": "acca82e107e0f91ddb80357e1805dc3544966dc3e97bbbafb728a346eaacd53d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/comms/thread-reply.test.ts",
+          "status": "added",
+          "sha256": "6ba001121aa0857cdd444996cc0eb9ead8aeeb28e48ecf82e528e9ae8d4c58b9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/comms/thread-reply.ts",
+          "status": "added",
+          "sha256": "5ebbaa8d66a8f5eeb115b7a3c14254ff83c5f2482a1eb2e6c651c25e0e81d253",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "9132172bb0d3ca1642d25763aefc1cd7c507cbdcd71f5092ccea95930b854595",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email-samples/catalog.ts",
+          "status": "modified",
+          "sha256": "c876bef4fd80f4a7126ac8087d914bd36bf9f987ef50e9bc53180d51d628ea9b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/email.ts",
+          "status": "modified",
+          "sha256": "8ccba850bd13a2c43ca01a1f0988c2ad2fcb696aa6d9b260b6de980ef6c65030",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/mentions/store.ts",
+          "status": "modified",
+          "sha256": "85d67244640bb5ac6819d2f875292b5397195e0053dde3dfb6be1d29dfa4d893",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/inapp.ts",
+          "status": "modified",
+          "sha256": "7d5862963f19a69bf4d3d4c507c02bb0fdacc62e2cae57a1f00c2a0ad2844458",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/ladder-route.ts",
+          "status": "added",
+          "sha256": "488086d8525e763578e0710e02e4769d7aef2b014cbec8f666fcc1bf2a1a32fe",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/ladder.test.ts",
+          "status": "added",
+          "sha256": "c1a2e9d355d3956f2cb190a7718a8307b3876934489c4ae483aa3da179661ef6",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/ladder.ts",
+          "status": "added",
+          "sha256": "8b62fe2683f6a7c5ca537b984b3f57d2ee65613ea5485a8de2fffad9295d2c0c",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/registry.ts",
+          "status": "modified",
+          "sha256": "0c3f6d35bee0b66903bbb2a553a456549dde64ed84959d9caaa40ad277b8898a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/notifications/router.ts",
+          "status": "modified",
+          "sha256": "ed78ac4e19e5e96e7074d1d87f19300f0a6d7bf22facc50dadc368ab62beb19d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/queue/handlers.ts",
+          "status": "modified",
+          "sha256": "62f8cccb29635b2e3264b2d25ed72321c18e5fa49cf1ba2a0ce800376aeec6ea",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/threads/actions.ts",
+          "status": "modified",
+          "sha256": "be6dd207f732ee856eda8b5abf8a02e1e18c742b9ae527402750ab075a2f7479",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346500000_hub_quiet_hours.sql",
+          "status": "added",
+          "sha256": "a756ebdd2a77e8b7215f8b45a6f4c90dd3ab4ec4cdd97d9a5d06bc4d98927dcf",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_quiet_hours.test.sql",
+          "status": "added",
+          "sha256": "91c402d3ba868b7855c4d5a164f18d39995c413480b27812dadeef9348cd9f08",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
