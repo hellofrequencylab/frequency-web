@@ -106,3 +106,17 @@ describe('buildBoard and listGroups', () => {
     expect(listGroups(cols).map((c) => c.key)).toEqual(['pencil', 'planning'])
   })
 })
+
+describe('a Pencil whose dates all passed (SCAN-1340)', () => {
+  const past = plan({ id: 'old', stage: 'pencil' })
+  const live = plan({ id: 'new', stage: 'pencil' })
+  const d = data({
+    plans: [past, live],
+    items: [item({ id: 'a', plan: 'old', kind: 'pencil', date: '2026-09-22' }), item({ id: 'b', plan: 'new', kind: 'pencil', date: '2026-10-30' })],
+  })
+  it('says Date passed and sinks below the live Pencils', () => {
+    expect(planStats(past, d, today).health.label).toBe('Date passed')
+    const pencil = buildBoard(d, today, 'meld').find((c) => c.key === 'pencil')!
+    expect(pencil.cards.map((c) => c.id)).toEqual(['new', 'old'])
+  })
+})

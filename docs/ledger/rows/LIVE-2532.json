@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/calendar/vera-plan.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; owner ask 2026-11-24 17:35Z: AI meeting and date management so everyone can brainstorm the best date and time)"
   },
-  "detail": "FOUND 2026-11-24: Vera's suggestDates offers whole free days for the Space (availability.ts reads unavailable time, events, pencils and day notes); it never offers a time of day and never reads who has to attend. Fix: suggestTimes takes the people, reads each one's assigned entries and team load, their connected Google busy time once calendar sync is live (LIVE-1179), quiet hours and past votes, and proposes three options with one line of reasoning each. Per ADR-1386 Vera only proposes: the options land as pencils for the team to vote on, nothing is booked.",
+  "detail": "FOUND 2026-11-24: Vera's suggestDates offers whole free days for the Space (availability.ts reads unavailable time, events, pencils and day notes); it never offers a time of day and never reads who has to attend. Fix: suggestTimes takes the people, reads each one's assigned entries and team load, their connected Google busy time once calendar sync is live (LIVE-1179), quiet hours and past votes, and proposes three options with one line of reasoning each. Per ADR-1386 Vera only proposes: the options land as pencils for the team to vote on, nothing is booked.\n\nDONE 2026-11-24: suggestTimes (lib/calendar/suggest-times.ts) proposes three dates AND times on different days for the Plan's lead, its to-do assignees and its voters: no overlap with the Space calendar or a person's timed to-dos, off days they already have to-dos due, outside quiet hours, leaning to the weekdays and times they said yes to before, one line of reasoning each through the voice module. Ask Vera for times in Find a time; Add as an option pencils one into the Plan's candidate group (max three). Google busy time joins personBusy once calendar sync is live (LIVE-1179).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2532",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Passes once lib/calendar exports suggestTimes that reads the people who have to be there."
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }

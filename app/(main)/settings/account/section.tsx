@@ -10,6 +10,9 @@ import { DeleteAccount } from './delete-account'
 import { DownloadData } from './download-data'
 import { EraseDrafts } from './erase-drafts'
 import { YourStanding } from './standing'
+import { createClient } from '@/lib/supabase/server'
+import { requestPasswordReset } from '@/app/sign-in/actions'
+import { SignInSubmit } from '@/app/sign-in/submit'
 
 // The Account and privacy SECTION of the unified Settings page (DAWN 2 screen pass).
 // This is the server half that used to be app/(main)/settings/account/page.tsx,
@@ -27,6 +30,13 @@ export async function AccountSection() {
   ])
 
   const setupHidden = myProfileId && launchSystemEnabled() ? await loadSetupHidden(myProfileId) : false
+  // SIGN-IN AND PASSWORD (SEC-045). Setting or changing a password goes through the member's own inbox:
+  // the reset email proves they hold the mailbox right now, which is the re-check a password change
+  // needs, and it works the same for someone who joined with Google or a magic link and has none yet.
+  const {
+    data: { user: authUser },
+  } = await (await createClient()).auth.getUser()
+  const signInEmail = authUser?.email ?? null
 
   return (
     <div className="space-y-8">
@@ -39,6 +49,20 @@ export async function AccountSection() {
           </form>
         </div>
       )}
+      {signInEmail && (
+        <div>
+          <p className="eyebrow text-muted mb-2">Sign-in and password</p>
+          <form action={requestPasswordReset} className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+            <input type="hidden" name="email" value={signInEmail} />
+            <span className="min-w-0 flex-1 text-body-sm text-text">
+              Sign in with a magic link, Google, or a password. To set or change your password, we will email a link
+              to <span className="font-semibold [overflow-wrap:anywhere]">{signInEmail}</span>.
+            </span>
+            <SignInSubmit variant="secondary">Email me a password link</SignInSubmit>
+          </form>
+        </div>
+      )}
+
       <div>
         <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Blocked members</p>
         {blocked.length === 0 ? (

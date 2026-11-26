@@ -19,6 +19,7 @@ import { EventDoorSection } from './door-section'
 import { getCallerProfile } from '@/lib/auth'
 import { spaceTeamIds, spaceTeamPeople } from '@/lib/threads/team'
 import { ItemThread } from '@/components/threads/item-thread'
+import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -119,8 +120,9 @@ export default async function ManageEventPage({
   const caps = await getEventCapabilities(event.id)
   if (!caps.has('event.editSettings')) notFound()
 
-  // The team thread (LIVE-2527) belongs to the Space that runs the event, and only its team sees it.
-  const threadSpaceId = event.host_space_id ?? event.space_id
+  // The team thread (LIVE-2527) belongs to the Space that hosts the event, and only its team sees it.
+  // The one resolver excludes the root tenant, so a personal event has no team thread (LIVE-075).
+  const threadSpaceId = await resolveHostingSpaceIdFromRow(event)
   const viewer = threadSpaceId ? await getCallerProfile() : null
   const onTeam = !!(viewer && threadSpaceId && (await spaceTeamIds(threadSpaceId)).has(viewer.id))
   const team = onTeam && threadSpaceId && viewer ? await spaceTeamPeople(threadSpaceId, viewer.id) : []

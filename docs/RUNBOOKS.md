@@ -1156,3 +1156,19 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 **Step 2:** set `CSP_NONCE_ENFORCE=1` on Production and redeploy. It wins over step 1.
 
 **Off:** blank the switch and redeploy.
+
+## Password sign-in
+
+Password sign-in sits beside the magic link and Google (SEC-045, [ADR-1979](DECISIONS.md)). The code enforces its own rule
+(`lib/auth/password-policy.ts`), but a script calling the Supabase auth API directly only meets the
+project's own settings. Keep these set in the Supabase dashboard (Frequency Community, Authentication):
+
+- **Sign In / Providers, Email:** "Confirm email" ON. Without it a password sign-up gets a session for an
+  address it never proved, and that account can later be joined to the real owner's Google sign-in.
+  Checked live 2026-11-25 (`mailer_autoconfirm: false` on `/auth/v1/settings`).
+- **Minimum password length:** the value of `PASSWORD_MIN_LENGTH`. No character-type requirements.
+- **Prevent use of leaked passwords:** ON (OWN-007). Its refusal reaches the form as the `weak` line.
+- **Secure password change:** ON, and the **password changed** security notification email ON.
+
+Symptom: a member says the reset link "did not work". The link is PKCE, so it must be opened in the
+browser that asked for it, inside an hour. Send them to `/sign-in?step=forgot` for a fresh one.

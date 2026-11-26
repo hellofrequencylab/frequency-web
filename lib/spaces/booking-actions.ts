@@ -91,8 +91,9 @@ export async function createBooking(
   note?: string,
   serviceTypeId?: string | null,
   answers?: Record<string, string> | null,
+  bookerTimeZone?: string | null,
 ): Promise<ActionResult> {
-  return createBookingImpl(spaceId, startsAtISO, note, serviceTypeId, answers)
+  return createBookingImpl(spaceId, startsAtISO, note, serviceTypeId, answers, bookerTimeZone)
 }
 
 /** Reschedule the member's own booking to a new time (P3). Atomic new-then-cancel, re-validated. */
@@ -164,6 +165,8 @@ interface GuestBookingActionInput {
   optIn?: boolean
   /** Honeypot: bots fill it, people never see it. */
   company?: string
+  /** BOOK-009: the zone the guest's browser reported, for their own emails. */
+  timeZone?: string | null
 }
 
 /** Book an open slot as a guest from a Space website (LIVE-835). Same ActionResult as createBooking.
@@ -193,6 +196,7 @@ export async function createGuestBookingAction(input: GuestBookingActionInput): 
     serviceTypeId: input.serviceTypeId ?? null,
     answers: input.answers ?? null,
     optIn: input.optIn === true,
+    ...(typeof input.timeZone === 'string' ? { timeZone: input.timeZone } : {}),
   })
 }
 

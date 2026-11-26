@@ -195,6 +195,10 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'support', href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', icon: 'LifeBuoy', min: 'host', staffDomain: 'members',
     world: 'community', worldLabel: 'Support', worldOrder: 10,
     adminNav: { section: 'operations', heading: 'Platform' } },
+  // Work (LIVE-2534, owner ruling 2026-11-24): the Console rollup of to-dos and live Plans across the
+  // Frequency Space and every Space the viewer runs. Read-only; each row opens its Plan.
+  { id: 'work', href: '/admin/work', label: 'Work', desc: 'Your to-dos and live Plans across Frequency and every Space you run.', icon: 'ListTodo', min: 'janitor',
+    adminNav: { section: 'operations', heading: 'Platform' } },
   { id: 'sms', href: '/admin/sms', label: 'Text messages', desc: 'SMS provisioning status and the operator on/off switch.', icon: 'MessageSquare', min: 'janitor', staffDomain: 'platform',
     adminNav: { section: 'operations', heading: 'Platform' } },
   { id: 'nonprofit-verifications', href: '/admin/nonprofit-verifications', label: 'Non Profit verification', desc: 'Review and approve 501(c)(3) verification requests.', icon: 'BadgeCheck', min: 'janitor',
@@ -344,11 +348,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-conversations', href: '/admin/crm/conversations', label: 'Conversations', desc: 'One ticketed inbox for support, outreach, and replies. Assign a thread, reply as yourself, and their reply comes back to the same place.', icon: 'MessagesSquare', min: 'janitor', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Conversations', worldOrder: 15.5,
     adminNav: { section: 'crm', heading: 'Engine' } },
-  // Tasks (ADR-628) — the operator follow-up board (open/done/snoozed), optionally tied to a contact.
-  // Distinct from member-facing crew_tasks (the volunteer economy); this is the staff to-do queue.
-  { id: 'crm-tasks', href: '/admin/crm/tasks', label: 'Tasks', desc: 'Your CRM follow-up list: queue a call-back, mark it done, or snooze it for later.', icon: 'ListTodo', min: 'janitor', staffDomain: 'marketing',
-    world: 'growth', worldLabel: 'CRM: Tasks', worldOrder: 16,
-    adminNav: { section: 'crm', heading: 'Engine' } },
+  // CRM Tasks (ADR-628) folded into Work (SCAN-1346, owner ruling 2026-11-25): /admin/crm/tasks redirects.
   // Signup leads (scan2 L9-03, 2026-09-05): the people who gave an email at /join and never finished.
   // The induction writes `signup_leads` on every beat; this is the only surface that reads it back.
   { id: 'crm-leads', href: '/admin/crm/leads', label: 'Signup leads', desc: 'People who gave an email at /join and never finished. See the beat they stopped at, reach out, or export the list.', icon: 'UserPlus', min: 'janitor', staffDomain: 'marketing',
@@ -565,7 +565,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
       // ("Resonance CRM" -> /admin/crm) IS the roster tab; listing the leaf too painted two tabs on one URL.
       // Order (owner directive): the landing | Marketing | Conversations | Tasks | Contacts | Intelligence |
       // Pipeline, then the two audience tools.
-      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-conversations' }, { leaf: 'crm-tasks' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
+      { heading: 'Engine', leaves: [{ leaf: 'crm-marketing' }, { leaf: 'crm-conversations' }, { leaf: 'crm-contacts' }, { leaf: 'crm-intelligence' }, { leaf: 'crm-pipeline' }] },
       { heading: 'Audiences', leaves: [{ leaf: 'segments' }, { leaf: 'crm-leads' }] },
     ],
   },
@@ -579,6 +579,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
   {
     href: '/admin/operations', label: 'Platform', min: 'janitor', staffDomain: 'platform',
     groups: [
+      { heading: 'Work', leaves: [{ leaf: 'work' }] },
       { heading: 'Site', leaves: [{ leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'page-layout' }, { leaf: 'appearance' }] },
       { heading: 'Commerce', leaves: [{ leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' }, { leaf: 'marketplace-reviews' }] },
       { heading: 'Accounts', leaves: [{ leaf: 'spaces' }, { leaf: 'roles' }, { leaf: 'sms' }, { leaf: 'nonprofit-verifications' }] },

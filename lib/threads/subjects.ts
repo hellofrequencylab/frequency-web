@@ -3,7 +3,7 @@
 // A team thread hangs off any item. Plans, to-dos and calendar entries keep theirs in
 // space_plan_comments (it carries the cross-Space share rules); events, deals and contacts keep
 // theirs in item_comments. Both broadcast new messages from the database to one private topic per
-// thread, `thread:<subject_type>:<subject_id>` (migration 20270346310000), and both record what a
+// thread, `thread:<subject_type>:<subject_id>` (migration 20270346460000), and both record what a
 // person has read in thread_reads. A Plan's thread, its own and its to-dos', is one topic: 'plan'.
 
 /** The items whose thread lives in item_comments. */

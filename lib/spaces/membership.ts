@@ -134,6 +134,20 @@ export async function listSpaceTeam(spaceId: string): Promise<{ profileId: strin
   }
 }
 
+/** Keep the Space's team room in step with the team (LIVE-2529). Imported lazily so the room code
+ *  never loads for a read of this module, and awaited so a serverless return cannot drop it.
+ *  ensureSpaceTeamRoom never throws: a room failure never fails a membership change. */
+async function syncTeamRoom(spaceId: string): Promise<void> {
+  const { ensureSpaceTeamRoom } = await import('./team-room')
+  await ensureSpaceTeamRoom(createAdminClient(), spaceId)
+}
+
+/** Give each of these Spaces its team room if it has none yet (LIVE-2529 backfill, run after a
+ *  "Spaces you run" render for the Spaces the viewer runs). A re-run writes nothing. */
+export async function syncSpaceTeamRooms(spaceIds: readonly string[]): Promise<void> {
+  for (const id of spaceIds) await syncTeamRoom(id)
+}
+
 /** Add (or re-activate) a member of a Space at a role. Service-role write, server-mediated (call
  *  behind app-authz). Upserts on the (space_id, profile_id) unique key, so re-adding a person
  *  updates their role/status rather than erroring. Returns the resulting membership, or null on
@@ -160,6 +174,7 @@ export async function addSpaceMember(input: {
       .select(MEMBER_COLS)
       .maybeSingle()
     if (error || !data) return null
+    await syncTeamRoom(input.spaceId)
     return mapMember(data)
   } catch {
     return null
@@ -179,6 +194,7 @@ export async function updateSpaceMemberRole(
       .update({ role })
       .eq('space_id', spaceId)
       .eq('profile_id', profileId)
+    if (!error) await syncTeamRoom(spaceId)
     return !error
   } catch {
     return false
@@ -200,6 +216,7 @@ export async function setSpaceMemberStatus(
       .update({ status })
       .eq('space_id', spaceId)
       .eq('profile_id', profileId)
+    if (!error) await syncTeamRoom(spaceId)
     return !error
   } catch {
     return false
@@ -215,6 +232,7 @@ export async function removeSpaceMember(spaceId: string, profileId: string): Pro
       .delete()
       .eq('space_id', spaceId)
       .eq('profile_id', profileId)
+    if (!error) await syncTeamRoom(spaceId)
     return !error
   } catch {
     return false

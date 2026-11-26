@@ -343,3 +343,70 @@ describe('where the session happens (BOOK-010)', () => {
     expect(icsOf(mail)).not.toContain('LOCATION:')
   })
 })
+
+describe("the booker's own time zone (BOOK-009)", () => {
+  beforeEach(() => {
+    tables.spaces = [{ id: 'space-1', name: 'River Yoga', brand_name: null, slug: 'river', domain: null }]
+    tables.profiles = [
+      { id: 'member-1', display_name: 'Ana', auth_user_id: 'auth-1' },
+      { id: 'owner-1', display_name: 'Rio', auth_user_id: 'auth-2' },
+    ]
+  })
+
+  it("shows the booker their zone and keeps the Space's for the owner", async () => {
+    tables.space_bookings = [{ id: 'b1', rescheduled_from: null, booker_time_zone: 'America/New_York' }]
+    await notifyBookingConfirmed({
+      bookingId: 'b1',
+      spaceId: 'space-1',
+      spaceSlug: 'river',
+      spaceName: 'River Yoga',
+      ownerProfileId: 'owner-1',
+      memberProfileId: 'member-1',
+      memberName: null,
+      startsAt: '2030-01-01T10:00:00.000Z',
+      endsAt: '2030-01-01T11:00:00.000Z',
+      serviceName: 'Deep tissue',
+    })
+    const [booker, owner] = emails()
+    expect(booker.html).toContain('5:00 AM EST')
+    expect(booker.html).not.toContain('10:00 AM UTC')
+    expect(owner.html).toContain('10:00 AM UTC')
+  })
+
+  it('falls back to the Space zone when the booker gave none', async () => {
+    tables.space_bookings = [{ id: 'b1', rescheduled_from: null }]
+    await notifyBookingConfirmed({
+      bookingId: 'b1',
+      spaceId: 'space-1',
+      spaceSlug: 'river',
+      spaceName: 'River Yoga',
+      ownerProfileId: null,
+      memberProfileId: 'member-1',
+      memberName: null,
+      startsAt: '2030-01-01T10:00:00.000Z',
+      endsAt: '2030-01-01T11:00:00.000Z',
+      serviceName: 'Deep tissue',
+    })
+    expect(emails()[0].html).toContain('10:00 AM UTC')
+  })
+
+  it("times the reminder in the booker's zone", async () => {
+    tables.space_bookings = [
+      {
+        id: 'b1',
+        space_id: 'space-1',
+        member_profile_id: null,
+        guest_name: 'Ana',
+        guest_email: 'ana@example.test',
+        guest_confirm_token: 'tok_1',
+        service_type_id: 'svc-1',
+        starts_at: '2099-01-01T10:00:00.000Z',
+        ends_at: '2099-01-01T11:00:00.000Z',
+        status: 'confirmed',
+        booker_time_zone: 'America/New_York',
+      },
+    ]
+    await runBookingReminder({ bookingId: 'b1' })
+    expect(emails()[0].html).toContain('5:00 AM EST')
+  })
+})
