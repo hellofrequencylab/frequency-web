@@ -64,7 +64,7 @@ describe('both switches off: nothing changes', () => {
     expect(await configHeader({ [ENFORCE]: '1' })).toEqual(off)
     // Today's header, pinned on the one directive this row is about, so "identical to today" is
     // not only "identical to a copy that was edited in the same change".
-    expect(off[0]).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://js.stripe.com;")
+    expect(off[0]).toContain("script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://js.stripe.com https://challenges.cloudflare.com;")
     expect(off[0]).toContain('report-uri /api/csp-report')
     expect(off[0]).not.toContain('nonce-')
     expect(off[0]).not.toContain('strict-dynamic')
