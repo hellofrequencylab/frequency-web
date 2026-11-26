@@ -1,4 +1,5 @@
 import { GoogleMark } from '@/components/google-mark'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -196,6 +197,7 @@ export default async function SignInPage({
               so you keep one account.
             </p>
             <form action={signInWithMagicLink} className="space-y-2">
+              <BotCheck />
               <input type="hidden" name="email" value={newAccountEmail} />
               <input type="hidden" name="mode" value="create" />
               {nextValue && <input type="hidden" name="next" value={nextValue} />}
@@ -218,6 +220,7 @@ export default async function SignInPage({
 
         {/* Magic link */}
         <form action={signInWithMagicLink} className="space-y-3">
+          <BotCheck />
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <input type="hidden" name="mode" value="signin" />
           <div>

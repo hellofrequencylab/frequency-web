@@ -14,6 +14,7 @@ import { passwordProblem } from '@/lib/auth/password-policy'
 import { finishSignIn } from '@/lib/auth/finish-sign-in'
 import { safeNextPath } from '@/lib/auth/safe-next'
 import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
+import { botCheckMissing, botCheckToken } from '@/lib/auth/bot-check'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
 // cinematic welcome (app/join/(induction)/induction.tsx sign-in beat).
@@ -63,6 +64,11 @@ function isProviderThrottle(error: { status?: number; code?: string; message?: s
     error.code === 'over_request_rate_limit' ||
     /rate limit/i.test(error.message ?? '')
   )
+}
+
+/** Supabase refused the bot-check token (SEC-047): missing, used, expired or not ours. */
+function isCaptchaError(error: { code?: string; message?: string }): boolean {
+  return error.code === 'captcha_failed' || /captcha/i.test(error.message ?? '')
 }
 
 async function callerIp(): Promise<string> {
@@ -121,6 +127,10 @@ export async function signInWithMagicLink(formData: FormData) {
     fail('rate', next)
   }
 
+  // THE BOT CHECK (SEC-047): the widget's token, handed to Supabase. Off until the site key is set.
+  const captchaToken = botCheckToken(formData)
+  if (botCheckMissing(captchaToken)) fail('bot', next)
+
   await stashNext(next)
   const supabase = await createClient()
 
@@ -144,6 +154,7 @@ export async function signInWithMagicLink(formData: FormData) {
     options: {
       emailRedirectTo: await getCallbackUrl(),
       shouldCreateUser: !askFirst,
+      captchaToken,
       ...(seq ? { data: { funnel_seq: seq } } : {}),
     },
   })
@@ -162,6 +173,7 @@ export async function signInWithMagicLink(formData: FormData) {
 
   if (error) {
     // Supabase's own wording never reaches the page — see ./errors.ts.
+    if (isCaptchaError(error)) fail('bot', next)
     console.error('[sign-in] magic link failed:', error.message)
     fail(isProviderThrottle(error) ? 'rate' : 'send', next)
   }
@@ -191,13 +203,17 @@ export async function sendSignupLink(formData: FormData): Promise<{ ok: true } |
     return { ok: false, error: SIGN_IN_ERRORS.rate }
   }
 
+  const captchaToken = botCheckToken(formData)
+  if (botCheckMissing(captchaToken)) return { ok: false, error: SIGN_IN_ERRORS.bot }
+
   await stashNext(next)
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: await getCallbackUrl(), shouldCreateUser: true },
+    options: { emailRedirectTo: await getCallbackUrl(), shouldCreateUser: true, captchaToken },
   })
   if (error) {
+    if (isCaptchaError(error)) return { ok: false, error: SIGN_IN_ERRORS.bot }
     console.error('[sign-in] signup link failed:', error.message)
     return { ok: false, error: isProviderThrottle(error) ? SIGN_IN_ERRORS.rate : SIGN_IN_ERRORS.send }
   }
@@ -292,11 +308,14 @@ export async function signInWithPassword(formData: FormData) {
     bounce(back, 'rate', next)
   }
   if (!mailbox || !password) bounce(back, 'credentials', next)
+  const captchaToken = botCheckToken(formData)
+  if (botCheckMissing(captchaToken)) bounce(back, 'bot', next)
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } })
   if (error) {
     if (isProviderThrottle(error)) bounce(back, 'rate', next)
+    if (isCaptchaError(error)) bounce(back, 'bot', next)
     if (error.code === 'email_not_confirmed') bounce(back, 'unconfirmed', next)
     // Never log the address or the password: a failed sign-in is routine, and a log line is a copy.
     bounce(back, 'credentials', next)
@@ -333,6 +352,8 @@ export async function signUpWithPassword(formData: FormData) {
   if (!mailbox) bounce(back, 'send', next)
   const problem = passwordProblem(password, email)
   if (problem) bounce(back, problem, next)
+  const captchaToken = botCheckToken(formData)
+  if (botCheckMissing(captchaToken)) bounce(back, 'bot', next)
 
   await stashNext(next)
   const seq = safeSeq(formData.get('seq'))
@@ -342,11 +363,13 @@ export async function signUpWithPassword(formData: FormData) {
     password,
     options: {
       emailRedirectTo: await getCallbackUrl(),
+      captchaToken,
       ...(seq ? { data: { funnel_seq: seq } } : {}),
     },
   })
   if (error) {
     if (isProviderThrottle(error)) bounce(back, 'rate', next)
+    if (isCaptchaError(error)) bounce(back, 'bot', next)
     if (error.code === 'weak_password') bounce(back, 'weak', next)
     // `user_already_exists` only comes back when confirmations are OFF. With them on (live), Supabase
     // answers an existing address with a look-alike success, which is what keeps this form from
@@ -368,13 +391,16 @@ export async function requestPasswordReset(formData: FormData) {
   if (!(await rateLimitOk('signin:ip', await callerIp(), IP_LIMIT, WINDOW, OPEN_WHEN_UNSET))) bounce(back, 'rate')
   if (mailbox && !(await rateLimitOk('signin:email', mailbox, EMAIL_LIMIT, WINDOW, OPEN_WHEN_UNSET))) bounce(back, 'rate')
   if (!mailbox) bounce(back, 'send')
+  const captchaToken = botCheckToken(formData)
+  if (botCheckMissing(captchaToken)) bounce(back, 'bot')
 
   // The recovery link lands on the bare /auth/callback like every other link (the redirect allow-list
   // is that one URL), and the stashed destination carries the person on to the new-password form.
   await stashNext('/sign-in?step=new-password')
   const supabase = await createClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: await getCallbackUrl() })
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: await getCallbackUrl(), captchaToken })
   if (error && isProviderThrottle(error)) bounce(back, 'rate')
+  if (error && isCaptchaError(error)) bounce(back, 'bot')
   if (error) console.error('[sign-in] password reset send failed:', error.code ?? error.message)
   // Same screen whether or not the address has an account, and whether or not the send worked for an
   // unknown address: the reset form must not be a way to test which emails are members.

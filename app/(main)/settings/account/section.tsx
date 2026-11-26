@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import { getMyProfileId } from '@/lib/auth'
 import { getBlockedProfiles } from '@/lib/blocking'
 import { getInitials } from '@/lib/utils'
@@ -60,6 +61,7 @@ export async function AccountSection() {
         <div>
           <p className="eyebrow text-muted mb-2">Sign-in and password</p>
           <form action={requestPasswordReset} className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+            <BotCheck />
             <input type="hidden" name="email" value={signInEmail} />
             <span className="min-w-0 flex-1 text-body-sm text-text">
               Sign in with a magic link, Google, or a password. To set or change your password, we will email a link

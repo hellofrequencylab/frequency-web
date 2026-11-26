@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSpaceById } from '@/lib/spaces/store'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { log } from '@/lib/log'
-import { routeNotification } from '@/lib/notifications/router'
+import { routeLadder } from '@/lib/notifications/ladder-route'
 import { excerpt } from '@/lib/calendar/plan-notify-core'
 import { parseCommentBody } from '@/lib/calendar/plan-comments'
 import { extractReferences, mentionedProfileIds } from '@/lib/mentions/references'
@@ -152,7 +152,7 @@ async function afterItemComment(input: { commentId: string; subjectType: ItemSub
   const base = { actorId: input.authorId, body: excerpt(input.body), url: facts.url, tag, referenceType: input.subjectType, referenceId: input.subjectId }
 
   for (const profileId of tagged) {
-    await routeNotification('item.mention', { profileId }, { ...base, title: `${author} mentioned you on ${facts.title}` })
+    await routeLadder('item.mention', { profileId }, { ...base, title: `${author} mentioned you on ${facts.title}` })
   }
 
   // Followers: whoever owns the item and whoever has written in the thread, still on the team.
@@ -166,6 +166,6 @@ async function afterItemComment(input: { commentId: string; subjectType: ItemSub
   const followers = new Set<string>([...facts.ownerIds, ...(prior ?? []).map((r) => r.author_profile_id).filter((v): v is string => !!v)])
   for (const profileId of followers) {
     if (profileId === input.authorId || tagged.includes(profileId) || !team.has(profileId)) continue
-    await routeNotification('item.comment', { profileId }, { ...base, title: `${author} wrote about ${facts.title}` })
+    await routeLadder('item.comment', { profileId }, { ...base, title: `${author} wrote about ${facts.title}` })
   }
 }

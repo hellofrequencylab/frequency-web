@@ -26,6 +26,8 @@ import { ArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
 import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
+import { BOT_CHECK_FIELD } from '@/lib/auth/bot-check'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { InductionWelcome } from '@/components/frequency/site/pages/funnel/induction-welcome'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
@@ -339,6 +341,8 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
   const [emailError, setEmailError] = useState('')
   const [capturing, setCapturing] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
+  // SEC-047: the invisible bot check's token for the magic-link send.
+  const [botToken, setBotToken] = useState('')
 
   // PARK THE RUN on every beat change, so leaving and coming back resumes here instead of
   // restarting at 0 — the promise the Beat-0 field already makes ("saves your spot so you can
@@ -452,6 +456,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
     const fd = new FormData()
     fd.set('email', email.trim())
     fd.set('next', completeNext)
+    if (botToken) fd.set(BOT_CHECK_FIELD, botToken)
     await signInWithMagicLink(fd) // redirects to /sign-in/confirm
   }
 
@@ -1362,6 +1367,7 @@ function DawnInduction({ userId = '', userEmail = '', initialHandle = '', previe
                       aria-label="Email address"
                       className={`${inputInset} mt-4`}
                     />
+                    <BotCheck onToken={setBotToken} />
                     <Button
                       onClick={deferredMagicLink}
                       disabled={!email.trim() || signingIn}

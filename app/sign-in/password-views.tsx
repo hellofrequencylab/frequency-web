@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import { GoogleMark } from '@/components/google-mark'
 import { AuthFrame } from '@/components/frequency/auth/auth-frame'
 import { Field, Input } from '@/components/ui/field'
@@ -52,6 +53,7 @@ export function CreateAccountView({
     >
       <Alert message={errorMessage} />
       <form action={signUpWithPassword} className="fqa-form">
+        <BotCheck />
         {nextValue && <input type="hidden" name="next" value={nextValue} />}
         <Field label="Email address">
           <Input
@@ -99,6 +101,7 @@ export function ForgotPasswordView({ errorMessage, emailValue }: { errorMessage:
     >
       <Alert message={errorMessage} />
       <form action={requestPasswordReset} className="fqa-form">
+        <BotCheck />
         <Field label="Email address">
           <Input
             name="email"

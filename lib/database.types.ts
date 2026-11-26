@@ -13741,6 +13741,8 @@ export type Database = {
           push_matches: boolean
           push_mentions: boolean
           push_practice: boolean
+          quiet_hours_end: number | null
+          quiet_hours_start: number | null
           sms_dispatches: boolean
           sms_enabled: boolean
           sms_events: boolean
@@ -13780,6 +13782,8 @@ export type Database = {
           push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -13819,6 +13823,8 @@ export type Database = {
           push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
