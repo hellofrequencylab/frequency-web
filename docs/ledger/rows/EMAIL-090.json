@@ -4,16 +4,16 @@
   "lane": "live",
   "priority": "P2",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/comms/reply-address.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: signed reply addresses and the inbound router work for comms conversations only; a reply to a Plan comment or mention email bounces into nothing. Owner ruling 2026-11-24: email is the only outside channel for now (no Slack or WhatsApp). Fix: encode the item thread in the reply token, strip quoted text, post as the sender. Inbound mail counts against the Resend quota, so it goes through the daily quota valve.",
+  "detail": "FOUND 2026-11-24: signed reply addresses and the inbound router work for comms conversations only; a reply to a Plan comment or mention email bounces into nothing. Owner ruling 2026-11-24: email is the only outside channel for now (no Slack or WhatsApp). Fix: encode the item thread in the reply token, strip quoted text, post as the sender. Inbound mail counts against the Resend quota, so it goes through the daily quota valve.\n\nA tag email carries Reply-To reply+n<notice id>-<HMAC>@reply domain; lib/comms/inbound.ts verifies it and lib/comms/thread-reply.ts posts the reply's new words (quoted trail cut) into the Plan, item thread or room as the notice's recipient, only while they still belong there; redeliveries within 10 minutes are not posted twice. No SQL.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node scripts/probes/hub-2026-11-24.mjs EMAIL-090",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "cmd": "node scripts/probes/hub-2026-11-24.mjs EMAIL-090"
   },
+  "closed": "2026-11-24",
   "wave": "W7"
 }

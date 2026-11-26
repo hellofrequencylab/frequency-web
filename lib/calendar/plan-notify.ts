@@ -265,6 +265,13 @@ export async function notifyPlanMentions(input: {
  * Null when the person works the Plan from no Space, and the hub simply shows.
  */
 export async function planHrefForViewer(planId: string, profileId: string | null): Promise<string | null> {
+  const home = await planTeamForViewer(planId, profileId)
+  return home ? `${calendarSettingsPath(home.slug)}?plan=${planId}` : null
+}
+
+/** The team this person works a Plan from: the host Space first, then an accepted guest. Null when
+ *  they are on neither. Also the side a reply by email is written from (EMAIL-090). */
+export async function planTeamForViewer(planId: string, profileId: string | null): Promise<{ id: string; slug: string } | null> {
   if (!profileId) return null
   try {
     const admin = createAdminClient()
@@ -273,8 +280,7 @@ export async function planHrefForViewer(planId: string, profileId: string | null
     if (!hostSpaceId) return null
     const { data: shares } = await admin.from('space_plan_shares').select('guest_space_id, status').eq('plan_id', planId)
     const guests = ((shares ?? []) as { guest_space_id: string; status: string }[]).filter((s) => s.status === 'accepted').map((s) => s.guest_space_id)
-    const home = await teamOf(profileId, [hostSpaceId, ...guests])
-    return home ? `${calendarSettingsPath(home.slug)}?plan=${planId}` : null
+    return await teamOf(profileId, [hostSpaceId, ...guests])
   } catch (err) {
     log.warn('calendar.plan_notify.plan_href_failed', { plan_id: planId, error: err instanceof Error ? err.message : String(err) })
     return null

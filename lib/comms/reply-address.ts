@@ -145,3 +145,61 @@ export function parseConversationReplyAddress(
   }
   return null
 }
+
+// ── Thread reply addresses (EMAIL-090) ─────────────────────────────────────────────────────────────
+// A hub notice email (a tag left unread, lib/notifications/ladder.ts) carries
+//   Reply-To: reply+n<notice id, 32 hex>-<20-hex tag>@<REPLY_DOMAIN>
+// The notice is the bell row itself, which already names the person it was for and the thread it is
+// about, so the reply posts into that thread AS that person and nobody else: the address is minted per
+// recipient, the From header is never trusted. The tag is an HMAC over `notice:<id>` (80 bits; a
+// distinct input from `conv:<ref>`, so a conversation tag can never pass as a thread tag), and the
+// local part stays at 60 characters, under the 64 an address allows. The `n` prefix keeps these apart
+// from the all-digit conversation refs above.
+
+const NOTICE_TAG_HEX = 20
+
+function compactUuid(id: string): string | null {
+  const hex = id.replace(/-/g, '').toLowerCase()
+  return /^[0-9a-f]{32}$/.test(hex) ? hex : null
+}
+
+function expandUuid(hex: string): string {
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+function makeNoticeToken(noticeId: string): string {
+  const hmac = createHmac('sha256', getSecret())
+  hmac.update(`notice:${noticeId.toLowerCase()}`)
+  return hmac.digest('hex').slice(0, NOTICE_TAG_HEX)
+}
+
+export function verifyNoticeToken(noticeId: string, token: string): boolean {
+  if (!token || token.length !== NOTICE_TAG_HEX) return false
+  try {
+    return timingSafeEqual(Buffer.from(makeNoticeToken(noticeId), 'hex'), Buffer.from(token, 'hex'))
+  } catch {
+    return false
+  }
+}
+
+/** The Reply-To for one hub notice, or null for an id that is not a uuid. */
+export function buildThreadReplyAddress(noticeId: string): string | null {
+  const hex = compactUuid(noticeId)
+  if (!hex) return null
+  return `reply+n${hex}-${makeNoticeToken(expandUuid(hex))}@${REPLY_DOMAIN}`
+}
+
+/** Parse an inbound recipient back into (noticeId, token), or null. Does NOT verify the token. */
+export function parseThreadReplyAddress(to: string | string[] | null | undefined): { noticeId: string; token: string } | null {
+  const parts = Array.isArray(to) ? to : typeof to === 'string' ? to.split(',') : []
+  const domain = REPLY_DOMAIN.toLowerCase()
+  for (const part of parts) {
+    const addr = extractAddress(part)
+    if (!addr) continue
+    const at = addr.lastIndexOf('@')
+    if (at <= 0 || addr.slice(at + 1) !== domain) continue
+    const m = /^reply\+n([0-9a-f]{32})-([0-9a-f]{20})$/.exec(addr.slice(0, at))
+    if (m) return { noticeId: expandUuid(m[1]), token: m[2] }
+  }
+  return null
+}

@@ -58,11 +58,12 @@ export const runHubLadder: JobHandler = async (payload) => {
   const admin = createAdminClient()
   const { data: notices } = await admin
     .from('notifications')
-    .select('read_at, archived_at')
+    .select('id, read_at, archived_at, created_at')
     .eq('recipient_id', profileId)
     .eq('reference_type', ctx.referenceType)
     .eq('reference_id', ctx.referenceId)
     .gte('created_at', new Date(Date.parse(since) - 60_000).toISOString())
+    .order('created_at', { ascending: false })
     .limit(50)
   if (!ladderStillDue((notices ?? []).map((n) => ({ readAt: n.read_at, archivedAt: n.archived_at })))) return
 
@@ -91,6 +92,11 @@ export const runHubLadder: JobHandler = async (payload) => {
   const { profileAccountEmail } = await import('@/lib/profiles/account-email')
   const to = await profileAccountEmail(profileId)
   if (!to) return
+  // A reply to this email posts into the thread as this person (EMAIL-090): the Reply-To names the
+  // newest unread bell row, which already says who it was for and which thread it is about.
+  const newestUnread = (notices ?? []).find((n) => !n.read_at && !n.archived_at)
+  const { buildThreadReplyAddress, conversationSigningAvailable } = await import('@/lib/comms/reply-address')
+  const replyTo = newestUnread && conversationSigningAvailable() ? buildThreadReplyAddress(newestUnread.id) ?? undefined : undefined
   const { buildHubTagEmail } = await import('@/lib/email')
   const email = buildHubTagEmail({
     to,
@@ -99,6 +105,7 @@ export const runHubLadder: JobHandler = async (payload) => {
     title: ctx.title ?? 'You were mentioned',
     preview: ctx.body ?? '',
     path: ctx.url ?? '/inbox',
+    replyTo,
   })
   await routeNotification('item.mention', { profileId, email: to, subject }, { ...(payload.ctx as object), email } as never, { only: ['email'] })
 }
