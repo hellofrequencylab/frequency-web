@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
 import Link from 'next/link'
 import { Dialog } from '@/components/ui/dialog'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Button } from '@/components/ui/button'
 import { Input, labelClasses } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -121,9 +122,15 @@ export function PlanDrawer({
   >([])
   const [linkEventId, setLinkEventId] = useState('')
   const planKey = plan?.id ?? ''
+  // THE FOUR TABS (SCAN-1342): one dialog held about twelve blocks. Overview, To-dos, Talk and
+  // History each show one part; sharing waits behind one Share button.
+  const [tab, setTab] = useState<PlanTab>('overview')
+  const [shareOpen, setShareOpen] = useState(false)
   const [syncedKey, setSyncedKey] = useState(planKey)
   if (planKey !== syncedKey) {
     setSyncedKey(planKey)
+    setTab('overview')
+    setShareOpen(false)
     setValues(planValues(plan))
     setRows(planRepeatRows(plan))
     setProposal(null)
@@ -469,7 +476,7 @@ export function PlanDrawer({
           <div>
             <p className="text-meta font-semibold uppercase tracking-wide text-muted">{SPACE_PLAN_MANIFEST.label}</p>
             <h2 id="plan-drawer-title" className="text-lead font-bold text-text">{plan.title}</h2>
-            <p className="text-meta text-muted">{planTargetDef(plan.targetKind).label} production record</p>
+            <p className="text-meta text-muted">{planSubtitle(planTargetDef(plan.targetKind).label, values.stage || plan.stage)}</p>
             {readOnly && (
               <p className="text-meta text-muted" data-plan-shared-from>
                 {sharedFrom ? `Shared with you by ${sharedFrom}. ` : 'Shared with you. '}The host keeps the controls; ask them for a change.
@@ -478,7 +485,7 @@ export function PlanDrawer({
           </div>
           <dl className="grid grid-cols-2 gap-3 rounded-control border border-border bg-surface-elevated p-3 text-body-sm">
             <div><dt className="text-meta text-muted">Stage</dt><dd className="font-semibold text-text">{planStageLabel(values.stage || plan.stage)}</dd></div>
-            <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{plan.ownerProfileId ? 'Assigned teammate' : 'Unassigned'}</dd></div>
+            <div><dt className="text-meta text-muted">Owner</dt><dd className="font-semibold text-text">{ownerName(plan.ownerProfileId, assignees)}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Readiness</dt><dd className="font-semibold text-text" data-plan-readiness={readinessFailed ? 'failed' : gaps === null ? 'checking' : 'known'}>{readinessLabel}</dd></div>
             <div className="col-span-2"><dt className="text-meta text-muted">Next action</dt><dd className="font-semibold text-text">{readOnly ? 'Talk to the host' : href ? 'Open the production Studio' : gaps?.[0] ?? 'Keep the Plan current'}</dd></div>
           </dl>
@@ -493,6 +500,16 @@ export function PlanDrawer({
           )}
           {deepSettingsHref && <Link href={deepSettingsHref} className="inline-flex text-body-sm font-semibold text-primary-strong hover:underline">Open deep settings</Link>}
         </div>
+
+        <SegmentedControl
+          label="Plan sections"
+          value={tab}
+          onChange={setTab}
+          size="sm"
+          segments={PLAN_TABS.map((t) => ({ value: t, label: t === 'todos' && todoOrder.open.length > 0 ? `To-dos · ${todoOrder.open.length}` : PLAN_TAB_LABEL[t] }))}
+        />
+
+        <div className="space-y-4" data-plan-tab="overview" hidden={tab !== 'overview'}>
 
         {/* THE MANIFEST FORM (PROG-CAL2). Field order, labels, kinds and option lists are
             SPACE_PLAN_MANIFEST's; the ids keep the `plan-` prefix the e2e spec and the workspace
@@ -535,81 +552,6 @@ export function PlanDrawer({
             each to-do is one line (box, title, due day, who, notes), open ones first with the
             overdue at the top, and the done ones folded under "Done (n)". Styles: .plan-todo* in
             app/themes/frequency/admin-pages.css. */}
-        <div className="space-y-2 plan-todos" data-plan-todos>
-          <p className={labelClasses}>
-            To-dos{todoOrder.open.length > 0 ? <span className="text-muted">{` · ${todoOrder.open.length} open`}</span> : null}
-          </p>
-          {todoOrder.open.length > 0 && <ul className="plan-todo-list">{todoOrder.open.map((t) => todoRow(t))}</ul>}
-          {todoOrder.done.length > 0 && (
-            <details className="plan-todo-done" data-plan-todos-done>
-              <summary>{`Done (${todoOrder.done.length})`}</summary>
-              <ul className="plan-todo-list">{todoOrder.done.map((t) => todoRow(t))}</ul>
-            </details>
-          )}
-          {!readOnly && (<>
-          <div className="flex gap-2">
-            <Input
-              aria-label="New to-do"
-              value={todoTitle}
-              onChange={(e) => setTodoTitle(e.target.value)}
-              onKeyDown={enterAddsTodo}
-              placeholder="Add a to-do"
-            />
-            <Button type="button" size="sm" variant="secondary" disabled={pending || !todoTitle.trim()} onClick={addTodo}>
-              Add
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="grid gap-1">
-              <label htmlFor="plan-todo-offset" className={labelClasses}>
-                Due, counting from the date
-              </label>
-              <Input
-                id="plan-todo-offset"
-                type="number"
-                min={0}
-                max={400}
-                inputMode="numeric"
-                className="w-24"
-                value={todoOffsetDays}
-                onChange={(e) => setTodoOffsetDays(e.target.value)}
-                onKeyDown={enterAddsTodo}
-                placeholder="Days"
-              />
-            </div>
-            <Select
-              aria-label="Before or after the date"
-              className="w-32"
-              value={todoOffsetDir}
-              options={[
-                { value: 'before', label: 'days before' },
-                { value: 'after', label: 'days after' },
-              ]}
-              onChange={(e) => setTodoOffsetDir(e.target.value === 'after' ? 'after' : 'before')}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={pending}
-              onClick={() =>
-                start(async () => {
-                  const res = await reanchorPlanTodos(slug, plan.id)
-                  if (isError(res)) setError(res.error)
-                  await refresh(plan.id)
-                })
-              }
-            >
-              Move to-dos to the date
-            </Button>
-          </div>
-          <p className="text-meta text-muted">
-            Leave the days blank for a to-do that stays where you put it. Anything with a count moves
-            when the date moves.
-          </p>
-          </>)}
-        </div>
-
         {!readOnly && (<>
 
         {/* FIND A TIME (LIVE-2531): the team answers each candidate date and the best shows first. */}
@@ -735,7 +677,12 @@ export function PlanDrawer({
             name, never a text field for an id; a share lands pending and the guest answers it from
             their own calendar. The list below says where each share stands, and an active one can
             be taken back. */}
-        <div className="grid gap-1" data-plan-shares>
+        {!shareOpen && (
+          <Button type="button" size="sm" variant="secondary" onClick={() => setShareOpen(true)} data-plan-share-open>
+            {shares.some((s) => isActiveShare(s.status)) ? `Share this Plan · ${shares.filter((s) => isActiveShare(s.status)).length}` : 'Share this Plan'}
+          </Button>
+        )}
+        <div className="grid gap-1" data-plan-shares hidden={!shareOpen}>
           <label htmlFor="plan-share" className={labelClasses}>
             Share with a co-host Space
           </label>
@@ -814,12 +761,89 @@ export function PlanDrawer({
           )}
         </div>
         </>)}
+        </div>
+
+        <div className="space-y-2 plan-todos" data-plan-todos data-plan-tab="todos" hidden={tab !== 'todos'}>
+          <p className={labelClasses}>
+            To-dos{todoOrder.open.length > 0 ? <span className="text-muted">{` · ${todoOrder.open.length} open`}</span> : null}
+          </p>
+          {todoOrder.open.length > 0 && <ul className="plan-todo-list">{todoOrder.open.map((t) => todoRow(t))}</ul>}
+          {todoOrder.done.length > 0 && (
+            <details className="plan-todo-done" data-plan-todos-done>
+              <summary>{`Done (${todoOrder.done.length})`}</summary>
+              <ul className="plan-todo-list">{todoOrder.done.map((t) => todoRow(t))}</ul>
+            </details>
+          )}
+          {!readOnly && (<>
+          <div className="flex gap-2">
+            <Input
+              aria-label="New to-do"
+              value={todoTitle}
+              onChange={(e) => setTodoTitle(e.target.value)}
+              onKeyDown={enterAddsTodo}
+              placeholder="Add a to-do"
+            />
+            <Button type="button" size="sm" variant="secondary" disabled={pending || !todoTitle.trim()} onClick={addTodo}>
+              Add
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1">
+              <label htmlFor="plan-todo-offset" className={labelClasses}>
+                Due, counting from the date
+              </label>
+              <Input
+                id="plan-todo-offset"
+                type="number"
+                min={0}
+                max={400}
+                inputMode="numeric"
+                className="w-24"
+                value={todoOffsetDays}
+                onChange={(e) => setTodoOffsetDays(e.target.value)}
+                onKeyDown={enterAddsTodo}
+                placeholder="Days"
+              />
+            </div>
+            <Select
+              aria-label="Before or after the date"
+              className="w-32"
+              value={todoOffsetDir}
+              options={[
+                { value: 'before', label: 'days before' },
+                { value: 'after', label: 'days after' },
+              ]}
+              onChange={(e) => setTodoOffsetDir(e.target.value === 'after' ? 'after' : 'before')}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  const res = await reanchorPlanTodos(slug, plan.id)
+                  if (isError(res)) setError(res.error)
+                  await refresh(plan.id)
+                })
+              }
+            >
+              Move to-dos to the date
+            </Button>
+          </div>
+          <p className="text-meta text-muted">
+            Leave the days blank for a to-do that stays where you put it. Anything with a count moves
+            when the date moves.
+          </p>
+          </>)}
+        </div>
+
 
         {/* THE THREAD (PROG-CAL7 Together, LIVE-542). Both teams talk about the Plan here, and the
             guest reads and writes it from the read-only drawer too: it is the one door a guest has
             from the day the share is accepted. A written comment is a record (no update policy);
             the author may take their own back and the thread says so in place. */}
-        <div className="grid gap-1" data-plan-comments>
+        <div className="grid gap-1" data-plan-comments data-plan-tab="talk" hidden={tab !== 'talk'}>
           <p className={labelClasses}>Comments</p>
           <PlanCommentThread
             slug={slug}
@@ -835,6 +859,8 @@ export function PlanDrawer({
         {/* THE RECORD (PROG-CAL7 Together, LIVE-543). What anyone on either side did to the Plan,
             written by the door that did it, newest first. Read only by design: the record is a
             fact about what happened, never a sentence to edit. */}
+        <div className="grid gap-1" data-plan-tab="history" hidden={tab !== 'history'}>
+        {activity.length === 0 && <p className="text-body-sm text-muted">Nothing has happened to this Plan yet.</p>}
         {activity.length > 0 && (
           <div className="grid gap-1" data-plan-activity>
             <p className={labelClasses}>Activity</p>
@@ -848,6 +874,7 @@ export function PlanDrawer({
             </ul>
           </div>
         )}
+        </div>
 
         {notice && (
           <p role="status" className="text-body-sm text-text" data-plan-notice>
@@ -923,4 +950,19 @@ function initialsOf(label: string): string {
   const first = words[0][0] ?? ''
   const last = words.length > 1 ? (words[words.length - 1][0] ?? '') : ''
   return (first + last).toUpperCase()
+}
+
+const PLAN_TABS = ['overview', 'todos', 'talk', 'history'] as const
+type PlanTab = (typeof PLAN_TABS)[number]
+const PLAN_TAB_LABEL: Record<PlanTab, string> = { overview: 'Overview', todos: 'To-dos', talk: 'Talk', history: 'History' }
+
+/** The line under the title: a Plan says "Plan" until it reaches Production (SCAN-1342). */
+function planSubtitle(targetLabel: string, stage: string): string {
+  return stage === 'production' ? `${targetLabel} in production` : `${targetLabel} Plan`
+}
+
+/** The owner by name, from the people the to-dos can go to. */
+function ownerName(ownerProfileId: string | null | undefined, people: readonly AssigneeChoice[]): string {
+  if (!ownerProfileId) return 'Unassigned'
+  return people.find((p) => p.value === ownerProfileId)?.label ?? 'A teammate'
 }
