@@ -256,7 +256,9 @@ test.describe('operator calendar acceptance', { tag: ['@smoke', '@shell'] }, () 
     const assertSharedDrawer = async () => {
       await expect(drawer.locator('#plan-title')).toHaveValue(title)
       await expect(summary).toContainText(title)
-      await expect(summary).toContainText('production record')
+      // A Pencil reads '<kind> Plan', never 'production record' (SCAN-1342, owner ruling 2026-11-26).
+      await expect(summary).not.toContainText('production record')
+      await expect(summary).toContainText(' Plan')
       await expect(summary).toContainText('Stage')
       await expect(summary).toContainText('Owner')
       await expect(summary).toContainText('Readiness')
