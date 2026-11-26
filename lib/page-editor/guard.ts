@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isJanitor, asWebRole } from '@/lib/core/roles'
+import { requireStaffAal2 } from '@/lib/auth/mfa'
 
 // Marketing-page management is gated to the `janitor` community role (the top
 // community admin), separate from the Studio staff system. One place so the
@@ -29,5 +30,7 @@ export async function getJanitor(): Promise<{ profileId: string } | null> {
 export async function requireJanitor(): Promise<{ profileId: string }> {
   const janitor = await getJanitor()
   if (!janitor) throw new Error('Forbidden: janitor role required')
+  // SEC-046: a janitor also needs a two-step-verified session. Thrown, not redirected: route handlers call this.
+  await requireStaffAal2({ mode: 'throw' })
   return janitor
 }

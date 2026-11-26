@@ -9,6 +9,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { readViewAsTarget } from '@/lib/view-as'
 import { type StaffRole, type StaffDomain, type Access, staffCan } from '@/lib/core/staff-roles'
 import { getCapabilityOverrides } from '@/lib/permissions'
+import { requireStaffAal2 } from '@/lib/auth/mfa'
 
 // The role model + capability matrix live in lib/core/staff-roles.ts (client-safe);
 // this module adds the DB lookup + server gates. Re-export so existing imports
@@ -66,6 +67,7 @@ export const getStaffMember = cache(async (): Promise<StaffMember | null> => {
 export async function requireStaff(min: StaffRole = 'analyst'): Promise<StaffMember> {
   const member = await getStaffMember()
   if (!member || !atLeastStaff(member.role, min)) redirect('/')
+  await requireStaffAal2() // SEC-046: staff need a two-step-verified session.
   return member
 }
 
@@ -95,5 +97,6 @@ export async function requireStaffCap(domain: StaffDomain, level: Access = 'writ
   if (!member) redirect('/')
   const overrides = await getCapabilityOverrides().catch(() => undefined)
   if (!staffCan(member.role, domain, level, overrides)) redirect('/')
+  await requireStaffAal2() // SEC-046: staff need a two-step-verified session.
   return member
 }
