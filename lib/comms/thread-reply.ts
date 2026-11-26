@@ -16,7 +16,7 @@ import { listSpaceTeam } from '@/lib/spaces/membership'
 //
 // The caller passes its own service-role client (the inbound webhook has no member session), so
 // this module adds nothing to the admin-client ratchet. The insert fires the same live broadcast as
-// a reply typed in the app (migration 20270346310000), so an open thread shows it at once.
+// a reply typed in the app (migration 20270346460000), so an open thread shows it at once.
 
 type Admin = SupabaseClient<Database>
 
