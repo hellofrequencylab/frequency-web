@@ -1172,3 +1172,23 @@ project's own settings. Keep these set in the Supabase dashboard (Frequency Comm
 
 Symptom: a member says the reset link "did not work". The link is PKCE, so it must be opened in the
 browser that asked for it, inside an hour. Send them to `/sign-in?step=forgot` for a fresh one.
+
+## Two-step codes for staff
+
+Every staff account (web_role admin or janitor, or any `team_members` row) must prove a code from an
+authenticator app before it can open `/admin` or pass a staff gate (SEC-046, [ADR-1980](DECISIONS.md), owner ruling
+2026-11-26). Members are never asked. The first visit to `/admin` after signing in opens
+`/sign-in?step=mfa` (or `step=mfa-setup` the first time, with a QR code). The rule lives in
+`lib/auth/mfa.ts` (the staff guards) and `proxy.ts` (admin server actions).
+
+**One staff member lost their phone.** Another janitor removes the factor in the Supabase dashboard
+(Frequency Community, Authentication, Users, open the user, MFA factors, delete), or with SQL in the SQL editor:
+`delete from auth.mfa_factors where user_id = '<auth user id>';`. Their next `/admin` visit asks them to set up again.
+A staff member who still has their phone can move to a new one from Settings > Account, "Reset two-step code".
+
+**Every admin lost their phone (break glass).** Set `ADMIN_MFA_BYPASS=1` in Vercel (Production) and redeploy.
+The requirement is off for every staff account while it is set. Remove the factors as above, blank the
+variable, redeploy, and set codes up again. Never leave it on.
+
+Symptom: a staff member sees "Two-step code required" (403) on an admin button. Their session did not pass a
+code (for example the tab was open before this shipped). Reload `/admin`; it sends them to the code step.

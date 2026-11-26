@@ -52,3 +52,8 @@
 [data-design="frequency"] .fqa-top{padding-bottom:var(--fq-space-10)}
 [data-design="frequency"] .fqa-card{padding:var(--fq-space-10) var(--fq-space-9)}}
 }
+/* SEC-046 two-step setup. The QR sits on the doorway's near-white text tone (the frame is always the dark Stage), so it reads dark on light, which is what a camera needs. */
+[data-design="frequency"] .fqa-qr{display:flex;justify-content:center}
+[data-design="frequency"] .fqa-qr img{display:block;width:180px;height:180px;padding:var(--fq-space-3);border-radius:var(--fq-radius-m);background:var(--fq-text-strong)}
+[data-design="frequency"] .fqa-note summary{cursor:pointer;color:var(--fq-text-strong)}
+[data-design="frequency"] .fqa-key{display:block;margin-top:var(--fq-space-2);font:500 var(--fq-text-body-s)/1.5 var(--fq-font-mono,ui-monospace,monospace);letter-spacing:.08em;overflow-wrap:anywhere;color:var(--fq-text-strong)}

@@ -51,6 +51,10 @@ export const SIGN_IN_ERRORS = {
   same: 'That is already your password. Pick a new one.',
   /** The reset session is missing or too old to change a password with. */
   reset: 'That reset link has expired. Ask for a new one.',
+  /** A two-step code that did not verify (wrong, expired, or not six digits). SEC-046. */
+  code: 'That code did not work. Codes change every 30 seconds, so enter the one showing now.',
+  /** The two-step setup went stale (another tab started a new one). SEC-046. */
+  mfa: 'That setup timed out. Scan the new code below and try again.',
 } as const
 
 export type SignInErrorCode = keyof typeof SIGN_IN_ERRORS
