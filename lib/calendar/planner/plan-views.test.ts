@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest'
 import type { SpacePlan } from '../plans'
 import { adaptCalendar } from './adapters'
 import { planStats } from './board'
-import { SUITE_VIEWS, isPlanView } from './suite-model'
+import { PLAN_LAYOUTS, isPlanView } from './suite-model'
 import type { PlannerPlan } from './types'
 
-// The three Plan views (List, Kanban, Timeline) and the Cancelled column's data.
+// The Plans tab's three layouts (Board, List, Timeline) and the Cancelled column's data.
 
 describe('isPlanView', () => {
-  it('is the views that hold every Plan instead of a stretch of time', () => {
-    expect(SUITE_VIEWS.filter(isPlanView)).toEqual(['list', 'board', 'timeline'])
+  it('is the layouts that hold every Plan instead of a stretch of time', () => {
+    expect(PLAN_LAYOUTS.every(isPlanView)).toBe(true)
+    expect((['day', 'week', 'month', 'agenda'] as const).some(isPlanView)).toBe(false)
   })
 })
 
