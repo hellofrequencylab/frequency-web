@@ -6170,6 +6170,98 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5480,
+      "expiresAt": "2026-12-01T23:59:59Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346490000_hub_space_tasks_one_table.sql",
+          "sha256": "bc8acd8d6178afce744e8a0080f6dc1873157a17e0569fe9a08735e1ec50b4a1"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/admin/crm/actions.ts",
+          "status": "modified",
+          "sha256": "538bccc8f9ae055f88e09551814c52415d749e9e7317e1b01bd0765c3ed293dc",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/HYG-251.json",
+          "status": "modified",
+          "sha256": "578276c0c2b0e0b42071d5f7997037dec882fdc69fc7873253f5644f624a16b2",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/pipeline-core.ts",
+          "status": "modified",
+          "sha256": "70e2a60fa9716e5fd126ea76932a13db5f10a9a6d75ba82c07c9361e859c3d6d",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/pipeline.test.ts",
+          "status": "modified",
+          "sha256": "4c2faaf8849104a0e7c51f41629f3a038deddfbcefc0359ec3493e543df259b0",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/pipeline.ts",
+          "status": "modified",
+          "sha256": "41186235f95c0e72a6dc76d566789e0208d7bdb5cd6f374076b1291317eebf46",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/crm/space-tasks.ts",
+          "status": "modified",
+          "sha256": "a0b8a7f5b15ef4d82839aaca745df054be59e7ffa55ee92e2a4454d66a3b8b28",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/database.types.ts",
+          "status": "modified",
+          "sha256": "72934c86612a76075e803755c810f0e30a55eb6ed3dea7302510a8a9be8b2343",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "modules/crm/components/space-tasks.tsx",
+          "status": "modified",
+          "sha256": "faf074baaeffe5b5a2818d98e952f3d0f706299b4d6e6e6c8b6b2081167f0c19",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346490000_hub_space_tasks_one_table.sql",
+          "status": "added",
+          "sha256": "bc8acd8d6178afce744e8a0080f6dc1873157a17e0569fe9a08735e1ec50b4a1",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/hub_space_tasks_one_table.test.sql",
+          "status": "added",
+          "sha256": "e782655ba0074b3193660a60d98276c82c913c7224d34bee0a29bd45b64dc453",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
