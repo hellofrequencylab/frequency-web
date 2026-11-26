@@ -2,12 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
-import { IconButton } from '@/components/ui/icon-button'
+import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { CalendarAudienceToggle } from './audience-toggle'
 import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
 import { monthName } from '@/lib/calendar/planner/month'
-import { SUITE_VIEWS, SUITE_VIEW_LABEL, isPlanView, type SuiteView } from '@/lib/calendar/planner/suite-model'
+import {
+  PLAN_LAYOUTS,
+  SUITE_TAB_LABEL,
+  SUITE_VIEWS,
+  SUITE_VIEW_LABEL,
+  isPlanView,
+  tabOf,
+  viewForTab,
+  type PlanLayout,
+  type SuiteView,
+} from '@/lib/calendar/planner/suite-model'
 
 // THE HEADER (README 1.2, layout 1a): the month as a title that opens the jump panel, the sign line
 // under it, the paging pill, the seven-segment view control, and the two buttons on the right. On a
@@ -112,8 +122,12 @@ export function SuiteHeader({
   onAsk,
   onSettings,
   slug,
+  teamRoomHref,
+  planLayout,
 }: {
   view: SuiteView
+  /** The Plans layout used last, which the Plans tab opens on. */
+  planLayout: PlanLayout
   cursor: string
   todayYm: string
   minYm: string
@@ -134,6 +148,8 @@ export function SuiteHeader({
   onSettings: () => void
   /** The Space, for the Team view / Public view toggle. */
   slug: string
+  /** The Space team room (SCAN-1350): one tap from the calendar to where the team talks. */
+  teamRoomHref: string | null
 }) {
   const ym = cursor.slice(0, 7)
   const plans = isPlanView(view)
@@ -207,13 +223,28 @@ export function SuiteHeader({
       <div className="cal-views">
         <SegmentedControl
           label="Calendar views"
-          value={view}
-          onChange={onView}
+          value={tabOf(view)}
+          onChange={(tab) => onView(viewForTab(tab, planLayout))}
           size="sm"
-          segments={SUITE_VIEWS.map((v) => ({ value: v, label: SUITE_VIEW_LABEL[v] }))}
+          segments={SUITE_VIEWS.map((v) => ({ value: v, label: SUITE_TAB_LABEL[v] }))}
         />
+        {plans ? (
+          // Board, List and Timeline are one set of Plans, sorted three ways (SCAN-1349).
+          <SegmentedControl
+            label="Show Plans as"
+            value={view}
+            onChange={onView}
+            size="sm"
+            segments={PLAN_LAYOUTS.map((v) => ({ value: v, label: SUITE_VIEW_LABEL[v] }))}
+          />
+        ) : null}
       </div>
       <div className="cal-acts">
+        {teamRoomHref && (
+          <IconLink label="Team room" variant="tinted" href={teamRoomHref}>
+            <FqIcon name="message" size={16} />
+          </IconLink>
+        )}
         <IconButton label="Calendar settings" variant="tinted" onClick={onSettings}>
           <FqIcon name="settings" size={16} />
         </IconButton>

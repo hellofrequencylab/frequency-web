@@ -4116,9 +4116,11 @@ export type Database = {
       crm_tasks: {
         Row: {
           assignee_profile_id: string | null
+          completed_at: string | null
           contact_id: string | null
           created_at: string
           created_by: string | null
+          deal_id: string | null
           due_at: string | null
           due_offset_days: number | null
           est_minutes: number | null
@@ -4134,9 +4136,11 @@ export type Database = {
         }
         Insert: {
           assignee_profile_id?: string | null
+          completed_at?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           due_at?: string | null
           due_offset_days?: number | null
           est_minutes?: number | null
@@ -4152,9 +4156,11 @@ export type Database = {
         }
         Update: {
           assignee_profile_id?: string | null
+          completed_at?: string | null
           contact_id?: string | null
           created_at?: string
           created_by?: string | null
+          deal_id?: string | null
           due_at?: string | null
           due_offset_days?: number | null
           est_minutes?: number | null
@@ -4169,6 +4175,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_tasks_assignee_profile_id_fkey"
             columns: ["assignee_profile_id"]
@@ -9991,6 +10004,50 @@ export type Database = {
           },
         ]
       }
+      item_comments: {
+        Row: {
+          author_profile_id: string | null
+          body: string
+          created_at: string
+          id: string
+          removed_at: string | null
+          removed_by: string | null
+          space_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Insert: {
+          author_profile_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Update: {
+          author_profile_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          removed_at?: string | null
+          removed_by?: string | null
+          space_id?: string
+          subject_id?: string
+          subject_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_comments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_completions: {
         Row: {
           completed_at: string
@@ -11502,6 +11559,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      link_previews: {
+        Row: {
+          description: string | null
+          fetched_at: string
+          image_url: string | null
+          ok: boolean
+          site_name: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          fetched_at?: string
+          image_url?: string | null
+          ok?: boolean
+          site_name?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          description?: string | null
+          fetched_at?: string
+          image_url?: string | null
+          ok?: boolean
+          site_name?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: []
       }
       listing_comments: {
         Row: {
@@ -13654,6 +13741,8 @@ export type Database = {
           push_matches: boolean
           push_mentions: boolean
           push_practice: boolean
+          quiet_hours_end: number | null
+          quiet_hours_start: number | null
           sms_dispatches: boolean
           sms_enabled: boolean
           sms_events: boolean
@@ -13693,6 +13782,8 @@ export type Database = {
           push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -13732,6 +13823,8 @@ export type Database = {
           push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          quiet_hours_end?: number | null
+          quiet_hours_start?: number | null
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -22119,6 +22212,27 @@ export type Database = {
           },
         ]
       }
+      thread_reads: {
+        Row: {
+          last_read_at: string
+          profile_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Insert: {
+          last_read_at?: string
+          profile_id: string
+          subject_id: string
+          subject_type: string
+        }
+        Update: {
+          last_read_at?: string
+          profile_id?: string
+          subject_id?: string
+          subject_type?: string
+        }
+        Relationships: []
+      }
       tips: {
         Row: {
           amount_cents: number
@@ -24817,6 +24931,7 @@ export type Database = {
         Returns: undefined
       }
       release_guest_seat: { Args: { p_token: string }; Returns: string }
+      remove_item_comment: { Args: { p_comment_id: string }; Returns: boolean }
       remove_plan_comment: { Args: { p_comment_id: string }; Returns: boolean }
       remove_profile_meta_keys: {
         Args: { p_keys: string[]; p_profile_id: string }

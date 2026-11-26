@@ -151,11 +151,27 @@ export async function addActivity(input: {
   const me = await requireCrm()
   const body = input.body?.trim()
   if (!body && input.kind !== 'task') return fail('Write something first.')
+  if (input.kind === 'task') {
+    // A task goes in crm_tasks, the one task table (HYG-251), on the deal's own Space.
+    const { data: deal } = await db().from('crm_deals').select('space_id').eq('id', input.dealId).maybeSingle()
+    const { error } = await db().from('crm_tasks').insert({
+      deal_id: input.dealId,
+      space_id: (deal as { space_id?: string | null } | null)?.space_id ?? null,
+      title: body || 'Task',
+      status: 'open',
+      due_at: input.dueAt || null,
+      created_by: me,
+    })
+    if (error) return fail(error.message)
+    revalidatePath(`/admin/crm/pipeline/${input.dealId}`)
+    revalidatePath('/admin/growth')
+    return ok()
+  }
   const { error } = await db().from('crm_activities').insert({
     deal_id: input.dealId,
     kind: input.kind,
     body: body || '',
-    due_at: input.kind === 'task' ? input.dueAt || null : null,
+    due_at: null,
     created_by: me,
   })
   if (error) return fail(error.message)
@@ -166,9 +182,10 @@ export async function addActivity(input: {
 
 export async function toggleTask(activityId: string, dealId: string, done: boolean): Promise<ActionResult> {
   await requireCrm()
+  const now = new Date().toISOString()
   const { error } = await db()
-    .from('crm_activities')
-    .update({ completed_at: done ? new Date().toISOString() : null })
+    .from('crm_tasks')
+    .update({ status: done ? 'done' : 'open', completed_at: done ? now : null, updated_at: now })
     .eq('id', activityId)
   if (error) return fail(error.message)
   revalidatePath(`/admin/crm/pipeline/${dealId}`)
@@ -178,8 +195,12 @@ export async function toggleTask(activityId: string, dealId: string, done: boole
 
 export async function deleteActivity(activityId: string, dealId: string): Promise<ActionResult> {
   await requireCrm()
-  const { error } = await db().from('crm_activities').delete().eq('id', activityId)
-  if (error) return fail(error.message)
+  // The id is a timeline item: an activity, or a task now kept in crm_tasks (HYG-251).
+  const [{ error }, { error: taskError }] = await Promise.all([
+    db().from('crm_activities').delete().eq('id', activityId),
+    db().from('crm_tasks').delete().eq('id', activityId).is('plan_id', null),
+  ])
+  if (error || taskError) return fail((error ?? taskError)!.message)
   revalidatePath(`/admin/crm/pipeline/${dealId}`)
   return ok()
 }

@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { log } from '@/lib/log'
-import { routeNotification } from '@/lib/notifications/router'
+import { routeLadder } from '@/lib/notifications/ladder-route'
 import { excerpt } from '@/lib/calendar/plan-notify-core'
 import type { Reference } from './references'
 
@@ -11,7 +11,7 @@ import type { Reference } from './references'
 // already checked: people who can read the conversation, items the sender picked from a list their
 // own session produced. Best effort: a failed write costs the backlink, never the message.
 
-type SourceType = 'room_message' | 'direct_message'
+type SourceType = 'room_message' | 'direct_message' | 'item_thread'
 
 export async function recordMessageReferences(
   admin: SupabaseClient,
@@ -42,7 +42,7 @@ export async function notifyRoomMentions(input: {
   for (const profileId of input.profileIds) {
     if (profileId === input.authorId) continue
     try {
-      await routeNotification(
+      await routeLadder(
         'item.mention',
         { profileId },
         {

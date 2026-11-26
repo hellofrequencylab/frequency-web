@@ -15,6 +15,7 @@
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
+import { requireStaffAal2 } from '@/lib/auth/mfa'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
@@ -65,6 +66,10 @@ export async function requireAdmin(
   const overrides = opts?.staff ? await getCapabilityOverrides() : undefined
   const okStaff = opts?.staff ? staffCan(staffRole, opts.staff, opts.staffLevel ?? 'write', overrides) : false
   if (!okPrimary && !okStaff) redirect('/feed')
+  // SEC-046: past the role check, a STAFF account also needs a two-step-verified session. A community
+  // host admitted on the community ladder (the door scanner, a feed report) is a member, not staff, and
+  // is never asked: the code is required of platform staff and team members only.
+  if (isStaff(profile.webRole) || staffRole) await requireStaffAal2()
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 
@@ -85,6 +90,8 @@ export async function requireAdminFloor(): Promise<AdminContext> {
     isStaff(profile.webRole) ||
     staffSeesAdmin(staffRole, overrides)
   if (!okFloor) redirect('/feed')
+  // SEC-046: /admin needs a two-step-verified session (owner ruling 2026-11-26).
+  await requireStaffAal2()
   return { profileId: profile.id, role: profile.community_role, webRole: profile.webRole, staffRole }
 }
 

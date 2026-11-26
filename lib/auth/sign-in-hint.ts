@@ -20,7 +20,9 @@ export const NEW_ACCOUNT_EMAIL_COOKIE = 'fq_new_account_email'
 /** A year: long enough to still help someone who signs in rarely. */
 export const SIGN_IN_HINT_MAX_AGE = 60 * 60 * 24 * 365
 
-type SignInMethod = 'google' | 'email'
+/** `password` is written only by a password sign-in (SEC-045, lib/auth/finish-sign-in.ts): Supabase records a
+ *  password and an email link as the same `email` identity, so only the door itself knows which it was. */
+type SignInMethod = 'google' | 'email' | 'password'
 
 interface SignInHint {
   method: SignInMethod
@@ -67,7 +69,7 @@ export function encodeSignInHint(hint: SignInHint): string {
 export function decodeSignInHint(raw: string | null | undefined): SignInHint | null {
   if (typeof raw !== 'string' || raw.length > 300) return null
   const [method, masked, extra] = raw.split('|')
-  if (extra !== undefined || (method !== 'google' && method !== 'email')) return null
+  if (extra !== undefined || (method !== 'google' && method !== 'email' && method !== 'password')) return null
   const at = (masked ?? '').indexOf('@')
   if (at !== 1 + MASK.length || !(masked ?? '').startsWith(`${masked![0]}${MASK}@`)) return null
   if (!/^[a-z0-9]$/.test(masked![0]) || !DOMAIN_RE.test(masked!.slice(at + 1))) return null
@@ -76,7 +78,7 @@ export function decodeSignInHint(raw: string | null | undefined): SignInHint | n
 
 /** The one sentence the sign-in page shows. */
 export function signInHintSentence(hint: SignInHint): string {
-  return hint.method === 'google'
-    ? `Last time you signed in with Google (${hint.masked}).`
-    : `Last time you signed in with an email link to ${hint.masked}.`
+  if (hint.method === 'google') return `Last time you signed in with Google (${hint.masked}).`
+  if (hint.method === 'password') return `Last time you signed in with a password (${hint.masked}).`
+  return `Last time you signed in with an email link to ${hint.masked}.`
 }

@@ -39,9 +39,21 @@
 [data-design="frequency"] .fqa-small a:hover,[data-design="frequency"] .fqa-link:hover{color:var(--fq-text-link-hover)}
 [data-design="frequency"] .fqa-link{align-self:center;font-size:var(--fq-text-body-s)}
 [data-design="frequency"] .fqa-actions{display:flex;flex-wrap:wrap;gap:var(--fq-space-3)}
+/* The password field's Show / Hide (SEC-045, app/sign-in/password-field.tsx): laid over the label's row,
+   outside the <label>, at least a 24px target. "Forgot your password?" sits at the end of the form's row. */
+[data-design="frequency"] .fqa-pw{position:relative}
+[data-design="frequency"] .fqa-pw-toggle{position:absolute;top:0;right:0;min-height:24px;min-width:44px /* token-ok: target size */;padding:0 var(--fq-space-2);border:0;background:none;border-radius:var(--fq-radius-s);font:600 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-link);cursor:pointer}
+[data-design="frequency"] .fqa-pw-toggle:hover{color:var(--fq-text-link-hover)}
+[data-design="frequency"] .fqa-pw-toggle:focus-visible{outline:2px solid var(--fq-focus-ring);outline-offset:2px}
+[data-design="frequency"] .fqa-link.fqa-end{align-self:flex-end;margin-top:calc(-1 * var(--fq-space-2))}
 [data-design="frequency"] .fqa-orb{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);color:var(--fq-text-strong)}
 [data-design="frequency"] .fqa-orb svg{width:24px;height:24px}
 @media (min-width:720px){[data-design="frequency"] .fqa{padding-inline:var(--fq-gutter-desktop)}
 [data-design="frequency"] .fqa-top{padding-bottom:var(--fq-space-10)}
 [data-design="frequency"] .fqa-card{padding:var(--fq-space-10) var(--fq-space-9)}}
 }
+/* SEC-046 two-step setup. The QR sits on the doorway's near-white text tone (the frame is always the dark Stage), so it reads dark on light, which is what a camera needs. */
+[data-design="frequency"] .fqa-qr{display:flex;justify-content:center}
+[data-design="frequency"] .fqa-qr img{display:block;width:180px;height:180px;padding:var(--fq-space-3);border-radius:var(--fq-radius-m);background:var(--fq-text-strong)}
+[data-design="frequency"] .fqa-note summary{cursor:pointer;color:var(--fq-text-strong)}
+[data-design="frequency"] .fqa-key{display:block;margin-top:var(--fq-space-2);font:500 var(--fq-text-body-s)/1.5 var(--fq-font-mono,ui-monospace,monospace);letter-spacing:.08em;overflow-wrap:anywhere;color:var(--fq-text-strong)}

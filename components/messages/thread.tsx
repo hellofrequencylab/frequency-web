@@ -1,16 +1,13 @@
 'use client'
 
 import { formatTimeShort } from '@/lib/format-date'
-import { useEffect, useState, useTransition } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
-import { sendMessage } from '@/app/(main)/messages/actions'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { useTypingIndicator } from '@/lib/realtime/use-typing'
 import { TypingIndicator } from '@/components/messages/typing-indicator'
 import { ChatComposer } from '@/components/ui/chat-composer'
-import { useStickToBottom } from '@/components/ui/use-stick-to-bottom'
+import { useDmThread } from '@/components/messages/use-dm-thread'
 
 export type Message = {
   id: string
@@ -57,101 +54,30 @@ export function MessageThread({
    *  pressed "Message" meant to type), never for a row click in the dock's own inbox. */
   autoFocus?: boolean
 }) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
 
   // Build a map for quick participant lookup
   const participantMap = Object.fromEntries(participants.map((p) => [p.id, p]))
 
-  // Live typing indicator (Broadcast — see lib/realtime/use-typing.ts)
-  const { typingNames, notifyTyping, stopTyping } = useTypingIndicator({
-    scope: `conv:${conversationId}`,
-    userId: myProfileId,
-    displayName: participantMap[myProfileId]?.display_name,
+  // Everything a DM does (realtime, read mark, typing, the pinned scroller, the optimistic send) is
+  // the one shared thread the Messages page runs too (HYG-252). This view owns its box and its look.
+  // The scroller sets scrollTop on THIS list only, so the page behind the fixed dock never moves.
+  const { messages, pending: isPending, typingNames, notifyTyping, listRef, send } = useDmThread({
+    conversationId,
+    initialMessages,
+    myProfileId,
+    myDisplayName: participantMap[myProfileId]?.display_name,
   })
 
-  // The transcript's own scroller. `useStickToBottom` sets scrollTop on THIS element and
-  // nothing else, which is the fix for the reported "it scrolls the main page behind it up":
-  // the old `bottomRef.scrollIntoView()` walked every scrollable ancestor, and the dock is
-  // position:fixed, so the ancestor the browser found to scroll was the document. It also
-  // stops yanking the reader to the bottom while they are scrolled up reading history.
-  // The coarse-pointer autofocus rule moved into ChatComposer for the same reason: one seam.
-  const { ref: listRef, stickNow } = useStickToBottom<HTMLDivElement>([messages.length, typingNames.length])
-
-  // Supabase Realtime subscription for new messages
-  useEffect(() => {
-    const supabase = createClient()
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as Message
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev
-            // My own realtime echo: replace the optimistic placeholder for this message rather than
-            // appending, so a DM I just sent doesn't briefly double-render (the optimistic id is
-            // `optimistic-*`, which the id dedup above can't match against the real row's uuid).
-            if (newMsg.sender_id === myProfileId) {
-              const i = prev.findIndex((m) => m.id.startsWith('optimistic-') && m.body === newMsg.body)
-              if (i !== -1) {
-                const next = prev.slice()
-                next[i] = newMsg
-                return next
-              }
-            }
-            return [...prev, newMsg]
-          })
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [conversationId, myProfileId])
-
   function submit() {
-    const trimmed = body.trim()
-    if (!trimmed || isPending) return
-
     setError(null)
-
-    // Optimistic insert
-    const optimistic: Message = {
-      id: `optimistic-${Date.now()}`,
-      conversation_id: conversationId,
-      sender_id: myProfileId,
-      body: trimmed,
-      created_at: new Date().toISOString(),
-    }
-    setMessages((prev) => [...prev, optimistic])
-    setBody('')
-    stopTyping()
-    stickNow()
-
-    const fd = new FormData()
-    fd.set('body', trimmed)
-
-    startTransition(async () => {
-      try {
-        await sendMessage(conversationId, fd)
-      } catch (err) {
-        // The send failed (e.g. the other member has been blocked) — roll back the
-        // optimistic bubble and restore the draft so the text isn't lost.
-        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
-        setBody((cur) => (cur ? cur : trimmed))
-        setError(err instanceof Error ? err.message : 'Message failed to send. Try again.')
-      }
+    const sent = send(body, (err, text) => {
+      // The send failed (e.g. the other member has been blocked): the draft comes back so the text isn't lost.
+      setBody((cur) => (cur ? cur : text))
+      setError(err instanceof Error ? err.message : 'Message failed to send. Try again.')
     })
+    if (sent) setBody('')
   }
 
   // Group consecutive messages from the same sender

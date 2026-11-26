@@ -35,6 +35,7 @@ import {
 import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost, subdomainAttributionHop, subdomainSiteRedirect } from '@/lib/sites/host'
 import { lookupLiveSiteDomain } from '@/lib/sites/live-domain-lookup'
 import { SECURE_COOKIE } from '@/lib/http/cookie-secure'
+import { refuseAdminActionWithoutAal2 } from '@/lib/auth/mfa-policy'
 import { nonceCspFor, type NonceCsp } from '@/lib/security/csp-nonce'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
@@ -223,6 +224,20 @@ export async function proxy(request: NextRequest) {
   // defaults: `sb-<project-ref>-auth-token`, split into `.0`, `.1` chunks when large.
   const hasAuthCookie = request.cookies.getAll().some((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
   const user = hasAuthCookie ? ((await supabase.auth.getClaims()).data?.claims ?? null) : null
+
+  // TWO-STEP CODES FOR STAFF (SEC-046). An admin server action from a session that has not passed a
+  // two-step code is refused here, before it runs. The staff guards cover every page and the actions
+  // that call them (lib/auth/mfa.ts); this covers the admin actions that gate themselves another way.
+  if (
+    refuseAdminActionWithoutAal2({
+      method: request.method,
+      pathname,
+      isServerAction: request.headers.has('next-action'),
+      aal: (user as { aal?: unknown } | null)?.aal,
+    })
+  ) {
+    return new NextResponse('Two-step code required', { status: 403 })
+  }
 
   // The ACCOUNT MARKER (owner, 2026-09-11: "user cannot change to dark until they have an account").
   //

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { commandRows } from './command-results'
 
-const views = ['day', 'week', 'month', 'agenda'] as const
+const views = ['month', 'week', 'agenda', 'plans'] as const
 const plans = [
   { id: 'p1', title: 'Supper club', stage: 'pencil' as const },
   { id: 'p2', title: 'Sound bath under the new moon', stage: 'event' as const },
@@ -11,8 +11,8 @@ const items = [{ id: 'i1', title: 'Supper club setup', kind: 'planning' as const
 describe('commandRows', () => {
   it('with nothing typed offers the views and today', () => {
     const rows = commandRows({ query: '', create: null, views, plans, items })
-    expect(rows.map((r) => r.label)).toEqual(['Open Day view', 'Open Week view', 'Open Month view', 'Open Agenda view', 'Jump to today'])
-    expect(rows[0]).toMatchObject({ meta: 'Press D' })
+    expect(rows.map((r) => r.label)).toEqual(['Open Month view', 'Open Week view', 'Open Agenda view', 'Open Plans view', 'Jump to today'])
+    expect(rows[0]).toMatchObject({ meta: 'Press M' })
     expect(rows[4]).toMatchObject({ meta: 'Press T' })
   })
   it('puts the create row first once there are three letters to read', () => {
@@ -35,7 +35,7 @@ describe('commandRows', () => {
   })
   it('never lists more than nine rows', () => {
     const many = Array.from({ length: 12 }, (_, i) => ({ id: `i${i}`, title: `Thing ${i}`, kind: 'private' as const, date: '2026-10-23' }))
-    const rows = commandRows({ query: 'thing', create: null, views: ['day', 'week', 'month', 'agenda', 'list', 'board', 'timeline'], plans: [], items: many })
+    const rows = commandRows({ query: 'thing', create: null, views, plans: [], items: many })
     expect(rows.length).toBeLessThanOrEqual(9)
     expect(rows).toHaveLength(4)
   })

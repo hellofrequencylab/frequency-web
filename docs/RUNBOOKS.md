@@ -1156,3 +1156,66 @@ The drain also recognizes already queued EMAIL-049 resource copies by their cano
 **Step 2:** set `CSP_NONCE_ENFORCE=1` on Production and redeploy. It wins over step 1.
 
 **Off:** blank the switch and redeploy.
+
+## Password sign-in
+
+Password sign-in sits beside the magic link and Google (SEC-045, [ADR-1979](DECISIONS.md)). The code enforces its own rule
+(`lib/auth/password-policy.ts`), but a script calling the Supabase auth API directly only meets the
+project's own settings. Keep these set in the Supabase dashboard (Frequency Community, Authentication):
+
+- **Sign In / Providers, Email:** "Confirm email" ON. Without it a password sign-up gets a session for an
+  address it never proved, and that account can later be joined to the real owner's Google sign-in.
+  Checked live 2026-11-25 (`mailer_autoconfirm: false` on `/auth/v1/settings`).
+- **Minimum password length:** the value of `PASSWORD_MIN_LENGTH`. No character-type requirements.
+- **Prevent use of leaked passwords:** ON (OWN-007). Its refusal reaches the form as the `weak` line.
+- **Secure password change:** ON, and the **password changed** security notification email ON.
+
+Symptom: a member says the reset link "did not work". The link is PKCE, so it must be opened in the
+browser that asked for it, inside an hour. Send them to `/sign-in?step=forgot` for a fresh one.
+
+## Invisible bot check
+
+Sign-in, sign-up and password reset carry a Cloudflare Turnstile token (SEC-047, [ADR-1981](DECISIONS.md), owner
+ruling 2026-11-26 "Yes, invisible check"). Supabase checks it, so a script calling the auth API directly with the
+public key is refused. Google sign-in needs none (Google is the check). The widget is
+`components/frequency/auth/bot-check.tsx`, and `app/sign-in/actions.ts` passes the token as `captchaToken`.
+
+**Switch-on order. Never reverse steps 2 and 3:** Supabase's toggle alone refuses every email sign-in that
+carries no token.
+
+1. Cloudflare dashboard, Turnstile, Add widget: name Frequency, hostnames `frequencylocal.com` (add
+   `localhost` for local testing), Widget Mode **Invisible**. Keep both keys.
+2. Vercel (Production and Preview): set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the **site key** and redeploy.
+   Check that `/sign-in` still sends a magic link. Supabase ignores the token while its captcha is off.
+3. Supabase (Frequency Community), Authentication, Attack Protection: Enable Captcha protection, provider
+   **Turnstile**, paste the **secret key**, save. Send a magic link and a password sign-in again.
+
+**Roll back:** turn the Supabase toggle off first, then blank the variable.
+
+**Before step 3:** the native app (`mobile/`) signs in by calling Supabase directly with no token, so step 3
+stops native sign-in until the app sends one. The iOS build is parked, so nothing ships that way today.
+Re-check before the app ships.
+
+Symptom: a member sees "We could not finish a quick security check". The widget had not finished, or a
+blocker stopped `challenges.cloudflare.com`. A retry is usually enough. If it happens for everyone, the site
+key and the secret key are from different widgets, or the hostname is missing from the widget: do the roll back.
+
+## Two-step codes for staff
+
+Every staff account (web_role admin or janitor, or any `team_members` row) must prove a code from an
+authenticator app before it can open `/admin` or pass a staff gate (SEC-046, [ADR-1980](DECISIONS.md), owner ruling
+2026-11-26). Members are never asked. The first visit to `/admin` after signing in opens
+`/sign-in?step=mfa` (or `step=mfa-setup` the first time, with a QR code). The rule lives in
+`lib/auth/mfa.ts` (the staff guards) and `proxy.ts` (admin server actions).
+
+**One staff member lost their phone.** Another janitor removes the factor in the Supabase dashboard
+(Frequency Community, Authentication, Users, open the user, MFA factors, delete), or with SQL in the SQL editor:
+`delete from auth.mfa_factors where user_id = '<auth user id>';`. Their next `/admin` visit asks them to set up again.
+A staff member who still has their phone can move to a new one from Settings > Account, "Reset two-step code".
+
+**Every admin lost their phone (break glass).** Set `ADMIN_MFA_BYPASS=1` in Vercel (Production) and redeploy.
+The requirement is off for every staff account while it is set. Remove the factors as above, blank the
+variable, redeploy, and set codes up again. Never leave it on.
+
+Symptom: a staff member sees "Two-step code required" (403) on an admin button. Their session did not pass a
+code (for example the tab was open before this shipped). Reload `/admin`; it sends them to the code step.

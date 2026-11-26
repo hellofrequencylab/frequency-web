@@ -1,4 +1,5 @@
 import { GoogleMark } from '@/components/google-mark'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -13,6 +14,10 @@ import { SignInSubmit } from './submit'
 import { safeNextPath } from '@/lib/auth/safe-next'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencySignIn } from './frequency-sign-in'
+import { CreateAccountView, ForgotPasswordView, NewPasswordView } from './password-views'
+import { MfaCodeView, MfaSetupView } from './mfa-views'
+import { isStaffAccount } from '@/lib/auth/staff-account'
+import { maskEmail } from '@/lib/auth/sign-in-hint'
 
 export const metadata: Metadata = {
   title: 'Sign in',
@@ -24,9 +29,9 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string; email?: string; step?: string }>
+  searchParams: Promise<{ error?: string; next?: string; email?: string; step?: string; method?: string }>
 }) {
-  const { error, next, email, step } = await searchParams
+  const { error, next, email, step, method } = await searchParams
 
   // ALREADY SIGNED IN → straight into the app. The header no longer offers a member this page
   // (the auth cluster follows the viewer now), but a bookmark, a stale tab, an old email and the
@@ -46,6 +51,61 @@ export default async function SignInPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  // SET A NEW PASSWORD (SEC-045) is the one step a signed-in person is shown: the reset link signs them
+  // in, and this is where they land to choose the password. Without a session there is nothing to set
+  // it on, so they are sent to ask for a link. The action re-checks that the session is fresh.
+  if (step === 'new-password') {
+    if (!user) redirect('/sign-in?step=forgot&error=reset')
+    return (
+      <NewPasswordView
+        errorMessage={signInErrorMessage(error)}
+        email={user.email ?? ''}
+        maskedEmail={maskEmail(user.email)}
+      />
+    )
+  }
+  // TWO-STEP CODES (SEC-046): the code step and the setup step are for a signed-in person too (the staff
+  // guards send them here after the role check). Without a session there is nothing to lift, so they
+  // sign in first and come back through `next`.
+  if (step === 'mfa' || step === 'mfa-setup') {
+    const back = `/sign-in?step=${step}${nextTarget ? `&next=${encodeURIComponent(nextTarget)}` : ''}`
+    if (!user) redirect(`/sign-in?next=${encodeURIComponent(back)}`)
+    const claims = (await supabase.auth.getClaims()).data?.claims as { aal?: unknown } | undefined
+    const { data: factors } = await supabase.auth.mfa.listFactors()
+    const verified = (factors?.totp ?? []).length > 0
+    // Already passed a code in this session: nothing to ask for.
+    if (claims?.aal === 'aal2' && step === 'mfa') redirect(nextTarget || '/admin')
+    if (step === 'mfa') {
+      if (!verified) redirect(back.replace('step=mfa', 'step=mfa-setup'))
+      return <MfaCodeView errorMessage={signInErrorMessage(error)} nextValue={nextTarget} />
+    }
+    // Setup: one authenticator per account. Someone who already has one proves it instead.
+    if (verified) redirect(claims?.aal === 'aal2' ? nextTarget || '/settings/account' : back.replace('step=mfa-setup', 'step=mfa'))
+    // Staff only for now (owner ruling 2026-11-26, "Required for admins"): it is enforced at the staff
+    // gates and nowhere else, so offering it to a member would promise a protection the app does not give.
+    if (!(await isStaffAccount())) redirect('/feed')
+    // A setup left half-done (a closed tab) is an unverified factor; clear it so the new QR is the only one.
+    for (const f of factors?.all ?? []) {
+      if (f.factor_type === 'totp' && f.status === 'unverified') await supabase.auth.mfa.unenroll({ factorId: f.id })
+    }
+    const { data: enrolled, error: enrollError } = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: `Frequency ${new Date().toISOString().slice(0, 19)}`,
+    })
+    if (enrollError || !enrolled) {
+      console.error('[sign-in] two-step enroll failed:', enrollError?.code ?? enrollError?.message)
+      redirect(nextTarget && !nextTarget.startsWith('/admin') ? nextTarget : '/feed')
+    }
+    return (
+      <MfaSetupView
+        errorMessage={signInErrorMessage(error)}
+        nextValue={nextTarget}
+        factorId={enrolled.id}
+        qrCode={enrolled.totp.qr_code}
+        secret={enrolled.totp.secret}
+      />
+    )
+  }
   if (user) redirect(nextTarget || '/feed')
 
   // `?error=` carries a CODE and this page owns the sentence. Rendering the raw value let anyone
@@ -77,6 +137,19 @@ export default async function SignInPage({
   const pendingNewEmail = jar.get(NEW_ACCOUNT_EMAIL_COOKIE)?.value
   const newAccountEmail = step === 'new-account' && isEmail(pendingNewEmail) ? pendingNewEmail : null
 
+  // THE OTHER PASSWORD STEPS (SEC-045): create an account, and forgot (or never had) a password. The
+  // create step prefills from the "no account for that email yet" cookie when it is there.
+  if (step === 'create') {
+    const prefill = isEmail(pendingNewEmail) ? pendingNewEmail : emailValue
+    return <CreateAccountView errorMessage={errorMessage} nextValue={nextValue} emailValue={prefill} />
+  }
+  if (step === 'forgot') return <ForgotPasswordView errorMessage={errorMessage} emailValue={emailValue} />
+
+  // WHICH EMAIL FORM (SEC-045): the one asked for, else the one this device used last time, else the
+  // magic link. A closed pair, so the query cannot pick anything else.
+  const signInView =
+    method === 'password' || method === 'link' ? method : hint?.method === 'password' ? 'password' : 'link'
+
   // FREQUENCY (ADR-1737, build-time): the same answers, drawn in the doorway frame. DAWN is unchanged.
   if (SITE_DESIGN === 'frequency') {
     return (
@@ -86,6 +159,7 @@ export default async function SignInPage({
         emailValue={emailValue}
         hintSentence={hint ? signInHintSentence(hint) : null}
         newAccountEmail={newAccountEmail}
+        method={signInView}
       />
     )
   }
@@ -123,6 +197,7 @@ export default async function SignInPage({
               so you keep one account.
             </p>
             <form action={signInWithMagicLink} className="space-y-2">
+              <BotCheck />
               <input type="hidden" name="email" value={newAccountEmail} />
               <input type="hidden" name="mode" value="create" />
               {nextValue && <input type="hidden" name="next" value={nextValue} />}
@@ -145,6 +220,7 @@ export default async function SignInPage({
 
         {/* Magic link */}
         <form action={signInWithMagicLink} className="space-y-3">
+          <BotCheck />
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <input type="hidden" name="mode" value="signin" />
           <div>

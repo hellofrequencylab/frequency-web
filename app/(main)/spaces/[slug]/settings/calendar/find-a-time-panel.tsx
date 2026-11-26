@@ -2,11 +2,14 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { TIME_VOTE_CHOICES, TIME_VOTE_WORDS, tallyLine, type TimeVoteChoice } from '@/lib/calendar/time-votes'
 import {
   addSuggestedTime,
   castTimeVote,
+  confirmPlanTime,
+  inviteTimeVoteByEmail,
   loadFindATime,
   suggestPlanTimes,
   type FindATimeView,
@@ -25,6 +28,11 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
   const [pending, start] = useTransition()
   // VERA'S TIMES (LIVE-2532): a proposal until someone adds one as an option.
   const [suggestions, setSuggestions] = useState<TimeSuggestionView | null>(null)
+  // ASK SOMEONE OUTSIDE (EMAIL-092): an address, and what the last invite did.
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [invited, setInvited] = useState<string | null>(null)
+  // CONFIRM (EMAIL-093): what the confirm did, once it has.
+  const [confirmed, setConfirmed] = useState<string | null>(null)
 
   useEffect(() => {
     let live = true
@@ -43,8 +51,44 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
   }, [slug, planId])
 
   if (!view) return error ? <p className="text-meta text-danger">{error}</p> : null
+  if (confirmed && view.options.length < 2) {
+    return (
+      <div className="grid gap-1" data-find-a-time>
+        <p className="font-medium">Find a time</p>
+        <p className="text-meta text-muted" role="status">
+          {confirmed}
+        </p>
+      </div>
+    )
+  }
   // A Plan with one date (or none) has nothing to vote between yet; Vera can still offer times.
   const polling = view.options.length >= 2
+
+  const confirm = (entryId: string) => {
+    setError(null)
+    start(async () => {
+      const res = await confirmPlanTime(slug, planId, entryId)
+      if (isError(res)) setError(res.error)
+      else {
+        setView(res.data.view)
+        setConfirmed(res.data.note)
+      }
+    })
+  }
+
+  const invite = () => {
+    if (!inviteEmail.trim()) return
+    setError(null)
+    setInvited(null)
+    start(async () => {
+      const res = await inviteTimeVoteByEmail(slug, planId, { email: inviteEmail })
+      if (isError(res)) setError(res.error)
+      else {
+        setInvited(`Sent. ${res.data.email} can pick dates from the email, no account needed.`)
+        setInviteEmail('')
+      }
+    })
+  }
 
   const askVera = () => {
     setError(null)
@@ -112,14 +156,41 @@ export function FindATimePanel({ slug, planId }: { slug: string; planId: string 
                 ))}
               </span>
             </div>
-            <p className="mt-1 text-meta text-muted" title={describeNames(o.names)}>
-              {tallyLine(o)}
-              {o.requiredNo ? ' · the Plan lead cannot make it' : ''}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-meta text-muted" title={describeNames(o.names)}>
+                {tallyLine(o)}
+                {o.requiredNo ? ' · the Plan lead cannot make it' : ''}
+              </p>
+              {o.answered > 0 && (
+                <Button type="button" size="sm" variant={o.best ? 'secondary' : 'ghost'} disabled={pending} onClick={() => confirm(o.entryId)}>
+                  Confirm this date
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>
       )}
+      {polling && (
+        <div className="flex gap-2" data-time-vote-invite>
+          <Input
+            type="email"
+            aria-label="Email someone outside the team to pick a date"
+            placeholder="Ask someone outside by email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return
+              e.preventDefault()
+              invite()
+            }}
+          />
+          <Button type="button" size="sm" variant="secondary" disabled={pending || !inviteEmail.trim()} onClick={invite}>
+            Send link
+          </Button>
+        </div>
+      )}
+      {invited && <p className="text-meta text-muted">{invited}</p>}
       <div>
         <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={askVera} data-vera-suggest-times>
           Ask Vera for times

@@ -1641,6 +1641,55 @@ Unsubscribe from message emails: ${unsubscribeUrl}
   }
 }
 
+// ── A tag left unread (EMAIL-091) ──────────────────────────────────────────────
+// The third rung of the notice ladder: someone tagged you on a Plan, an item thread or a room and
+// the bell has sat unread for twenty minutes. One email per thread per half hour, sent on the
+// `mentions` category so the member's own Mentions email switch and unsubscribe decide.
+
+interface HubTagEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  /** The notice's own title, e.g. "Sam mentioned you on Spring Market". */
+  title: string
+  preview: string
+  /** In-app path of the thread. */
+  path: string
+  /** A signed reply address, when the thread takes replies by email (EMAIL-090). */
+  replyTo?: string
+}
+
+export function buildHubTagEmail(params: HubTagEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, title, preview, path, replyTo } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'mentions' })
+  const threadUrl = `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
+  const replyLine = replyTo ? 'Reply to this email and your words land in the thread.' : ''
+  return {
+    to,
+    subject: title,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    ...(replyTo ? { replyTo } : {}),
+    html: emailShell(`
+      ${emailKicker('Mentions')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(title)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">Hi ${escapeHtml(recipientName)}, here is what they said:</p>
+      <p data-fq="fq-p" style="${pStyle}">&ldquo;${escapeHtml(preview)}&rdquo;</p>
+      ${replyLine ? `<p data-fq="fq-p" style="${pStyle}">${escapeHtml(replyLine)}</p>` : ''}
+      ${emailButton('Open the thread', threadUrl)}
+    `),
+    text: `${title}
+
+Hi ${recipientName}, here is what they said:
+
+"${preview}"
+${replyLine ? `\n${replyLine}\n` : ''}
+Open the thread: ${threadUrl}
+
+Unsubscribe from mention emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 // ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
 // Built, not sent: the notification router transports it on the `lifecycle` category once the
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is
@@ -1697,6 +1746,93 @@ ${cta}: ${url}
 
 Unsubscribe from these emails: ${unsubscribeUrl}
 `,
+  }
+}
+
+// FIND A TIME BY EMAIL (EMAIL-092). An outside collaborator (a venue, a guest teacher) gets one link
+// that opens the Plan's candidate dates with no account; the link itself is the authorisation
+// (lib/calendar/time-vote-token.ts). Transactional and one to one, asked for by the Space's team, so
+// it carries no unsubscribe: there is no list to leave. The sender is the platform; the Space is named.
+interface TimeVoteInviteEmailParams {
+  to: string
+  recipientName: string | null
+  spaceName: string
+  planTitle: string
+  /** The dates on offer, already formatted ("Sat, Dec 6, 7:00 PM"). */
+  whenLabels: string[]
+  /** The signed link's path (timeVotePath). */
+  votePath: string
+  /** The member who asked, by name. */
+  askedBy: string | null
+}
+
+export function buildTimeVoteInviteEmail(params: TimeVoteInviteEmailParams): EmailPayload {
+  const { to, recipientName, spaceName, planTitle, whenLabels, votePath, askedBy } = params
+  const url = `${BASE_URL}${votePath}`
+  const subject = `Which date works for ${planTitle}?`
+  const who = askedBy ? `${askedBy} at ${spaceName}` : spaceName
+  const lead = `${who} is picking a date for ${planTitle} and wants to know what works for you. Mark each date yes, if need be or no. No account needed, and it takes a minute.`
+  const hi = recipientName ? `Hi ${recipientName}, ` : 'Hi, '
+  const list = whenLabels.map((w) => `<li style="margin:0 0 6px;">${escapeHtml(w)}</li>`).join('')
+  return {
+    to,
+    subject,
+    html: emailShell(`
+      ${emailKicker('Find a time')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(hi + lead)}</p>
+      <ul style="${pStyle}padding-left:20px;">${list}</ul>
+      ${emailButton('Pick your dates', url)}
+      <p data-fq="fq-p" style="${pStyle}">The link is yours alone and works for three weeks.</p>
+    `),
+    text: `${subject}
+
+${hi}${lead}
+
+${whenLabels.map((w) => `- ${w}`).join('\n')}
+
+Pick your dates: ${url}
+
+The link is yours alone and works for three weeks.
+`,
+  }
+}
+
+// THE DATE IS SET (EMAIL-093). Once the team confirms a Find a time date, everyone who answered gets
+// the date and an .ics to drop into their own calendar, members and outside collaborators alike, as
+// booking confirmations already do. Transactional and one to one: no list, so no unsubscribe.
+interface TimeConfirmedEmailParams {
+  to: string
+  recipientName: string | null
+  spaceName: string
+  planTitle: string
+  whenLabel: string
+  /** The calendar invite: an .ics file, base64. */
+  invite: { filename: string; content: string }
+  /** A member's way back to the Space's calendar; null for someone outside the team. */
+  calendarPath: string | null
+}
+
+export function buildTimeConfirmedEmail(params: TimeConfirmedEmailParams): EmailPayload {
+  const { to, recipientName, spaceName, planTitle, whenLabel, invite, calendarPath } = params
+  const subject = `${planTitle} is set for ${whenLabel}`
+  const hi = recipientName ? `Hi ${recipientName}, ` : 'Hi, '
+  const lead = `${spaceName} picked the date for ${planTitle}: ${whenLabel}. Thanks for saying what works. The invite is attached, so it can go straight into your calendar.`
+  const url = calendarPath ? `${BASE_URL}${calendarPath}` : null
+  return {
+    to,
+    subject,
+    html: emailShell(`
+      ${emailKicker('Find a time')}
+      <h1 data-fq="fq-h1" style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p data-fq="fq-p" style="${pStyle}">${escapeHtml(hi + lead)}</p>
+      ${url ? emailButton('Open the calendar', url) : ''}
+    `),
+    text: `${subject}
+
+${hi}${lead}
+${url ? `\nOpen the calendar: ${url}\n` : ''}`,
+    attachments: [invite],
   }
 }
 

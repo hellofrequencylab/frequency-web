@@ -41,6 +41,9 @@ export interface RouterDeps {
 interface RouteOptions {
   /** Sends already made in the window + the hard cap, for a frequency-capped type. */
   frequency?: { sentInWindow: number; cap: number }
+  /** Route only these of the type's channels (the notice ladder, EMAIL-091: in-app at once, the
+   *  later rungs from their own delayed job). Omitted: every declared channel, as before. */
+  only?: readonly NotificationChannel[]
 }
 
 /** What happened on one channel. `enqueued` is true only when the gate allowed AND a job was
@@ -84,6 +87,7 @@ export async function routeNotification<E extends NotificationEvent>(
   let enqueuedCount = 0
 
   for (const channel of type.channels) {
+    if (options.only && !options.only.includes(channel)) continue
     // Only route a channel the type actually rendered a payload for. A declared-but-unrendered
     // channel (e.g. a conditional email) is a clean skip, never a half-formed job.
     const hasPayload =

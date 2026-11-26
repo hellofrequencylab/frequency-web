@@ -5,10 +5,10 @@ category: getting-started
 order: 14
 group: Your account
 published: 2026-06-03
-updated: 2026-11-18
+updated: 2026-11-24
 audience: member
 featureKeys: [notifications]
-keywords: [unsubscribe, stop emails, too many emails, manage emails, mute, push, alerts, email preferences]
+keywords: [quiet hours, reply by email, unsubscribe, stop emails, too many emails, manage emails, mute, push, alerts, email preferences]
 status: published
 ---
 
@@ -31,6 +31,14 @@ Where to find it: tap your photo at the top right, choose **Settings**, then **N
 - **Marketing email.** Its own switch, off unless you turn it on.
 
 Everything sends as it happens. There is no digest option today.
+
+## Tags and team threads
+
+When someone tags you, or writes in a team thread you follow, the bell lights up right away. If you haven't looked after a couple of minutes, you get a push. If a tag is still unread after about twenty minutes, you get one email for that thread, however busy it got. Reading it in the app stops anything else from going out.
+
+Reply to that email and your words land in the thread, as you. Only the new part of your reply is posted, not the quoted email underneath.
+
+Want evenings off? Turn on **Quiet hours** in Settings, Notifications. Pushes and emails about tags and threads wait until your quiet hours end. The bell still shows everything.
 
 ## Change email from the email itself
 

@@ -39,7 +39,7 @@ const csp = [
   // sub-domains ONLY: `https://*.vercel.live` does not cover the apex, and the preview
   // toolbar serves its feedback bundle from `https://vercel.live/_next-live/...`. The
   // smoke suite caught this as a console error on every preview deployment.
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://js.stripe.com`,
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ''} https://www.googletagmanager.com https://va.vercel-scripts.com https://vercel.live https://*.vercel.live https://maps.googleapis.com https://maps.gstatic.com https://js.stripe.com https://challenges.cloudflare.com`,
   // fonts.googleapis.com: the Maps JS API injects a Roboto stylesheet link at runtime.
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
@@ -66,7 +66,9 @@ const csp = [
   // 2026-09-08 (PROG-SPOT, ADR-1279).
   // The two Stripe hosts are NOT media embeds and are not in that sync rule: js.stripe.com mounts
   // every Element, hooks.stripe.com carries the 3DS / redirect authentication frame (ADR-1369).
-  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com",
+  // challenges.cloudflare.com (SEC-047): the invisible Turnstile bot check on the sign-in forms. Its
+  // api.js is a script-src, and it runs the check inside its own iframe (frame-src). Nothing else.
+  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv https://js.stripe.com https://hooks.stripe.com https://challenges.cloudflare.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
@@ -689,6 +691,8 @@ const nextConfig: NextConfig = {
       { source: '/admin/crm/deals/:path*', destination: '/admin/crm/pipeline/:path*', permanent: false },
       { source: '/admin/crm/graph', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/crm/inbox', destination: '/admin/crm/conversations', permanent: false },
+      // CRM Tasks folded into the Console Work page (SCAN-1346, owner ruling 2026-11-25).
+      { source: '/admin/crm/tasks', destination: '/admin/work', permanent: false },
       { source: '/admin/crm/playbooks', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/crm/today', destination: '/admin/crm/intelligence', permanent: false },
       { source: '/admin/demo/studio', destination: '/admin/demo', permanent: false },

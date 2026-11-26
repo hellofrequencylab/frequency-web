@@ -34,6 +34,8 @@ import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { beginFeatureFunnelSignup } from './feature-actions'
 import { signInWithMagicLink } from '@/app/sign-in/actions'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
+import { BOT_CHECK_FIELD } from '@/lib/auth/bot-check'
 import { safeImageSrc } from '@/lib/safe-image-src'
 import { Input } from '@/components/ui/field'
 import { SITE_DESIGN } from '@/lib/theme/design'
@@ -528,6 +530,8 @@ function JoinStep({
   onBack: () => void
 }) {
   const [signingIn, setSigningIn] = useState(false)
+  // SEC-047: the invisible bot check's token for the join send.
+  const [botToken, setBotToken] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const emailOk = EMAIL_RE.test(lead.email.trim())
@@ -587,6 +591,7 @@ function JoinStep({
     // Instagram's in-app browser — whose cookie jar is not the one that opens the emailed link.
     // See app/sign-in/actions.ts and app/auth/callback/route.ts for the recovery this enables.
     fd.set('seq', sequence)
+    if (botToken) fd.set(BOT_CHECK_FIELD, botToken)
     await signInWithMagicLink(fd)
   }
 
@@ -663,6 +668,7 @@ function JoinStep({
       </div>
 
       <div className="mx-auto mt-5 max-w-sm">
+        <BotCheck onToken={setBotToken} />
         <button type="button" onClick={joinNow} disabled={!emailOk || signingIn} className={PRIMARY_BTN}>
           {signingIn ? 'Sending your link...' : `Join now, get ${zaps} Zaps`}
         </button>

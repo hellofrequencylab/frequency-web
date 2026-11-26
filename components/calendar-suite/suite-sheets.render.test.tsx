@@ -134,7 +134,7 @@ describe('Command bar', () => {
       <SuiteCommand
         today={TODAY}
         timeZone="America/Los_Angeles"
-        views={['day', 'week', 'month', 'agenda']}
+        views={['month', 'week', 'agenda', 'plans']}
         plans={[{ id: 'p1', title: 'Supper club', stage: 'pencil' }]}
         items={[]}
         onRun={run}
@@ -152,7 +152,7 @@ describe('Command bar', () => {
     expect(host.textContent).toContain('Block pool deck nov 2')
     expect(host.textContent).toContain('Open Week view')
     expect(host.textContent).toContain('Press T')
-    expect(q('.cal-cmd-foot')?.textContent).toBe('↑↓ move↵ runP pencil it inD W M A viewsT today')
+    expect(q('.cal-cmd-foot')?.textContent).toBe('↑↓ move↵ runP pencil it inM W A B viewsT today')
   })
 
   it('shows what it understood and writes only when Enter runs the create row', async () => {
@@ -180,7 +180,7 @@ describe('Command bar', () => {
     key('ArrowDown')
     key('ArrowDown')
     await act(async () => void key('Enter'))
-    expect(run.mock.calls[0][0]).toMatchObject({ type: 'view', view: 'month' })
+    expect(run.mock.calls[0][0]).toMatchObject({ type: 'view', view: 'agenda' })
   })
 
   it('finds a Plan by name', () => {
