@@ -260,8 +260,8 @@ export function SuiteRail({
         </ul>
       </section>
 
-      <section id="cal-inbox" aria-label="Inbox">
-        <h3 className="cal-caps cal-rail-h">Inbox</h3>
+      <section id="cal-inbox" aria-label="No date yet">
+        <h3 className="cal-caps cal-rail-h">No date yet</h3>
         {inbox.length === 0 ? (
           <p className="cal-serif">Every to-do has a date.</p>
         ) : (

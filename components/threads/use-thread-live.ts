@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 
 // LIVE THREADS (LIVE-2528). A new message in a thread is broadcast from the database to the
-// thread's private topic (migration 20270346310000), and a realtime.messages policy lets in only
+// thread's private topic (migration 20270346460000), and a realtime.messages policy lets in only
 // people who can read the thread. This joins that topic and calls `onMessage` when something
 // lands, a beat later so a burst is one refetch. The payload carries no body: the caller refetches
 // through its own RLS read. The Supabase client loads lazily, so a page pays for it only when a

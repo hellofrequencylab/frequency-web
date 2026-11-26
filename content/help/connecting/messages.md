@@ -7,7 +7,7 @@ published: 2026-06-03
 updated: 2026-11-24
 audience: member
 featureKeys: [messages]
-keywords: [team thread, tag someone, mention, link a plan, dm, chat, inbox, group chat, private message, text someone, cant message, channel room]
+keywords: [link preview, team thread, tag someone, mention, link a plan, team room, dm, chat, inbox, group chat, private message, text someone, cant message, channel room]
 status: published
 ---
 
@@ -38,12 +38,17 @@ A room is an ongoing group space with a name, not a one-off chat.
 - Tap **Start a room** to make one. Any member can. You choose whether it is public or private.
 - Open rooms you can join appear under **Rooms to join**.
 - Every [Channel](/help/groups/channels) has its own room. Look for **Open room** on the Channel's page.
+- Every Space has a team room, named after the Space. Its owner and team are in it automatically, and someone who leaves the team leaves the room. Find it under **Rooms** in your inbox.
 
 ## Tag someone or link a plan
 
 In a room, type **@** and pick a member to tag them. They get a notice in their Inbox that opens the room. Someone who isn't in the room can't be tagged there.
 
 In a room or a direct message, type **#** and a couple of letters to link a Plan, a to-do, an event, a deal or a contact. You only see the things you already have access to.
+
+## Link previews
+
+Paste a link in a room or a direct message and a small card shows the page's title, a short description and a picture. A link to an event or a Space on Frequency shows its name, and only if you can already see it.
 
 ## Talk with your team about an event, a deal or a person
 

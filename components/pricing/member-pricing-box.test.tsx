@@ -176,7 +176,9 @@ describe('the pricing box data', () => {
 
     it('reads prices from the catalog: Business $49, Collective $99 under a $149 list, Network from $476', () => {
       expect(by('business').monthlyCents).toBe(4900)
-      expect(by('business').yearlyCents).toBe(49000)
+      // Before February 1, 2027 Business yearly is the Founding Year (LIVE-2541): $441 under the $490 list.
+      expect(by('business').yearlyCents).toBe(44100)
+      expect(by('business').listYearlyCents).toBe(49000)
       expect(by('business').nonprofitMonthlyCents).toBe(3900)
       expect(by('collective').monthlyCents).toBe(9900)
       expect(by('collective').listMonthlyCents).toBe(14900)
@@ -185,6 +187,22 @@ describe('the pricing box data', () => {
       expect(by('network').monthlyCents).toBe(47600)
       expect(by('network').nonprofitMonthlyCents).toBe(38000)
       expect(by('network').from).toBe(true)
+    })
+
+    it('sells the Founding Year on Business and Collective yearly until the paid year starts, then the catalog yearly (LIVE-2541)', () => {
+      expect(by('business').foundingYear).toEqual({ cents: 44100 })
+      expect(by('collective').foundingYear).toEqual({ cents: 99000 })
+      expect(by('collective').yearlyCents).toBe(99000)
+      expect(by('business').note.year).toContain('February 1, 2027 to January 31, 2028')
+      expect(by('network').foundingYear ?? null).toBeNull()
+      const after = buildPricingBox({ crew: PWYW_CONFIG_DEFAULT, trialDays: 14, takeRate: NETWORK_TAKE_RATE_DEFAULT, now: new Date('2027-02-01T08:00:00Z') })
+      const biz = after.tiers.find((t) => t.key === 'business')!
+      expect(biz.yearlyCents).toBe(49000)
+      expect(biz.foundingYear ?? null).toBeNull()
+      // LIVE-2542: once the 150 Founder seats are gone, yearly is the catalog yearly again.
+      const full = buildPricingBox({ crew: PWYW_CONFIG_DEFAULT, trialDays: 14, takeRate: NETWORK_TAKE_RATE_DEFAULT, now: new Date('2026-12-01T00:00:00Z'), founderSeatsLeft: 0 })
+      expect(full.tiers.find((t) => t.key === 'business')!.yearlyCents).toBe(49000)
+      expect(full.tiers.find((t) => t.key === 'collective')!.foundingYear ?? null).toBeNull()
     })
 
     it('gives Crew no single price and carries the catalog amounts', () => {

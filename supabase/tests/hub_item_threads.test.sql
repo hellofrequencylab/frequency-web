@@ -1,4 +1,4 @@
--- pgTAP guard for 20270346310000_hub_item_threads (LIVE-2527, LIVE-2528): item_comments is
+-- pgTAP guard for 20270346460000_hub_item_threads (LIVE-2527, LIVE-2528): item_comments is
 -- row-secured with read and insert policies and no update or delete policy, thread_reads holds own
 -- rows only, anon holds no grant on either, both thread tables broadcast on insert, and the thread
 -- topic check refuses a malformed topic.

@@ -1,4 +1,4 @@
--- pgTAP guard for 20270346330000_hub_quiet_hours (EMAIL-091): the two quiet-hour columns exist on
+-- pgTAP guard for 20270346500000_hub_quiet_hours (EMAIL-091): the two quiet-hour columns exist on
 -- notification_preferences.
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 

@@ -46,9 +46,11 @@ import { PlanCommentThread } from './plan-comment-thread'
 import { useThreadLive } from '@/components/threads/use-thread-live'
 import { threadTopic } from '@/lib/threads/subjects'
 import { markThreadRead } from '@/lib/threads/actions'
+import { FindATimePanel } from './find-a-time-panel'
 import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
 import { shortDateLabel } from '@/lib/calendar/short-date'
+import { isOverdueTodo, orderPlanTodos, todayDayKey } from '@/lib/calendar/plan-todo-order'
 import { isActiveShare, shareStateWords, type PlanShareView } from '@/lib/calendar/plan-shares'
 import type { VeraPlanProposal } from '@/lib/calendar/vera-plan'
 
@@ -262,6 +264,90 @@ export function PlanDrawer({
     if (!isError(res)) setComments(res.data)
   }
   const noteCounts = countByTask(comments)
+  const todoOrder = orderPlanTodos(todos)
+  const today = todayDayKey()
+  const todoRow = (t: CrmTask) => {
+    // An anchored to-do says so (in the date's tooltip and in its fold). Without it the person
+    // has no way to tell which rows will follow the event when it moves.
+    const anchor = describeOffset(t.dueOffsetDays)
+    const notes = noteCounts.get(t.id) ?? 0
+    const done = t.status === 'done'
+    const overdue = isOverdueTodo(t, today)
+    const who = t.assigneeProfileId ? assignees.find((a) => a.value === t.assigneeProfileId) ?? null : null
+    const follows = anchor
+      ? `Due ${anchor === 'on the day' ? 'on the day' : `${anchor} the date`}, and moves when the date moves.`
+      : null
+    return (
+      <li key={t.id} className="plan-todo" data-done={done || undefined} data-overdue={overdue || undefined}>
+        <div className="plan-todo-line">
+          <Checkbox
+            checked={done}
+            disabled={pending}
+            wrapperClassName="plan-todo-check"
+            onChange={(e) => toggleTodo(t.id, e.target.checked)}
+            label={
+              <span className="plan-todo-title" title={t.title}>
+                {t.title}
+              </span>
+            }
+          />
+          <span className="plan-todo-meta">
+            {/* Each to-do has its own thread (LIVE-542), folded until asked for. */}
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="plan-todo-notes"
+              data-has-notes={notes > 0 || undefined}
+              aria-expanded={openThread === t.id}
+              data-plan-todo-notes={t.id}
+              onClick={() => setOpenThread((cur) => (cur === t.id ? null : t.id))}
+            >
+              {notes > 0 ? `Notes (${notes})` : 'Notes'}
+            </Button>
+            {t.dueAt ? (
+              <span className="plan-todo-due" title={follows ?? undefined}>
+                {overdue ? 'Late · ' : ''}
+                {shortDateLabel(t.dueAt)}
+              </span>
+            ) : null}
+            {/* WHO DOES IT (LIVE-544): a person on either team, by name, or nobody yet. The line
+                shows their initials in a small circle; the real picker sits over it, invisible, so
+                a click or a tap opens the native list of names and the keyboard reaches it as ever. */}
+            <span className="plan-todo-who" title={who ? who.label : 'Nobody yet'} data-empty={who ? undefined : true}>
+              <span className="plan-todo-face" aria-hidden>
+                {who ? initialsOf(who.label) : '+'}
+              </span>
+              <Select
+                aria-label={`Assign "${t.title}"`}
+                data-plan-todo-assignee={t.id}
+                value={t.assigneeProfileId ?? ''}
+                emptyLabel="Nobody yet"
+                options={assignees}
+                disabled={pending}
+                onChange={(e) => assignTodo(t.id, e.target.value)}
+                onKeyDown={enterDoesNothing}
+              />
+            </span>
+          </span>
+        </div>
+        {openThread === t.id && plan && (
+          <div className="plan-todo-fold" data-plan-todo-comments={t.id}>
+            {follows ? <p className="text-meta text-muted">{follows}</p> : null}
+            <PlanCommentThread
+              slug={slug}
+              planId={plan.id}
+              taskId={t.id}
+              comments={comments}
+              onChanged={() => refreshComments(plan.id)}
+              people={assignees}
+              placeholder="A note on this to-do, for both teams."
+            />
+          </div>
+        )}
+      </li>
+    )
+  }
   const refreshShares = async (planId: string) => {
     const res = await listPlanShares(slug, planId)
     if (isError(res)) return
@@ -444,72 +530,22 @@ export function PlanDrawer({
           </div>
         ))}
 
-        <div className="space-y-2" data-plan-todos>
-          <p className={labelClasses}>To-dos</p>
-          <ul className="space-y-1 text-body-sm text-text">
-            {todos.map((t) => {
-              // An anchored to-do says so. Without this the list shows a bare date and the person
-              // has no way to tell which rows will follow the event when it moves.
-              const anchor = describeOffset(t.dueOffsetDays)
-              const notes = noteCounts.get(t.id) ?? 0
-              return (
-                <li key={t.id} className="space-y-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Checkbox
-                      checked={t.status === 'done'}
-                      disabled={pending}
-                      onChange={(e) => toggleTodo(t.id, e.target.checked)}
-                      label={
-                        <span className={t.status === 'done' ? 'text-muted line-through' : undefined}>
-                          {t.title}
-                          {t.dueAt ? ` · ${shortDateLabel(t.dueAt)}` : ''}
-                          {anchor ? <span className="text-muted"> {`· ${anchor} the date`}</span> : null}
-                        </span>
-                      }
-                    />
-                    <span className="flex items-center gap-2">
-                      {/* WHO DOES IT (LIVE-544): a person on either team, by name, or nobody yet. */}
-                      <Select
-                        aria-label={`Assign "${t.title}"`}
-                        data-plan-todo-assignee={t.id}
-                        value={t.assigneeProfileId ?? ''}
-                        emptyLabel="Nobody yet"
-                        options={assignees}
-                        disabled={pending}
-                        wrapperClassName="w-auto"
-                        onChange={(e) => assignTodo(t.id, e.target.value)}
-                        onKeyDown={enterDoesNothing}
-                      />
-                      {/* Each to-do has its own thread (LIVE-542), folded until asked for. */}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        aria-expanded={openThread === t.id}
-                        data-plan-todo-notes={t.id}
-                        onClick={() => setOpenThread((cur) => (cur === t.id ? null : t.id))}
-                      >
-                        {notes > 0 ? `Notes (${notes})` : 'Notes'}
-                      </Button>
-                    </span>
-                  </div>
-                  {openThread === t.id && (
-                    <div className="pl-6" data-plan-todo-comments={t.id}>
-                      <PlanCommentThread
-                        slug={slug}
-                        planId={plan.id}
-                        taskId={t.id}
-                        comments={comments}
-                        onChanged={() => refreshComments(plan.id)}
-                        people={assignees}
-                        placeholder="A note on this to-do, for both teams."
-                      />
-                    </div>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+        {/* ONE LINE PER TO-DO (2026-11-25). The list read as a wall: a full-width picker and a
+            Notes button under every row, done and open mixed in the order they were added. Now
+            each to-do is one line (box, title, due day, who, notes), open ones first with the
+            overdue at the top, and the done ones folded under "Done (n)". Styles: .plan-todo* in
+            app/themes/frequency/admin-pages.css. */}
+        <div className="space-y-2 plan-todos" data-plan-todos>
+          <p className={labelClasses}>
+            To-dos{todoOrder.open.length > 0 ? <span className="text-muted">{` · ${todoOrder.open.length} open`}</span> : null}
+          </p>
+          {todoOrder.open.length > 0 && <ul className="plan-todo-list">{todoOrder.open.map((t) => todoRow(t))}</ul>}
+          {todoOrder.done.length > 0 && (
+            <details className="plan-todo-done" data-plan-todos-done>
+              <summary>{`Done (${todoOrder.done.length})`}</summary>
+              <ul className="plan-todo-list">{todoOrder.done.map((t) => todoRow(t))}</ul>
+            </details>
+          )}
           {!readOnly && (<>
           <div className="flex gap-2">
             <Input
@@ -575,6 +611,9 @@ export function PlanDrawer({
         </div>
 
         {!readOnly && (<>
+
+        {/* FIND A TIME (LIVE-2531): the team answers each candidate date and the best shows first. */}
+        <FindATimePanel slug={slug} planId={plan.id} />
 
         {/* THE REPAIR DOOR (PROG-CAL3). `plan_id` was create-only: `updateEvent` never touched it and
             nothing could put an event back on its Plan, so one wrong link could only be fixed in
@@ -875,4 +914,13 @@ function planRepeatRows(plan: SpacePlan | null): Record<string, RepeatRow[]> {
     links: (plan?.links ?? []).map((l) => ({ url: l.url, label: l.label })),
     files: (plan?.files ?? []).map((f) => ({ [REPEAT_ITEM_SELF]: assetRefToField(f) })),
   }
+}
+
+/** "DT" for "Daniel Tyack (Frequency)": the name without its Space, first and last word. */
+function initialsOf(label: string): string {
+  const words = label.replace(/\s*\(.*\)\s*$/, '').trim().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return '?'
+  const first = words[0][0] ?? ''
+  const last = words.length > 1 ? (words[words.length - 1][0] ?? '') : ''
+  return (first + last).toUpperCase()
 }

@@ -65,6 +65,7 @@ community_book_submissions           internal
 connection_settings                  public
 consent_records                      authenticated
 contact_channel_preferences          authenticated
+contact_consents                     internal
 contact_import                       authenticated
 contact_interactions                 authenticated
 contact_relationships                authenticated
@@ -260,6 +261,7 @@ space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_calendar_day_notes             authenticated
 space_calendar_entries               authenticated
+space_calendar_time_votes            authenticated
 space_calendar_private_feeds         authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
@@ -448,6 +450,8 @@ lifecycle_send_log                    internal
 analytics_experiments internal
 analytics_experiment_assignments internal
 tz_zone_lookup internal
+# LIVE-2530: link previews, read by signed-in members, written only by the server (service role).
+link_previews                         authenticated
 
 # LIVE-1179: two-way calendar sync, sealed tokens, owner and admins on the caller session (private.is_space_admin).
 space_calendar_sync_connections       authenticated

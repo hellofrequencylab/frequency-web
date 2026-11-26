@@ -14,6 +14,8 @@ import {
   buildDirectMessageEmail,
   buildHousingMatchEmail,
   buildPlanShareEmail,
+  buildTimeVoteInviteEmail,
+  buildTimeConfirmedEmail,
   sendBookingCancelledEmail,
   sendBookingConfirmationEmail,
   sendDispatchNotificationEmail,
@@ -404,6 +406,8 @@ export const SAMPLE_SPECS: readonly SampleSpec[] = [
   { id: 'housing-match', group: 'Community', run: () => buildHousingMatchEmail({ to: TO, recipientName: 'Maya', recipientProfileId: PROFILE, counterpartName: 'Sam', kind: 'listing', city: 'Encinitas', matchPath: '/housing/matches/abc123' }) },
   { id: 'automation-note', group: 'Community', run: () => { const out = actorEmailMessage('Hi Maya,\n\nYou made it to three swims this month. The group noticed, and so did we.\n\nSee you at the water,\nThe Frequency team', UNSUB); return { to: TO, subject: 'Three swims this month', html: out.html, text: out.text } } },
   { id: 'plan-share-requested', group: 'Community', run: () => buildPlanShareEmail({ to: TO, recipientName: 'Jordan', recipientProfileId: PROFILE, moment: 'requested', otherSpaceName: 'Tidepool Trust', planTitle: 'Winter beach cleanups', calendarPath: '/spaces/north-light/settings/calendar' }) },
+  { id: 'time-vote-invite', group: 'Community', run: () => buildTimeVoteInviteEmail({ to: TO, recipientName: 'Maya', spaceName: SAMPLE_SPACE_NAME, planTitle: 'Winter beach cleanups', whenLabels: ['Sat, Dec 6, 10:00 AM', 'Sun, Dec 7, 2:00 PM', 'Sat, Dec 13, 10:00 AM'], votePath: '/find-a-time/abc', askedBy: 'Jordan' }) },
+  { id: 'time-confirmed', group: 'Community', run: () => buildTimeConfirmedEmail({ to: TO, recipientName: 'Maya', spaceName: SAMPLE_SPACE_NAME, planTitle: 'Winter beach cleanups', whenLabel: 'Sat, Dec 6, 10:00 AM', invite: { filename: 'invite.ics', content: Buffer.from('BEGIN:VCALENDAR').toString('base64') }, calendarPath: null }) },
   // ── Owner notices (EMAIL-027: the stock emails built outside lib/email.ts) ──────────────────────────
   { id: 'contact-lead', group: 'Owner notices', run: () => buildContactLeadEmail({ to: TO, ownerName: 'Jordan', who: 'Maya Chen', spaceName: SAMPLE_SPACE_NAME, preview: 'Hi, is the Tuesday sunrise session OK for a beginner? I can swim but I have never done open water.', optedIn: true, keptOutOfCrm: false, crmUrl: `${SITE}/spaces/north-light/crm`, replyTo: 'maya@example.com' }) },
   { id: 'lead-magnet-resource', group: 'Tickets and bookings', run: () => buildLeadMagnetResourceEmail({ to: TO, resourceUrl: 'https://frequencylocal.com/resources/first-gathering.pdf', label: 'Your first gathering checklist' }) },
