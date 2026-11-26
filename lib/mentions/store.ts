@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { log } from '@/lib/log'
-import { routeNotification } from '@/lib/notifications/router'
+import { routeLadder } from '@/lib/notifications/ladder-route'
 import { excerpt } from '@/lib/calendar/plan-notify-core'
 import type { Reference } from './references'
 
@@ -42,7 +42,7 @@ export async function notifyRoomMentions(input: {
   for (const profileId of input.profileIds) {
     if (profileId === input.authorId) continue
     try {
-      await routeNotification(
+      await routeLadder(
         'item.mention',
         { profileId },
         {
