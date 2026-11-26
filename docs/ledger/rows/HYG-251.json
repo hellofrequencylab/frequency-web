@@ -4,16 +4,17 @@
   "lane": "hygiene",
   "priority": "P3",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/crm/space-tasks.ts",
     "ref": "Hub plan 2026-11-24 (project thread: Design a central project and messaging hub; doc https://claude.ai/artifact/BqySUVMoZYsPcR49SBRUqB)"
   },
-  "detail": "FOUND 2026-11-24: Space CRM tasks are crm_activities rows with kind='task' while Plan to-dos and the operator queue use crm_tasks, so a person's work is split across two tables and no list shows both. crew_tasks stays separate on purpose (the member volunteer economy). Fix: move the rows into crm_tasks (additive migration), point space-tasks.ts at it.\n\nUPDATED 2026-11-25 (Plans and calendar clarity audit): production holds 0 crm_activities rows with kind='task', so no data moves. The fix is only to point lib/crm/space-tasks.ts and the Space CRM Tasks panel at crm_tasks (contact_id / deal_id), so a Space has one to-do list.",
+  "detail": "FOUND 2026-11-24: Space CRM tasks are crm_activities rows with kind='task' while Plan to-dos and the operator queue use crm_tasks, so a person's work is split across two tables and no list shows both. crew_tasks stays separate on purpose (the member volunteer economy). Fix: move the rows into crm_tasks (additive migration), point space-tasks.ts at it.\n\nUPDATED 2026-11-25 (Plans and calendar clarity audit): production holds 0 crm_activities rows with kind='task', so no data moves. The fix is only to point lib/crm/space-tasks.ts and the Space CRM Tasks panel at crm_tasks (contact_id / deal_id), so a Space has one to-do list.\n\nDONE 2026-11-24: 20270346490000 gives crm_tasks deal_id and completed_at and moves every crm_activities task row across with its id (prod held 0). Space CRM tasks (lib/crm/space-tasks.ts), the board read and open count (lib/crm/pipeline.ts) and the admin deal timeline's tasks (app/(main)/admin/crm/actions.ts, getActivities merges a deal's crm_tasks) all use crm_tasks now. A Space CRM task is a crm_tasks row with no plan_id; writes are scoped by space_id and plan_id is null, so a Plan to-do is never edited from the CRM board.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/hub-2026-11-24.mjs HYG-251",
     "note": "Fails today; passes once the consequence in the title holds."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-24"
 }
