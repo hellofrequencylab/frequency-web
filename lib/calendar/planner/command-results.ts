@@ -8,18 +8,7 @@ import type { PlannerItem, PlannerKind, PlannerPlan } from './types'
 // adds what they described, the views that match, Today, then Plans and dates whose title holds the
 // words. At most nine rows. Pure: the bar draws these and runs the one that is highlighted.
 
-/** The key that opens each view, as the bar and the keyboard help print it. */
-export const VIEW_KEY: Record<SuiteView, string> = {
-  day: 'D',
-  week: 'W',
-  month: 'M',
-  agenda: 'A',
-  list: 'I',
-  board: 'B',
-  timeline: 'L',
-}
-
-/** The key that opens each tab. Plans opens on the Board. */
+/** The key that opens each tab, as the bar and the keyboard help print it. Plans opens on the Board. */
 export const TAB_KEY: Record<SuiteTab, string> = {
   month: 'M',
   week: 'W',
