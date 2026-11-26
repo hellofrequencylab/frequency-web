@@ -8,7 +8,7 @@ const { routeThreadReply, threadReplyBody } = await import('./thread-reply')
 
 function fakeAdmin(notice: Record<string, string> | null) {
   const chain: Record<string, unknown> = {}
-  for (const k of ['select', 'eq', 'gte', 'limit']) chain[k] = () => chain
+  for (const k of ['select', 'eq', 'gte', 'limit', 'order']) chain[k] = () => chain
   chain.maybeSingle = async () => ({ data: notice })
   return { from: () => chain } as never
 }
@@ -29,9 +29,9 @@ describe('routeThreadReply', () => {
   })
   it('refuses an event reply from someone off the Space team', async () => {
     const chain: Record<string, unknown> = {}
-    for (const k of ['select', 'eq', 'gte', 'limit']) chain[k] = () => chain
+    for (const k of ['select', 'eq', 'gte', 'limit', 'order']) chain[k] = () => chain
     let call = 0
-    chain.maybeSingle = async () => (call++ === 0 ? { data: { recipient_id: 'p1', reference_type: 'event', reference_id: 'e1' } } : { data: { space_id: 's1', host_space_id: null } })
+    chain.maybeSingle = async () => (call++ === 0 ? { data: { recipient_id: 'p1', reference_type: 'event', reference_id: 'e1' } } : { data: { space_id: 's1' } })
     expect(await routeThreadReply({ from: () => chain } as never, 'n1', 'On it')).toBe('not_allowed')
   })
   it('says so when the notice is gone', async () => {

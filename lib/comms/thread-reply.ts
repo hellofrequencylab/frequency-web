@@ -43,20 +43,19 @@ function found(res: { data: unknown[] | null }): boolean {
   return (res.data ?? []).length > 0
 }
 
+// The thread's own Space: the one its comments were written under, which is the Space the app reads
+// the thread by (loadItemThread filters on it). A notice about an item exists because someone wrote in
+// that thread, so there is always a row to read; with none, the reply has nowhere it belongs.
 async function itemSpace(admin: Admin, type: string, id: string): Promise<string | null> {
-  if (type === 'event') {
-    const { data } = await admin.from('events').select('space_id, host_space_id').eq('id', id).maybeSingle()
-    return data?.host_space_id ?? data?.space_id ?? null
-  }
-  if (type === 'deal') {
-    const { data } = await admin.from('crm_deals').select('space_id').eq('id', id).maybeSingle()
-    return data?.space_id ?? null
-  }
-  if (type === 'contact') {
-    const { data } = await admin.from('contacts').select('space_id').eq('id', id).maybeSingle()
-    return data?.space_id ?? null
-  }
-  return null
+  const { data } = await admin
+    .from('item_comments')
+    .select('space_id')
+    .eq('subject_type', type)
+    .eq('subject_id', id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data?.space_id ?? null
 }
 
 export async function routeThreadReply(admin: Admin, noticeId: string, text: string | null): Promise<ThreadReplyStatus> {
