@@ -1,7 +1,7 @@
 // PER-SPACE TASKS — the owner-gated, space-scoped WRITE layer for a Space CRM's tasks (CRM-STRATEGY
-// §6/§7). A task is a crm_activities row with kind='task': a title (the `body`), an optional due date
-// (due_at), an optional link to a deal (deal_id) and/or a contact (contact_id), and a completion stamp
-// (completed_at). Reads live in lib/crm/pipeline.ts (getSpaceTasks / partitionTasks, fail-safe); this
+// §6/§7). A task is a crm_tasks row with no plan_id (HYG-251: the one task table, beside Plan to-dos and
+// the operator queue): a title, an optional due date (due_at), an optional link to a deal (deal_id)
+// and/or a contact (contact_id), and a completion stamp (completed_at, with status 'done'). Reads live in lib/crm/pipeline.ts (getSpaceTasks / partitionTasks, fail-safe); this
 // module owns create / edit / complete / reopen / delete, all gated + scoped.
 //
 // SHAPE (mirrors lib/crm/client-notes.ts): this module has NO 'use server' directive, so it can ALSO
@@ -14,11 +14,11 @@
 //     canEditProfile: owner / admin / editor), exactly like client-notes. A non-editor / anonymous
 //     caller writes nothing and gets an error (fail-closed).
 //   • Every write is SCOPED to the Space: an INSERT stamps space_id; an UPDATE / DELETE filters BOTH
-//     id AND space_id AND kind='task', so a task id from another Space (or a non-task activity id) is a
-//     no-op, never a cross-space mutation. A deal / contact a task links to is confirmed to belong to
+//     id AND space_id AND plan_id is null, so a task id from another Space (or a Plan to-do, which its
+//     Plan owns) is a no-op, never a cross-space mutation. A deal / contact a task links to is confirmed to belong to
 //     THIS Space before the link is written (no cross-space attach).
-// crm_activities is not in the generated DB types yet, so the writes go through the untyped admin
-// client (ADR-246), matching lib/crm/pipeline.ts.
+// crm_tasks is not in the generated DB types yet, so the writes go through the untyped admin client
+// (ADR-246), matching lib/crm/pipeline.ts and lib/crm/tasks.ts.
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -74,21 +74,19 @@ async function requireSpaceEditor(spaceId: string): Promise<string | null> {
   return caps.canEditProfile ? profileId : null
 }
 
-/** The untyped crm_activities admin-client seam (the table is not in the generated DB types yet,
- *  ADR-246). One place so every write uses the same loose typing as lib/crm/pipeline.ts. */
-function activities(): {
+type Scoped = { eq: (col: string, val: string) => { eq: (col: string, val: string) => { is: (col: string, val: null) => Promise<{ error: unknown }> } } }
+
+/** The untyped crm_tasks admin-client seam (the table is not in the generated DB types yet, ADR-246).
+ *  One place so every write uses the same loose typing as lib/crm/pipeline.ts. */
+function tasks(): {
   insert: (rows: Record<string, unknown>[]) => {
     select: (cols: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }> }
   }
-  update: (patch: Record<string, unknown>) => {
-    eq: (col: string, val: string) => { eq: (col: string, val: string) => { eq: (col: string, val: string) => Promise<{ error: unknown }> } }
-  }
-  delete: () => {
-    eq: (col: string, val: string) => { eq: (col: string, val: string) => { eq: (col: string, val: string) => Promise<{ error: unknown }> } }
-  }
+  update: (patch: Record<string, unknown>) => Scoped
+  delete: () => Scoped
 } {
   const db = createAdminClient() as unknown as { from: (t: string) => never }
-  return db.from('crm_activities')
+  return db.from('crm_tasks')
 }
 
 /** Confirm a deal belongs to THIS Space; returns its id when valid, else null (no cross-space link). */
@@ -138,12 +136,12 @@ export async function createTask(
   ])
 
   try {
-    const { data, error } = await activities()
+    const { data, error } = await tasks()
       .insert([
         {
           space_id: spaceId,
-          kind: 'task',
-          body: title,
+          title,
+          status: 'open',
           due_at: parseDueDate(input.dueAt),
           deal_id: dealId,
           contact_id: contactId,
@@ -162,7 +160,7 @@ export async function createTask(
 
 /**
  * Edit a task (title / due date / links). Gated on canEditProfile and space-scoped: the UPDATE filters
- * id AND space_id AND kind='task', so a task id from another Space (or a non-task activity) is a no-op.
+ * id AND space_id AND plan_id is null, so a task id from another Space (or a Plan to-do) is a no-op.
  * Only the keys present in `patch` are written. A title, when given, must be non-empty. Fail-closed.
  */
 export async function updateTask(
@@ -178,20 +176,21 @@ export async function updateTask(
   if (patch.title !== undefined) {
     const title = normalizeTaskTitle(patch.title)
     if (!title) return fail('A task needs a title.')
-    row.body = title
+    row.title = title
   }
   if (patch.dueAt !== undefined) row.due_at = parseDueDate(patch.dueAt)
   if (patch.dealId !== undefined) row.deal_id = await validDealLink(patch.dealId, spaceId)
   if (patch.contactId !== undefined) row.contact_id = await validContactLink(patch.contactId, spaceId)
 
   if (Object.keys(row).length === 0) return ok()
+  row.updated_at = new Date().toISOString()
 
   try {
-    const { error } = await activities()
+    const { error } = await tasks()
       .update(row)
       .eq('id', taskId)
       .eq('space_id', spaceId)
-      .eq('kind', 'task')
+      .is('plan_id', null)
     if (error) return fail('Could not save the task. Try again.')
     revalidateSpace(slug)
   } catch {
@@ -202,8 +201,8 @@ export async function updateTask(
 
 /**
  * Mark a task complete or reopen it. Gated on canEditProfile and space-scoped (id AND space_id AND
- * kind='task'), so a cross-space / non-task id is a no-op. `done` true stamps completed_at = now;
- * false clears it. Fail-closed on permission.
+ * plan_id is null), so a cross-space id or a Plan to-do is a no-op. `done` true sets status 'done' and
+ * stamps completed_at = now; false sets it back to 'open' and clears the stamp. Fail-closed on permission.
  */
 export async function setTaskDone(
   spaceId: string,
@@ -215,11 +214,12 @@ export async function setTaskDone(
   if (!editorId) return fail('You do not have permission to edit tasks for this space.')
 
   try {
-    const { error } = await activities()
-      .update({ completed_at: done ? new Date().toISOString() : null })
+    const now = new Date().toISOString()
+    const { error } = await tasks()
+      .update({ status: done ? 'done' : 'open', completed_at: done ? now : null, updated_at: now })
       .eq('id', taskId)
       .eq('space_id', spaceId)
-      .eq('kind', 'task')
+      .is('plan_id', null)
     if (error) return fail('Could not update the task. Try again.')
     revalidateSpace(slug)
   } catch {
@@ -229,8 +229,8 @@ export async function setTaskDone(
 }
 
 /**
- * Delete a task. Gated on canEditProfile and space-scoped (id AND space_id AND kind='task'), so a task
- * id from another Space (or a non-task activity) can never be deleted through this Space's context.
+ * Delete a task. Gated on canEditProfile and space-scoped (id AND space_id AND plan_id is null), so a
+ * task id from another Space (or a Plan to-do) can never be deleted through this Space's context.
  * Fail-closed on permission.
  */
 export async function deleteTask(spaceId: string, taskId: string, slug?: string): Promise<ActionResult> {
@@ -238,7 +238,7 @@ export async function deleteTask(spaceId: string, taskId: string, slug?: string)
   if (!editorId) return fail('You do not have permission to delete tasks for this space.')
 
   try {
-    const { error } = await activities().delete().eq('id', taskId).eq('space_id', spaceId).eq('kind', 'task')
+    const { error } = await tasks().delete().eq('id', taskId).eq('space_id', spaceId).is('plan_id', null)
     if (error) return fail('Could not delete the task. Try again.')
     revalidateSpace(slug)
   } catch {
