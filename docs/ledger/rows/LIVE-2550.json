@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2550",
+  "title": "A Space owner or admin can refund a shop order, a ticket or a donation from the Orders tab",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/shop/orders-tab.tsx",
+    "ref": "Owner ask 2026-11-27 (project thread: Trace the House of Fates payment); audit /mnt/project-files/payments-audit/PAYMENTS-ORDERS-TICKETS-AUDIT-2026-11-27.md"
+  },
+  "detail": "Owner ask 2026-11-27: 'We should be able to easily manage and track' payments and orders. Before: the Orders tab listed sales and offered nothing to do with them. A ticket could be refunded only from the event page, a shop order only by Frequency staff (refundCommerceOrder had one caller, the admin marketplace), and a donation had no refund path in the product at all.\n\nDONE 2026-11-27: every sale that stands on the Orders tab carries a two-tap Refund. lib/commerce/space-refunds.ts pins the sale to the Space (the order's owner_space_id, the ticket's event by the same host rule the list uses, the donation's space_id) and then runs the money path that already exists for that kind; refundSpaceDonation is new and unwinds the destination charge the way a ticket refund does. The action is held to the owner or a Space admin (an editor is refused). A split order that pays other sellers too is refused and stays with staff. Full refunds only. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-refunds-2026-11-27.mjs LIVE-2550",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}

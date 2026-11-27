@@ -101,7 +101,7 @@ export default async function SpaceShopConsolePage({
 
       <Suspense fallback={<TabSkeleton />}>
         {activeTab === 'catalog' && <CatalogTab slug={slug} spaceId={space.id} readOnly={readOnly} />}
-        {activeTab === 'orders' && <OrdersTab spaceId={space.id} slug={slug} readOnly={readOnly} />}
+        {activeTab === 'orders' && <OrdersTab spaceId={space.id} slug={slug} readOnly={readOnly} canRefund={canManage && caps.role === 'admin'} />}
         {activeTab === 'storefront' && (
           <StorefrontTab slug={slug} spaceId={space.id} preferences={space.preferences} readOnly={readOnly} />
         )}
