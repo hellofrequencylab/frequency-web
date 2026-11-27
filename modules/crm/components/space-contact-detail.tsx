@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Phone,
   PhoneCall,
+  Receipt,
   Sparkles,
   StickyNote,
   Target,
@@ -22,6 +23,8 @@ import {
 import { getSpaceContactDetail, type SpaceContactInsight } from '@/lib/crm/space-contact-detail'
 import { ContactCustomFieldsEditor } from './contact-custom-fields-editor'
 import { formatMoney } from '@/lib/crm/pipeline'
+import { lifetimeSpendCents, type SpaceSale } from '@/lib/commerce/space-sales'
+import { formatPriceCents } from '@/lib/commerce/types'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -35,6 +38,8 @@ import type { ValueType } from '@/lib/crm/import/types'
 import { getCallerProfile } from '@/lib/auth'
 import { spaceTeamPeople } from '@/lib/threads/team'
 import { ItemThread, ItemThreadToggle } from '@/components/threads/item-thread'
+
+const PURCHASE_KIND: Record<SpaceSale['kind'], string> = { ticket: 'Ticket', donation: 'Donation', order: 'Order' }
 
 // Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
 // instead of a row of identical clocks. Notes and QR scans keep their origin icon; everything else
@@ -112,7 +117,7 @@ export async function SpaceContactDetail({
     )
   }
 
-  const { identity, timeline, deals, notes, insight } = detail
+  const { identity, timeline, deals, notes, purchases, insight } = detail
   const name = identity.name || identity.email || 'Unnamed contact'
 
   // Derive an at-a-glance recency line from the existing timeline (newest-first out of buildTimeline):
@@ -201,6 +206,42 @@ export async function SpaceContactDetail({
       {/* About: the member's confirmed facts (interests, goals, neighborhood). Renders only when any
           are known, so a contact with no memory shows nothing rather than an empty shell. */}
       <AboutPanel insight={insight} />
+
+      {/* What they bought from this Space (LIVE-2549): tickets, gifts and shop orders. */}
+      <div>
+        <SectionHeader title="Purchases" count={purchases.length} />
+        {purchases.length === 0 ? (
+          <EmptyState
+            icon={Receipt}
+            title="No purchases yet."
+            description="Tickets, orders and donations from this person show here."
+          />
+        ) : (
+          <>
+            <p className="mb-2 text-meta text-muted">
+              {formatPriceCents(lifetimeSpendCents(purchases), purchases[0]?.currency ?? 'usd')} spent with you
+            </p>
+            <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
+              {purchases.map((p) => (
+                <li key={`${p.kind}:${p.id}`} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-text">
+                      {p.title}
+                      {p.qty > 1 ? ` ×${p.qty}` : ''}
+                    </p>
+                    <p className="mt-0.5 text-meta text-muted">
+                      {PURCHASE_KIND[p.kind]} · {relativeTime(p.at)} · {p.status === 'refunded' ? 'Refunded' : 'Paid'}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-body-sm font-bold tabular-nums text-text">
+                    {formatPriceCents(p.amountCents, p.currency)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
 
       {/* Deals in this Space */}
       <div>
