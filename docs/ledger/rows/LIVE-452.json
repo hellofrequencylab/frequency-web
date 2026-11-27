@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-452",
+  "append": {
+    "detail": "2026-11-27 (SCAN-1345, owner approved the probe rewrite 11-27): the staff calendar drawer retired; scripts/live-452-probe.mjs now reads the team calendar Details panel: one Stage control (Pencil, Planning, Production, with Cancelled as the exit), every field saved on leave, and Go live as the Publish door. The model, kit stepper, door and Spark arms are unchanged."
+  }
+}

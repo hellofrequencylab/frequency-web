@@ -288,6 +288,21 @@ function ItemBody({ item, data, ctx, actions, onSelect, onClose, say }: PanelPro
       ) : item.notes ? (
         <p className="cal-notes">{item.notes}</p>
       ) : null}
+      {hasStage ? (
+        // An event on its way carries its public description here, and Go live hands it to the
+        // event form (LIVE-379). Notes stay with the team; this is what people will read.
+        <div className="cal-notesf" data-entry-description>
+          <p className="cal-caps">Description</p>
+          <TextField
+            multiline
+            label="Description"
+            placeholder="What people will read about it. It becomes the event description when you go live."
+            value={input?.description ?? ''}
+            disabled={busy}
+            onCommit={(description) => void edit({ description })}
+          />
+        </div>
+      ) : null}
       <Problem line={error} />
       <div className="cal-actions">
         {goLive ? (
@@ -306,8 +321,16 @@ function ItemBody({ item, data, ctx, actions, onSelect, onClose, say }: PanelPro
               Copy to next week
             </Button>
             {item.kind !== 'cancelled' ? (
-              <Button type="button" size="sm" variant="secondary" disabled={busy} onClick={() => void edit({ stage: 'cancelled' })}>
-                Cancel
+              // A date on a Plan cancels the Plan with every date on it, so the button says so (LIVE-467).
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={busy}
+                title={item.plan ? 'Marks the Plan Cancelled with every date on it.' : undefined}
+                onClick={() => void edit({ stage: 'cancelled' })}
+              >
+                {item.plan ? 'Cancel the Plan' : 'Cancel'}
               </Button>
             ) : null}
             <Button

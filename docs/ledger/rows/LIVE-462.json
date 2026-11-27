@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-462",
+  "append": {
+    "detail": "2026-11-27 (SCAN-1345, owner approved the probe rewrite 11-27): the staff calendar drawer retired; scripts/live-462-probe.mjs now reads the team calendar (components/calendar-suite/): no router.refresh(), saveCalendarEntry and deleteCalendarEntry still revalidate, and a Plan opens by id. createPenciledPlan was removed with the drawer."
+  }
+}
