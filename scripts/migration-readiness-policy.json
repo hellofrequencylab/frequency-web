@@ -6691,9 +6691,9 @@
         },
         {
           "file": "docs/ledger/rows/LIVE-2560.json",
-          "status": "added",
+          "status": "modified",
           "sha256": "e536ff320a4cbf70a2d7f3c867d4db53a88e4ef4305ce60f45e89026d72bb593",
-          "baseMode": "000000",
+          "baseMode": "100644",
           "headMode": "100644"
         },
         {
