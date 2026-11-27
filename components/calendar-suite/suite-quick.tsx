@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/field'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { clockLabel, dayLabel } from '@/lib/calendar/planner/days'
@@ -38,13 +39,15 @@ export function SuiteQuick({
   /** The calendar box's size, to keep the card inside it. */
   box: { width: number; height: number }
   /** Returns a sentence when it failed, or null when it went through. */
-  onAdd: (input: { kind: QuickKind; title: string; day: string; startMin: number | null }) => Promise<string | null>
+  onAdd: (input: { kind: QuickKind; title: string; day: string; startMin: number | null; onlyMe?: boolean }) => Promise<string | null>
   /** Opens the full sheet on this day. The typed title comes along. */
   onMore: (title: string) => void
   onClose: () => void
 }) {
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<QuickKind>('pencil')
+  // "Only me" (LIVE-2560): a Private date nobody else reads. The team sees a Busy block.
+  const [onlyMe, setOnlyMe] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const input = useRef<HTMLInputElement>(null)
@@ -60,7 +63,7 @@ export function SuiteQuick({
     if (!title.trim() || busy) return
     setBusy(true)
     setError('')
-    const failed = await onAdd({ kind, title: title.trim(), day, startMin })
+    const failed = await onAdd({ kind, title: title.trim(), day, startMin, ...(kind === 'private' && onlyMe ? { onlyMe: true } : {}) })
     setBusy(false)
     if (failed) setError(failed)
   }
@@ -86,6 +89,9 @@ export function SuiteQuick({
       >
         <Input ref={input} value={title} maxLength={200} placeholder="What is it?" aria-label="What is it?" onChange={(e) => setTitle(e.target.value)} />
         <SegmentedControl label="Kind" size="sm" value={kind} onChange={setKind} segments={KINDS} />
+        {kind === 'private' ? (
+          <Checkbox label="Only me" hint="Your team sees Busy, nothing else." checked={onlyMe} onChange={(e) => setOnlyMe(e.target.checked)} />
+        ) : null}
         <p className="cal-serif">{when}</p>
         {error ? (
           <p className="cal-form-err" role="alert">

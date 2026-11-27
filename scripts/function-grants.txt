@@ -256,6 +256,7 @@ settle_ticket_atomic                 internal
 similar_library_assets               internal
 space_calendar_entries_stage_sync    internal
 space_public_calendar_feed           internal
+space_personal_busy                  authenticated
 space_public_unavailable             public
 sync_contact_from_profile            internal
 sync_event_scope_arc                 internal

@@ -15,7 +15,7 @@ type QuickMade = { kind: 'plan' | 'entry' | 'todo'; id: string; line: string }
 
 export interface SuiteCreateActions {
   pencilItIn: (input: PencilSubmit) => Promise<ActionResult<{ planId: string; todos: number; holdUntil: string | null }>>
-  addQuick: (input: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin?: number }) => Promise<ActionResult<QuickMade>>
+  addQuick: (input: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin?: number; onlyMe?: boolean }) => Promise<ActionResult<QuickMade>>
   /** Puts away a Plan and the dates it holds. */
   removePlan: (planId: string) => Promise<ActionResult<void>>
   removeEntry: (entryId: string) => Promise<ActionResult<void>>
@@ -48,7 +48,7 @@ export function useSuiteCreate(actions: SuiteCreateActions, say: Say) {
   )
 
   const quick = useCallback(
-    async (input: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin?: number }): Promise<string | null> => {
+    async (input: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin?: number; onlyMe?: boolean }): Promise<string | null> => {
       const res = await ref.current.addQuick(input)
       if ('error' in res) return res.error
       const made = res.data
