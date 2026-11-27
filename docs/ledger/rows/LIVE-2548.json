@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2548",
+  "title": "The event guest list shows each holder's ticket type, ticket count and amount, totals holders per type, exports to CSV and can resend or refund a ticket",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/events/[slug]/manage/load.ts",
+    "ref": "Owner ask 2026-11-27 (project thread: Trace the House of Fates payment); audit /mnt/project-files/payments-audit/PAYMENTS-ORDERS-TICKETS-AUDIT-2026-11-27.md items 1, 2, 8, 9"
+  },
+  "detail": "Owner ask 2026-11-27: 'Space owners should easily be able to see and manage tier ticket holders from every relevant surface.' Before: the Manage > Guests roster read event_tickets without the tier, quantity or amount, so every buyer showed a plain 'Ticket' chip, a 3-ticket purchase read as one head, there was no per-tier total with names, no export of the guest list, and no way to resend a ticket (a guest's emailed ticket is their only copy).\n\nDONE 2026-11-27: the roster reads tier, qty and amount for every ticket (a member who holds both an RSVP and a ticket carries it on their one row); each row shows 'VIP x3 · $132.00'; a line above the list totals tickets and buyers per ticket type; Export CSV downloads name, email, status, ticket type, tickets, paid, attended and joined; Resend sends the original receipt to the address it first went to, gated on host, cohost or staff and pinned to the event; Refund is the same host refund the public page's Sales list already offers, now on the holder's row. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/ticket-holders-2026-11-27.mjs LIVE-2548",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}

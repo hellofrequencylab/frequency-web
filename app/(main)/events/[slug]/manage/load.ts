@@ -34,6 +34,19 @@ export interface ManageGuest {
   /** When the host marked this seat present (PROG-GD4), or null. Host-attested, every seat kind. */
   attendedAt: string | null
   createdAt: string
+  /** What this person paid for, when they hold a ticket (LIVE-2548): the tier, how many seats the
+   *  purchase covers, and the amount. Null for an RSVP with no ticket. A member who holds BOTH an
+   *  RSVP and a ticket is listed once, on the RSVP row, and their ticket rides here. */
+  ticket?: GuestTicket | null
+}
+
+export interface GuestTicket {
+  ticketId: string
+  /** The tier's name, or null for a flat-price ticket or a tier that is gone. */
+  tierName: string | null
+  qty: number
+  amountCents: number
+  currency: string
 }
 
 interface RsvpRow {
@@ -53,6 +66,10 @@ interface RsvpRow {
 interface TicketRow {
   id: string
   buyer_profile_id: string | null
+  ticket_type_id: string | null
+  qty: number | null
+  amount_cents: number | null
+  currency: string | null
   guest_email: string | null
   attended_at: string | null
   created_at: string
@@ -80,7 +97,7 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
     admin
       .from('event_tickets')
       .select(
-        'id, buyer_profile_id, guest_email, attended_at, created_at, buyer:profiles!buyer_profile_id ( id, display_name, handle, avatar_url )',
+        'id, buyer_profile_id, ticket_type_id, qty, amount_cents, currency, guest_email, attended_at, created_at, buyer:profiles!buyer_profile_id ( id, display_name, handle, avatar_url )',
       )
       .eq('event_id', eventId)
       .eq('status', 'succeeded')
@@ -88,6 +105,21 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
       .order('created_at', { ascending: true }),
     loadCheckedInIds(eventId),
   ])
+  const ticketRows = (ticketRes.data ?? []) as unknown as TicketRow[]
+  const tierNames = await loadTierNames(ticketRows.map((t) => t.ticket_type_id))
+  const ticketOf = (t: TicketRow): GuestTicket => ({
+    ticketId: t.id,
+    tierName: t.ticket_type_id ? (tierNames.get(t.ticket_type_id) ?? null) : null,
+    qty: Math.max(1, Number(t.qty) || 1),
+    amountCents: Number(t.amount_cents) || 0,
+    currency: t.currency ?? 'usd',
+  })
+  // A member's tickets, keyed by profile, so an RSVP row can carry the ticket its holder bought.
+  const ticketByProfile = new Map<string, GuestTicket>()
+  for (const t of ticketRows) {
+    const pid = t.buyer?.id
+    if (pid && !ticketByProfile.has(pid)) ticketByProfile.set(pid, ticketOf(t))
+  }
 
   // 🔴 This used to end in `.filter((r) => r.profile != null)`, which was harmless when profile_id
   // was NOT NULL and became a silent bug the moment guest seats existed: guests occupy real
@@ -116,6 +148,7 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
     checkedIn: r.profile ? checkedIn.has(r.profile.id) : false,
     attendedAt: r.attended_at ?? null,
     createdAt: r.created_at,
+    ticket: r.profile ? (ticketByProfile.get(r.profile.id) ?? null) : null,
   }))
 
   // One row per person: a member who holds BOTH an RSVP row and a ticket (a claimed guest ticket
@@ -123,7 +156,7 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
   // which is the row every other host action already keys on. A ticket whose buyer is on no RSVP
   // row, and every guest ticket (no buyer at all), is its own seat.
   const rsvpProfiles = new Set(rsvpSeats.map((g) => g.profileId).filter((id): id is string => !!id))
-  const ticketSeats: ManageGuest[] = ((ticketRes.data ?? []) as unknown as TicketRow[])
+  const ticketSeats: ManageGuest[] = ticketRows
     .filter((t) => !(t.buyer?.id && rsvpProfiles.has(t.buyer.id)))
     .map((t) => ({
       seat: { kind: 'ticket', id: t.id },
@@ -141,9 +174,20 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
       checkedIn: t.buyer ? checkedIn.has(t.buyer.id) : false,
       attendedAt: t.attended_at ?? null,
       createdAt: t.created_at,
+      ticket: ticketOf(t),
     }))
 
   return [...rsvpSeats, ...ticketSeats]
+}
+
+/** Tier names by id, for the tickets on a roster. A missing name costs a label, never the roster. */
+async function loadTierNames(ids: Array<string | null>): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))]
+  const out = new Map<string, string>()
+  if (!unique.length) return out
+  const { data } = await createAdminClient().from('event_ticket_types').select('id, name').in('id', unique)
+  for (const t of (data ?? []) as { id: string; name: string | null }[]) if (t.name) out.set(t.id, t.name)
+  return out
 }
 
 /** Profile ids that have logged a verified check-in for this event. Check-in is
