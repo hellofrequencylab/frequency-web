@@ -53780,3 +53780,351 @@ AccentScope still carries its optional surface and faces props. Nothing passes t
 4. **Vera coaches with questions only** (ruling 1). She never rewrites owner copy and never offers drafts as diffs. The builder's "Suggest changes" mode ships off. BLD-402 builds Vera to this rule.
 
 **Consequences.** Two Space profile-nav tests that pinned the tab label "Calendar" now pin "What's Happening"; what they guard (one merged row, its address) is unchanged. A later surface that names the calendar imports `CALENDAR_NAME`, never a literal. A caller that lints an owner's words passes `author: 'owner'` and the Space's name in `exempt`.
+
+## ADR-1940: A Trail draft lives in its hunt_versions row; hunts.revision is the only clock (2026-11-10)
+
+**Date:** 2026-11-10 · **Status:** accepted (owner delegation to best practice, 2026-11-10) · **Rows:** FH-013 · **Design:** [`docs/hunts/CREATOR-FLOW.md`](hunts/CREATOR-FLOW.md)
+
+**Context.** FH-012 designed the free creator flow and FH-013 builds its screens. The FH-005 schema has no draft column and no title column: `hunts` carries ownership, status, visibility and `revision`; `hunt_versions` carries an edition with a `policy` jsonb, a status (`draft`, `validated`, `published`, `superseded`) and a content hash; missions and rule groups are relational children of a version. The brief asked for one conditional update on `hunts.revision` and no migration.
+
+**Decision.**
+1. **A draft is a `hunt_versions` row at status `draft`.** Its `policy.trail` holds the `TrailDraft` (`lib/hunts/draft.ts`): title, hook, area, audience, the stops, the route-test marker and the permission confirm. Missions and rule groups are not written while drafting.
+2. **`hunts.revision` is the only clock.** Every save is one conditional update (`revision = base + 1 where id = ? and revision = ?`); zero rows is a conflict and nothing else is written. A stale tab cannot overwrite a newer revision. The content write follows the bump; the two are not one transaction, so a crash between them leaves a bumped revision over older content, which the next save reports as a conflict and a reload repairs. If torn saves ever show in practice, the fix is a `hunt_draft_save` SQL function, not a second clock.
+3. **Publishing freezes the same row.** The missions, rule groups and members are materialized from `draftToGraph`, the version flips to `published` with a sha256 over the canonical content, and `hunts.current_version_id` points at it. A published version is never updated again: the next edit opens version N+1 at status `draft`.
+4. **Preview writes nothing.** `previewTrail` runs the real evaluator in memory; credits live in the tab. The only record is the route-test marker on the draft, written once every stop was found in order, and it is not a claim, a run or an outbox row.
+5. **The permission confirm rides on the publish tap,** not on a draft save, so confirming it cannot clear the route test.
+6. **Routes:** `/hunts/new` (name it, the governed create), `/hunts/edit` (the resident's trails) and `/hunts/edit/<id>` (stops, shape, preview, publish). `/hunts/<slug>` stays the Regulars hunt page; the Frequency Hunts player (FH-015) picks its own public address.
+
+**Consequences.** `hunt` is a Studio entity (`lib/studio/entities/hunt.ts`) with a scoped create gate: the authoring switch plus a signed-in profile. The drafts surface cannot finish one (NO_COMMIT_REASON). A title column on `hunts` (or a view over `policy.trail`) is a schema follow-up for public browse, owned by the Hunts spine. The clue coach is static questions; a model never writes a clue.
+
+## ADR-1950: Hunt money is projected from canonical settlement, one row per unit, and ships dark (2026-11-10)
+
+**Date:** 2026-11-10 · **Status:** accepted (owner delegation to best practice, 2026-11-10) · **Rows:** FH-036, FH-037, FH-038, FH-039, FH-040, FH-046, FH-047 · **Design:** [`docs/hunts/PAID-TICKET-AUTHORITY.md`](hunts/PAID-TICKET-AUTHORITY.md), [`docs/hunts/REFUNDS-AND-DISPUTES.md`](hunts/REFUNDS-AND-DISPUTES.md)
+
+**Context.** A Hunt must never move money. Tickets and orders settle through the canonical Stripe path (`lib/billing/tickets.ts`, `lib/commerce/checkout.ts`); a Hunt can only recognize a benefit that a settled source paid for, without double-granting it under a webhook and return race, and without reopening it after a refund.
+
+**Decision.**
+1. **One benefit row per (source, seat or order unit, benefit code)**, unique in `hunt_entitlements`. `hunt_entitlement_project` is idempotent on that key; a revoked unit is never reopened by an older delivery.
+2. **Consume and reverse both take the entitlement row lock**, so a refund and a staff scan cannot both win. A consumed benefit opens a review case and never frees stock. Each reversal carries the canonical refund or dispute id; a repeat does nothing twice.
+3. **A partial refund never infers a unit from an amount.** Named units revoke; an unnamed partial opens a `partial_unmapped` case.
+4. **A pass binding is frozen** (trigger) and one live pass per ticket tier. A purchase is priced from the canonical tier only; the browser's price, tier, Event, seller and return path are never inputs.
+5. **The kill switch closes new sales only** and fails closed; settlement, refunds and reconciliation never read it.
+6. **A migration holds all the storage, the call sites ship later.** The pure core, the tables and the finance page ship dark behind `HUNTS_COMMERCE_ENABLED` (needs `HUNTS_ENABLED`). Nothing here edits a ticket, order or donation row or the Stripe webhook; the live wiring is FH-036S, FH-037S, FH-038S, FH-046S and FH-047S, after the D7 and D8 sign-offs.
+7. **Donations and sponsor pledges stay apart.** "Raised" is settled donation money net of refunds; a sponsor pledge is reported as pledged until its settlement is paid with a provider reference. Nothing in the progression graph reads either.
+
+**Consequence.** The tables exist and are service role only; enabling the switch before the S rows land changes nothing a player or buyer can see except the staff finance page.
+
+## ADR-1952: Review campaign evidence before adapting the next invitation
+
+**Status:** Accepted.
+
+## Context
+
+A personal-list invitation offered a preview but linked to Space creation. Email opens
+did not establish participant intent, and utility and unsubscribe clicks inflated the
+apparent response. The next scheduled invitation repeated the builder destination.
+
+## Decision
+
+Extend the existing CRM Marketing workspace, campaign coach, Email Studio documents,
+and outbound approval vocabulary. Keep model coaching ephemeral and read-only. Add a
+separate owner-reviewed revision path using deterministic, voice-checked templates.
+
+Read bounded, paginated provider evidence against the campaign's recipient cohort.
+Distinguish unique recipients, repeated events, experience clicks, utility clicks and
+unsubscribe clicks. Missing replies, Google attribution and completed outcomes remain
+unknown. Current suppressions are not assumed to have been caused by a campaign.
+
+Compare the promised action with the known destination without fetching arbitrary
+links. Participant previews open public gathering discovery. Hosting follow-up requires
+an explicit hosting audience; clicks and opens never establish that intent.
+
+Analyze without writing. Applying a reviewed proposal recomputes it server-side and
+compares the reviewed source/target fingerprints. Atomically guard the existing
+content and lifecycle state before writing. Return the campaign to draft, invalidate
+approval, schedule, test-send state and compiled HTML, and retain provenance in the
+existing campaign metadata. A stale or unreadable campaign fails closed.
+
+The learning panel is outside the open composer, so it cannot share an active editor's
+autosave session. It provides no send, resume or schedule capability. Existing consent,
+suppression, audience preview, approval and dispatch checks still govern delivery.
+
+## Verification
+
+`scripts/probes/campaign-learning.mjs` directly executes the real pure policy modules.
+Focused tests cover provider evidence boundaries, action authorization, optimistic
+concurrency, approved-schedule invalidation and explicit UI review. No schema change
+or new sender is required.
+
+## ADR-1953: The block-system counter is re-seeded to the canon's five systems
+
+**Status:** Accepted (owner approval, Daniel, 2026-11-16: "Fix both, then fold Space profile").
+
+## Context
+
+`scripts/block-baselines.json` holds one ratchet, `block-systems`, whose manifest is the list of
+files that each stand for one block system. The E2 gate is that count reaching 1. The manifest
+seeded on 2026-11-10 did not match the canon table in `docs/EDITOR-ARCHITECTURE.md` section 2.1:
+
+- `lib/email-studio/product-block.ts` is send-time data binding for a block already in the entity
+  registry. It is not a block system.
+- `lib/library/element-catalog.ts` is the Loom art catalog. It is not a block system.
+- `components/spotlight` is a directory that will always exist, so that entry could never fall.
+- Layout modules (`lib/widgets/modules.ts`) and the Space profile catalog
+  (`lib/spaces/profile-blocks.ts`), the two largest systems in the table, were not counted.
+
+So the number 5 was right and the five files were wrong: deleting two unrelated files would have
+read as consolidation, and folding the two largest systems would have moved nothing.
+
+PROG-E2's probe had a second fault. It read a top-level `block-systems` key; the file's shape is
+`entries: [{ key, baseline }]`. It failed for the wrong reason and would have failed at 1.
+
+## Decision
+
+1. The manifest is the canon's five entry points: `lib/entity-blocks/registry.ts`,
+   `lib/page-editor/config.tsx`, `lib/widgets/modules.ts`, `lib/spaces/profile-blocks.ts`,
+   `lib/spotlight/blocks/schema.ts`.
+2. The change goes through the gate's own path (`--update --reason`), which records a changed
+   manifest as `rebased` with the value before and after. The count is 5 on both sides. A rebase
+   is not a win and is not counted as one.
+3. PROG-E2's probe becomes `scripts/probes/builder/PROG-E2.mjs` and reads `entries[].baseline`
+   for `block-systems`. The bar does not move: a `block_type_usage` migration and the value 1.
+4. A system leaves the count when its entry file is deleted from the tree, not when it is renamed
+   or moved. Fold order: Space profile, Spotlight, Layout modules, Puck.
+
+## Consequences
+
+The approval covers the manifest and that one probe reader. It does not cover any other probe,
+pin or baseline. A future manifest change needs its own approval and its own rebase record.
+
+## ADR-1954: Nonce-based script-src on the member app only, rolled out report-only first
+
+**Status:** Accepted. Follows ADR-170 (the enforced CSP and its nonce follow-up); does not replace it.
+
+## Context
+
+SCAN-1243: the enforced Content-Security-Policy keeps `'unsafe-inline'` in `script-src`. The owner
+answered on 2026-11-16: move to nonce-based scripts, with a test run first and a rollback if anything
+breaks.
+
+Next.js 16 stamps a nonce only on a page it renders per request
+(`node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md`). A static, ISR or
+partially prerendered page cannot carry one. `experimental.sri` hashes script files, not the inline
+RSC payload scripts every App Router page contains, so it does not remove `'unsafe-inline'` either.
+This site depends on static and ISR public pages and on the build and cache budgets in
+`docs/DEPLOY-SAFETY.md`.
+
+## Decision
+
+1. The nonce-based policy applies only to pages rendered under `app/(main)`. That layout reads the
+   request on every render, so nothing static becomes dynamic. Static pages keep today's policy,
+   `'unsafe-inline'` included. No design removes it there without making them dynamic, and that
+   trade is refused.
+2. The root layout is not touched and reads no header. Its constant inline scripts are allowed by
+   SHA-256 hash; the one per-request inline script in the (main) layout carries the nonce; scripts
+   appended by trusted code are allowed by `'strict-dynamic'`. JSON-LD is a data block and is not
+   subject to the policy.
+3. Two env switches read through `envFlag`, both blank by default: `CSP_NONCE_REPORT_ONLY` sends the
+   strict policy as `Content-Security-Policy-Report-Only` beside the enforced one;
+   `CSP_NONCE_ENFORCE` sends it as `Content-Security-Policy`. Blanking a switch and redeploying is
+   the rollback. With both blank the response is unchanged.
+4. Reports go to the existing `/api/csp-report` sink, tagged `?policy=nonce`. No new service.
+5. The enforced literal stays in `next.config.ts` (the row's verify probe reads it there, and it
+   remains the policy for static pages). `lib/security/csp-nonce.ts` restates it and a test fails on
+   any difference.
+
+## Consequences
+
+SCAN-1243 does not close on merge. It closes when `CSP_NONCE_ENFORCE` is on in production, and then
+only for the member app; the row records that static pages are out of reach of this design. A new
+top-level member route must be added to the route rule (a test names it). A new constant inline
+script on a member page must be added to `inlineScriptSources`, or it will be reported and, once
+enforced, blocked.
+
+## Verification
+
+`lib/security/csp-nonce.test.ts`, `lib/security/csp-nonce-routes.test.ts`, `proxy-csp.test.ts`.
+Design and inventory: `docs/security/csp-nonce.md`. Activation gate: `docs/RUNBOOKS.md`
+"Nonce-based script policy".
+
+## ADR-1955: Layout modules is the Apps catalog, and the E2 block-system target is 2
+
+**Status:** Accepted (owner rulings, Daniel, 2026-11-16: 17:26Z "Reclassify it, move no code", 17:32Z "Approve both small edits", 17:33Z "Stop at 2 and close PROG-E2", 17:52Z "Approve the PROG-E2A edit"). Amends [ADR-1953](DECISIONS.md) (the counter's manifest) and the E2 gate in `docs/EDITOR-ARCHITECTURE.md`.
+
+## Context
+
+ADR-1953 re-seeded the `block-systems` counter to five entry files. Two folds followed: the Space profile catalog (PROG-E2B) and the Spotlight kit (PROG-E2C), taking the count to 3. Two entries were left: Layout modules (`lib/widgets/modules.ts`) and the website builder's Puck blocks (`lib/page-editor/config.tsx`).
+
+Measured on 2026-11-16 before either was touched:
+
+- Layout modules holds 137 entries and shares no id with the entity-block registry. It is the page Apps list that the menu contract registers as a catalog (`REGISTERED_CATALOGS` in `scripts/check-menu.mjs`), carrying role visibility and page scopes the registry does not model. It is a menu of apps, not a set of blocks a person arranges.
+- The website builder has 314 Puck blocks; about 33 match a registry row. Every launch theme kit depends on them. A merge would be a multi-PR project with data migrations, touching about 90 files before a January 1 launch.
+
+## Decision
+
+1. Layout modules is reclassified as the page Apps catalog, not a block system. `lib/widgets/modules.ts` leaves the counter's manifest; no file moves and nothing is renamed.
+2. The E2 consolidation target is **2**: the entity-block registry and the website builder's Puck blocks. PROG-E2 closes at 2. The full Puck merge is not scheduled; it is raised again only if the owner raises it.
+
+## Consequences
+
+- `scripts/block-baselines.json` reads 2 (rebased through the gate's own `--update`, since the manifest changed).
+- `scripts/probes/builder/PROG-E2A.mjs` stops requiring `lib/widgets/modules.ts` in the manifest (one path, approved 17:32Z). PROG-E2's probe reads the target 2 in place of 1, and PROG-E2A's check of that probe expects it to fail only while the count is above 2 (approved 17:52Z).
+- A new block system still raises the counter and is refused by the ratchet.
+
+## ADR-1957: LinkedIn and Facebook brand pages are dropped for launch, so OWN-101 is parked
+
+**Status:** Accepted. Owner ruling, 2026-11-16.
+
+## Context
+
+OWN-101 asked for LinkedIn and Facebook brand pages, so their URLs could join `SOCIAL_PROFILES` in `lib/site.ts`. Instagram, TikTok and YouTube are already listed there. On 2026-11-16, Daniel answered a multiple-choice question in the platform thread: drop LinkedIn and Facebook for now.
+
+## Decision
+
+OWN-101 is parked. Instagram, TikTok and YouTube stay in `SOCIAL_PROFILES`. LIVE-1134 waits with OWN-101. The row comes back only when Daniel reopens it.
+
+## Consequences
+
+HYG-161 allows a parked row only when a ruling later than ADR-1703 is cited on it. This ADR is that ruling, and OWN-101's notes cite it.
+
+## ADR-1972: A team shares one run, and a run stays on the edition it started on (2026-11-16)
+
+**Date:** 2026-11-16 · **Status:** accepted for the dark build; the two owner questions below are open · **Rows:** FH-043, FH-044 · **Builds on:** [ADR-1940](DECISIONS.md)
+
+**Context.** FH-043 (Expedition teams) and FH-044 (seasonal editions) both had to answer the same question: what does a credit belong to once more than one person, or more than one edition, is involved. The claim command `hunt_claim_apply` (FH-010, later FH-049T and FH-020U) is the one writer of a credit, other rows were editing around it at the same time, and its key is one credit per run and stop.
+
+**Decision.**
+1. **A team is a roster over one `hunt_runs` row.** The run's subject is the team's current captain. One credit per run and stop is therefore one credit per team and stop, with no second ledger. `hunt_team_claim_apply` checks the locked roster and then calls `hunt_claim_apply` unchanged.
+2. **The wall is a trigger, not a convention.** A BEFORE INSERT trigger on `hunt_claims` refuses any claim on a team's run whose actor is not an active member of a locked roster, whichever function or statement wrote it. The TypeScript checks only produce a readable answer first.
+3. **Departure keeps the credits with the team.** A departed member keeps a roster row with `left_at` set and cannot rejoin that team. When the captain leaves, the longest-standing active member becomes captain and the run's subject moves to them. When the last member leaves the team is disbanded and its run withdrawn.
+4. **A team award is split once.** Equal shares, spare units to the longest-standing members, written once per team and award key. The same rule is in `lib/hunts/teams.ts` so a screen can state it before a tap.
+5. **A run is pinned to its edition.** A trigger refuses to change a run's version or Hunt, and a published `hunt_versions` row is frozen (hash, number, trail) and can only move forward to `superseded`. Releasing an edition updates no run.
+6. **A run on an earlier edition is a record.** It keeps its rules and credits and is read against its own version. It takes no new credit: the claim command already answers `version_superseded`, and this build does not change that.
+7. **A printed code follows its place.** Stop keys follow position, so the release writes a crosswalk (outgoing stop to the stop at the same place) and carries each mission-to-placement binding across it. A code whose place was dropped gets no binding: it opens the Trail and credits nothing.
+8. **An import is a new draft.** A Regulars hunt or a QR campaign is read (select only) into an unpublished Trail draft with a note of its source. No stamp, scan, completion or reward is copied, and the legacy rows, routes and printed links are not touched ([`docs/hunts/DECISIONS-D1.md`](hunts/DECISIONS-D1.md)). Old rewards are read where they were written.
+
+**Consequences.** `hunt_claim_apply` is untouched, so parallel work on it does not collide with either row. Point 6 means a player half way through an edition when the next one is released cannot finish the old one: the release reports how many active runs it leaves behind so the author sees the cost first. Letting those runs finish needs a change to the claim command and to `lib/hunts/claim-store.ts`, which read the Hunt's current version; that is FH-044S.
+
+**Open for the owner.** (a) Should an in-flight run be allowed to finish on its old edition for a grace window, or is "a new season starts everyone fresh" the intended rule. (b) Should a team reward be one unit the captain holds or a split across the roster; the split exists and nothing calls it yet (FH-043S).
+
+## ADR-1973: Production functions run in pdx1, beside the database (2026-11-17)
+
+**Date:** 2026-11-17 · **Status:** accepted · **Rows:** PERF-005
+
+**Context.** The owner opened Events and it "took forever". Production functions were running in Vercel's default region, iad1 (Washington, D.C.: every runtime log line reads `region=iad1`), while the database is Frequency Community in us-west-2 (Oregon, docs/RUNBOOKS.md). Supabase's edge log on 2026-11-17 recorded every request from the app entering Cloudflare at IAD, with an origin time of 80 to 130 ms even for a one-row lookup by id (`select capacity ... id=eq.<uuid>`, 85 ms), while the same queries execute in a few milliseconds inside Postgres (`public_events(200)` measured 27 ms under EXPLAIN ANALYZE). So the cost of a page is mostly how many round trips it makes in series, times a cross-country hop. Measured from the owner's machine on production the same morning: /events answered in 1.4 to 2.7 s signed out (440 KB of HTML), and 4.0 s to the end of the HTML in a signed-in browser (first byte at 1.85 s). No ADR had ever chosen the function region; it was the platform default.
+
+**Decision.** `vercel.json` pins functions to `pdx1` (Portland), the Vercel region beside us-west-2. This applies to every server render, route handler, server action and cron. The /events loader also drops the round trips it made in series before its first event query: it reuses the request-cached identity and viewer row (`getCachedUser` / `getCachedViewerProfile`, lib/auth.ts) instead of its own `auth.getUser()`, starts its settings wave before the viewer reads, and reads memberships with their circle names in one query.
+
+**Consequences.** Every page that reads the database gets faster, not only Events, because each serial round trip shrinks from a cross-country hop to an in-region one. The launch audience (North County San Diego, then the West Coast) is also nearer to Portland than to Virginia. Upstash (rate limiting, server actions only) and third-party APIs (Stripe, Resend) are reached over the internet from whichever region runs the function; they are called once per action, not in render waterfalls, so they were not a reason to stay east. To undo, remove the `regions` key and redeploy. PERF-005's probe checks the pin and the loader shape; the before and after timings are in the PR.
+
+## ADR-1974: what a page does not show on arrival does not ride in its HTML
+
+**Status:** Accepted, 2026-11-17 (PERF-006)
+
+**Context.** After PERF-005 moved functions beside the database, signed-in /events answered in 0.7 to 0.9 s but took about 2.1 s to arrive in full, because the document was about 590 KB. Three things in it are never on screen at first paint: the map lightbox's rows (the lightbox is closed until a tap or `?map=1`), the right rail's Invite a friend QR (a popup, rendered on every signed-in page), and a JSON-LD ItemList of every upcoming event, which a server component's props carry twice (the script and the React payload).
+
+**Decision.** Content behind a tap loads on that tap. The /events map lightbox reads its rows with the page's own filters when it opens (`loadEventsMapItems`, the same read the rail map uses), and the map tile gets slim pins only. The invite popup reads its QR from `/api/qr` (the same render) when it opens. The /events ItemList lists the soonest 60, the most the grid draws; the sitemap still lists every event.
+
+**Consequences.** Opening the map or the invite popup costs one request with a short loading state. The rail map and its lightbox are unchanged (they already read on demand). A new popup or lightbox on a member page should take the same shape: pass a key, not the rows.
+
+## ADR-1975: sharp is stripped from every page function by one Turbopack trace exclude
+
+**Status:** Accepted, 2026-11-17 (HYG-245). Corrects one line of [ADR-1002](DECISIONS.md)'s "what does not work" table.
+
+**Context.** Production dpl_9hr5MSWb (#5182) wrote 7.99 GB of its 8 GB `check:build-budget`, so any PR adding one route failed. The largest single line was libvips-cpp.so, 909 MB (17.8 MB x 51 functions). `check:og-trace` split those 51 into 28 card routes that rasterise and 23 page functions that carry sharp only because they share a segment with a per-entity `opengraph-image.tsx`: the page's metadata module imports the card module for its `alt`, `size` and `contentType`, and the tracer follows `import('sharp')` out of it. Moving the cards to explicit image routes would cure it, but about 25 probes and tests pin the card paths and the owner parked that move until after the Jan 1 launch (HYG-245, 2026-11-16).
+
+ADR-1002 recorded `outputFileTracingExcludes` as unusable here, reasoning from picomatch in `collect-build-traces.js`. That file does not run for this build: it is Turbopack, and Next 16.4.6 applies the keys in `next-api/src/nft.rs` with Turbopack's own glob (contains mode, no `!` negation, no extglob) against `/app` + the entry's original name, with route groups and the trailing `/page` or `/route` kept. A first attempt with a picomatch-style negation (`!**/@(opengraph-image|twitter-image)*`) matched nothing on the preview build, which is how this was found.
+
+**Decision.** `next.config.ts` excludes `node_modules/sharp/**` and `node_modules/@img/**` (top level and under `.pnpm`) for the key `/app/**/page`. Every card is a route handler (`.../opengraph-image-<hash>/route`), so no card matches. The exclude prunes the module graph at sharp, so libvips below it goes too. It is safe by construction: `lib/og/deliver.ts` is the only module that imports sharp, lazily inside `deliverCard`, and only card route handlers call it. `check:build-budget` now also prints headroom and its full ranked cost list on a passing run, so the next cut is readable from any build log.
+
+**Consequences.** About 410 MB leaves the deploy with no route path, probe or card changed, and `check:og-trace`'s incidental count should fall to about 0. A page that needs sharp would have it stripped and fail soft; rasterise from a route handler instead. `scripts/sharp-trace-exclude.test.ts` models the Turbopack match over the real route tree, and `check:og-trace` still fails the build if a card loses sharp. The other route-key comments in `next.config.ts` describe picomatch; under Turbopack they hold only where a key is a plain substring.
+
+## ADR-1976: two-way calendar sync is stateless on the provider side, and Frequency wins only out loud
+
+**Status:** Accepted, 2026-11-18 (LIVE-1179). The owner ruled the same day: build it behind an off switch now, credentials later.
+
+**Context.** The Space calendar's settings listed Google, Apple, Outlook and Notion under "Two-way sync", each marked Coming soon. Only the one-way feeds worked. Real sync needs provider OAuth, token storage, a worker and a conflict rule. Apple has no OAuth API for iCloud calendars and Notion has no calendar API (Notion Calendar reads Google accounts), so two of the four rows can never carry a Connect button of their own.
+
+**Decision.**
+
+1. **Switch and providers.** `CALENDAR_SYNC_ENABLED` (envFlag) gates it, and the Connect button also needs the Google OAuth client (`GOOGLE_OAUTH_CLIENT_ID` / `_SECRET`, the Contacts import client) and a dedicated `CALENDAR_SYNC_ENCRYPTION_KEY`. Google ships first. Outlook is the next provider through the same `[provider]` callback and table. Apple and Notion rows explain the honest path (the feed; connect Google) instead of a fake button.
+2. **Who.** The Space's owner and admins only (`caps.isAdmin` in the actions, `private.is_space_admin` in RLS), because connecting hands Frequency write access to a real calendar. Everything rides the caller's session; no admin client.
+3. **Storage.** One new table, `space_calendar_sync_connections`, one row per Space and provider. The discovery table (`space_discovery_connections`) was not reusable: its provider check, consent binding and property columns are specific to search consoles. Tokens and the PKCE verifier are sealed with AES-256-GCM, the Space, provider, connection id and purpose bound in as authenticated data, the approach of `lib/ai/discovery-oauth-state.ts`; its state and nonce helpers are reused as they are. Each connect is a new connection id, so an older ciphertext never opens against a newer row.
+4. **No link table.** Each pushed copy carries two private extended properties, the Frequency event id and a fingerprint (title, place, start instant, end instant) of what Frequency last wrote. The provider's own copy is the sync state. Pushed copies are marked free, so they never come back as busy time.
+5. **The conflict rule** (`lib/calendar-sync/plan.ts`). Frequency wins for Frequency's events: a change made here is pushed. But never silently: a copy whose current fingerprint differs from the stored one was edited there, and it is not overwritten. It is listed for the team with two answers, "Use Frequency's version" (overwrite) or "Keep their edit" (the copy is marked detached and never written again). An event removed here deletes its copy unless the copy was edited there; then it is a conflict with the same two answers. Writes on an existing copy carry If-Match, so an edit landing between read and write is a 412, not an overwrite.
+6. **Pull.** Every other non-cancelled, non-free event in the window becomes a `Busy` Unavailable entry on the private calendar layer (`source_kind = 'calendar_sync'`, times only, never the title, attendees or notes), mirrored by diff, removed by tombstone (LIVE-536).
+7. **Worker.** On demand: Sync now, a conflict answer, and once after connecting, inside the request, bounded at 60 writes per run. No cron and no queue yet, so nothing new is paid for and nothing runs without a person.
+
+**Consequences.** Busy time comes back only when someone syncs; a scheduled run on the existing cron runner is the obvious next step, and it needs a service-role reader (an `check:admin-client` baseline entry) because a cron has no session. Disconnecting removes the mirrored busy entries but leaves pushed copies on the provider calendar. The calendar.events scope is a sensitive Google scope, so members outside the test-user list need Google's verification first. The activation gate is in docs/RUNBOOKS.md "Calendar sync".
+
+## ADR-1977: Trail challenges are their own list beside the stops, saved by their own action that hashes the answer
+
+**Status:** Accepted, 2026-11-18 (FH-042S). Owner's coordinator ruling, 2026-11-18.
+
+**Context.** FH-042 built the engine half of exclusive choices and Mystery answers: `choice_group` and `fallback_group` on a mission, kind `answer`, `answer_hash` checked by `lib/hunts/mystery.ts`, and the hunt_missions columns already exist. No screen could author them. The obvious place, the Trail editor's stops list, is pinned: `lib/hunts/draft.test.ts` fixes the stop fields' kinds and requires every stop field to survive a save through `parseTrailDraft`, and the stops autosave would carry whatever the stop holds, which must never be a plain answer.
+
+**Decision.** Challenges are a separate list, `hunt_versions.policy.challenges`, beside `policy.trail`. Each challenge names one stop by position and says whether it is a Mystery (question, hint shown after the second wrong try, and an answer), part of a fork (players pick one stop: `choice_group`) or part of a stand-in set (either stop counts: `fallback_group`). The pure model is `lib/hunts/challenges.ts`; the manifest declares it as the `challenges` repeat of `HUNT_MANIFEST` with its own section, and the editor shows it on the shape step (`components/hunts/trail-challenges.tsx`). It is saved by `saveChallengesAction` (`app/(main)/hunts/challenge-actions.ts`), which hashes a typed answer with `hashAnswer` and drops it, keeps the stored hash when the field is left blank, and sends the editor back only `answerSet`. The save is revision-checked like a draft save. Publish reads the list from the version: neighbouring stops in one fork or set become one layer (each needs the layer before; what follows needs any one of them), a Mystery publishes as kind `answer` with its question added to the clue and only the hash. The checklist words the author's blockers (a Mystery needs a question, an answer and a stand-in; a fork or set needs two neighbouring stops) before `validateGraph` runs. The stops list, its autosave and `draft.test.ts` are unchanged, and a Trail with no challenges publishes byte for byte as before (same graph, rows and content hash). Tries stay fixed at `MAX_ANSWER_ATTEMPTS` (5); a per-Mystery count would need a column and is not offered.
+
+**Consequences.** A creator can publish a fork and a Mystery without JSON, and the plain answer is never stored or returned to a browser. Challenges name stops by position, so moving or removing a stop remaps them in the editor and asks for a challenges save before publish. Whether `hunt_claim_apply` itself should refuse a second member of a choice group (FH-042S item 4) is not decided here and still needs a migration through the serial gate.
+
+## ADR-1978: Yours stay yours: 0% on your own people, the seller bears card processing, one finder's fee on an introduced customer
+
+**Status:** Accepted, 2026-11-18 (LIVE-2420 is the first row). Owner ruling, 2026-11-18: "I like the no take rate for your own people thing", then "make all the changes site wide to the new system".
+
+**Context.** Every seller checkout is a Stripe destination charge on an Express account. On that charge type Stripe debits its card fee from the platform balance, and the application fee carried only Frequency's percentage. So Frequency paid 2.9% + 30c on every sale, lost money on every 0% own-audience sale and every tip, and the Collective 3% and Network 2% rates sat below the cost of the card. The public copy already said "plus card processing". The fee on an introduced customer was a ladder by plan (5 / 3 / 2) charged on every purchase, and the own-audience check counted any follower and every signed-out buyer as the seller's own, so it almost never fired.
+
+**Decision.** One system, in this order of rollout:
+1. **Own people stay 0%** on a paid plan. Frequency earns from the subscription there.
+2. **Card processing passes to the seller** on every plan, at the published standard rate (2.9% + 30c), as its own line: `lib/billing/processing-fee.ts` is the one place it is priced, the application fee is Frequency's fee plus the card fee, and `platform_fee_cents` stays Frequency's fee alone. It starts from one effective date, `CARD_FEE_PASS_THROUGH_FROM` (`lib/billing/card-fee.ts`), not an on/off switch, so a past sale's card fee is known from its amount and time and no money table needs a column.
+3. **One finder's fee** replaces the ladder: 10% capped at $20, once, on the first purchase of a customer Frequency introduced. Non Profit pays none. A Founding rate lock is kept.
+4. **Only a paying account processes money** (owner rulings 2026-11-18, 9:15 to 9:18 PM PT: "Free spaces cannot sell. They have zero money privileges." "The only time you can process money, is if you are paying money." "If a Crew member starts a free space, they can take donations."). A free Space sells nothing. A free Space whose owner pays for Crew takes donations and nothing else. Tips go to a person who pays for Crew or who owns a Space on a paying plan (decision card: "Paid Spaces and Crew members"). "Pays for Crew" is the billed column, never the beta grant or a Crew granted by a community membership (`lib/pricing/paying-accounts.ts`). One exception (decision card "Count beta Crew as paying"): the beta's free Crew counts as paying through January 31, 2027, for tips and donations only. The fee-only 5% rung ruled on 2026-11-11 is withdrawn.
+5. **Own audience is counted from recorded introductions**, not from a follow with no date.
+6. **A seller may let the guest cover the card fee.**
+7. Every sale email says which rule applied.
+
+**Consequences.** Frequency stops losing money on the sales it promises are free, and what a seller keeps on their own people is what they would keep taking the card anywhere else. The card fee charged is the standard rate, not Stripe's exact cost: an international card or a pay-later method costs Frequency the difference. A refund returns the whole application fee, so Frequency still absorbs the card fee on a refunded sale. Split orders (LIVE-2421) and the earnings views (LIVE-2422) must land before the date is set. Items 3 to 7 land in their own rows; until each does, the code it replaces is still the truth. The survey behind the rates: the take rate survey of 2026-11-18 (competitor fees, net tables, sources).
+
+## ADR-1979: A password is the third door, beside the magic link and Google
+
+**Status:** Accepted, 2026-11-25 (SEC-045). **Amends** [ADR-1392](DECISIONS.md), which kept passwords out of scope. Owner ask, 2026-11-25: "I want it to be normal user / pass, magic link and google ... fully flexible and secure. Absolute best practice."
+
+**Context.** Sign-in was passwordless from the first commit (2026-05-25): a magic link and Google (ADR-071, ADR-082, ADR-510). The owner remembered a password login that never existed. ADR-959's audit (2026-08-07) had recorded passwords as a later third door. The live project already had confirm email on and leaked-password protection on (OWN-007), so the auth server was ready and only the screens were missing.
+
+**Decision.**
+1. **Three doors on one page.** `/sign-in` shows a magic link or a password (one tap between them; a device whose last sign-in was a password opens on the password form) and Google. Create, forgot and set-new-password are steps of the same page (`?step=`), not new routes.
+2. **The NIST shape.** Length is the rule (`PASSWORD_MIN_LENGTH`), no composition rules, a 72-byte ceiling because bcrypt truncates, not the email address, breached passwords refused by Supabase, a Show toggle instead of a confirm field, paste and managers allowed.
+3. **No enumeration.** A wrong address and a wrong password read the same. Sign-up and reset always end on "check your email".
+4. **Takeover resistance.** Sign-up needs the confirmation click before any session. Setting a password needs a session under an hour old and signs every other session out. Settings sets or changes a password only through a link to the member's own inbox, which is the re-check.
+5. **Throttled like the rest.** Per-IP and per-mailbox (five tries per ten minutes) buckets that fail open (LIVE-043), on top of Supabase's own limits.
+6. **Same arrival.** A password sign-in never visits `/auth/callback`, so `lib/auth/finish-sign-in.ts` runs the callback's steps (the `account.created` row, the guest claims, the funnel recovery, the hint).
+
+**Consequences.** Existing members have no password until they ask for one through "Forgot" or Settings, which is also how a Google member adds one. Admin two-step codes and a captcha are separate rows, each an owner call. Converging the callback onto `finishSignIn` is a later cleanup; until then the two must change together.
+
+## ADR-1980: Staff need a two-step code; members are never asked
+
+**Status:** Accepted, 2026-11-26 (SEC-046). Follows [ADR-1979](DECISIONS.md). Owner ruling, 2026-11-26: "Required for admins".
+
+**Context.** A password, a magic link and a Google sign-in are each one factor. Since SEC-045 a staff account can be reached with a password alone, and `/admin` holds member data, money and every switch. Supabase supports authenticator-app codes (TOTP) and records a session that passed one as `aal2` in the signed access token.
+
+**Decision.**
+1. **Who.** Every staff account: web_role admin or janitor, or any `team_members` row. A community host admitted on the community ladder (the door scanner, a feed report) is a member and is never asked.
+2. **Where.** The staff guards (`requireAdmin` for staff callers, `requireAdminFloor`, `requireStaff`, `requireStaffCap`, `requireJanitor`) call `requireStaffAal2` after the role check, so every page and action behind them is covered. `proxy.ts` refuses a server-action POST under `/admin` without `aal2`, which covers the admin actions that gate themselves.
+3. **How it is read.** From the access token's verified claims (`getClaims`), never an unverified cookie.
+4. **The steps.** `/sign-in?step=mfa` (enter a code) and `?step=mfa-setup` (scan a QR, prove the first code), steps of the one page like the password steps. Tries are throttled per account on top of Supabase's own limit. Setup is offered to staff only, because nothing else enforces a code; offering it to members would promise protection the app does not give.
+5. **Recovery.** A lost phone is a janitor removing the factor (runbook). `ADMIN_MFA_BYPASS` is break glass for every admin at once. A staff member with their phone resets it from Settings, which needs an `aal2` session.
+
+**Consequences.** Each staff member sets up an authenticator on their next `/admin` visit after this ships. Optional codes for members, recovery codes and passkeys are later rows, each an owner call.
+
+## ADR-1981: An invisible bot check guards every email sign-in door, verified by Supabase
+
+**Status:** Accepted, 2026-11-26 (SEC-047). Follows [ADR-1980](DECISIONS.md). Owner ruling, 2026-11-26: "Yes, invisible check".
+
+**Context.** The magic link, password sign-in, sign-up and reset all reach Supabase's auth API, which anyone can call with the public key. Our per-IP and per-mailbox limits (LIVE-043, SEC-045) only cover our own forms. A script that skips them can spray sign-up mail and guess passwords at Supabase's own limits.
+
+**Decision.**
+1. **Cloudflare Turnstile, invisible.** No puzzle, and no third-party tracking cookie for members. A token is made in the background on each form.
+2. **Supabase verifies it.** The token rides the form as `captchaToken` and goes to Supabase on every email door. With Supabase's captcha on, a request without a fresh token is refused at the auth server, including a direct API call. Google sign-in needs none.
+3. **Off until set, in a fixed order.** `NEXT_PUBLIC_TURNSTILE_SITE_KEY` blank means no widget and no token. The site key ships first, then the Supabase toggle with the secret key (docs/RUNBOOKS.md, "Invisible bot check"). Reversing the order refuses every email sign-in.
+4. **Our words.** A missing or refused token gets the `bot` line ("Wait a second and try again"), never Supabase's text.
+
+**Consequences.** The CSP admits `challenges.cloudflare.com` for script and frame. The native app calls Supabase directly with no token, so the toggle stops native sign-in until the app sends one; the iOS build is parked, and the runbook says to re-check before it ships.
