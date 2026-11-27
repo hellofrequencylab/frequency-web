@@ -89,6 +89,7 @@ import { ENTITY_ID } from '@/lib/finance/record'
 import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
 import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
 import { notifyTicketSaleHost } from './ticket-sale-notify'
+import { notifyTicketRefund } from './ticket-refund-notify'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { payableCents, type MemberBenefit, type AppliedBenefit } from '@/lib/spaces/benefits'
 import { ticketSalesWindowError } from '@/lib/events/sales-window'
@@ -2133,6 +2134,9 @@ export async function recordTicketRefund(paymentIntentId: string | null): Promis
       sourceId: row.id,
       idempotencyKey: `ticket-refund:${row.id}`,
     }).catch(() => {})
+    // Tell the buyer and the payee (LIVE-2551). Once per flipped row, so a redelivery tells nobody
+    // twice; it never throws.
+    await notifyTicketRefund(row.id)
   }
 }
 
