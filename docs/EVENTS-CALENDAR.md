@@ -157,6 +157,16 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - **Calendar surfaces compose the page framework** (`IndexTemplate` for the grid; the rail falls
   through to `'global'` — no `page-chrome` edit needed).
 
+## One month grid, one week start (SCAN-1345)
+
+The public Calendar tab (`components/events/event-calendar.tsx`) and the team calendar
+(`components/calendar-suite/suite-month.tsx`) look different, but they draw the same grid. Both take
+their weeks and their weekday header from `components/calendar/month-grid.tsx`, and the day a week
+starts on is one constant, `WEEK_STARTS_ON` in `lib/calendar/week-start.ts` (Sunday). The team
+calendar's week view, mini-month and Pencil it in, the timeline, and a Space website's month
+(`components/sites/site-month.tsx`) follow the same constant. A surface brings its own day cell and
+classes. It never works out which column a date sits in. The old staff grid was removed in #5526.
+
 ## Calendar and Events are ONE page (LIVE-520)
 
 Owner ask, 2026-09-27: *"Calendar & Events should be all one page: Please design a page structure
@@ -304,7 +314,7 @@ slot that overlaps is neither offered nor bookable. An existing booking inside t
 touched. The read is service-role and fails safe to no blocks. A repeating entry contributes every
 landing inside the horizon, minus its `exception_dates` (`PROG-CAL13`, below).
 
-**The public Calendar tab is one calendar for everyone (SCAN-1344, owner ruling 2026-11-25, "Public only, link to team").** `/spaces/<slug>/calendar` renders the guest calendar for every viewer, the Space's team included, and a viewer who may run the Space's events gets one **Open team calendar** button to `/spaces/<slug>/settings/calendar` (the calendar suite, `components/calendar-suite`). The tab no longer calls `loadAdminCalendar` and no longer mounts the staff grid, List, Workflow, the console, Day / Week / Timeline, Ask Vera or the Plan drawer; an old operator link (`?view=`, `?plan=`, `?item=`, `?console=`, `?look=`) is sent on to the team calendar. The operator-view paragraphs below (Admin Calendar views, the Calendar console, the stage host, Ask Vera on the page) describe the retired team mode of this tab and are kept as history until its modules are removed. The team's tools are the suite's.
+**The public Calendar tab is one calendar for everyone (SCAN-1344, owner ruling 2026-11-25, "Public only, link to team").** `/spaces/<slug>/calendar` renders the guest calendar for every viewer, the Space's team included, and a viewer who may run the Space's events gets one **Open team calendar** button to `/spaces/<slug>/settings/calendar` (the calendar suite, `components/calendar-suite`). The tab no longer calls `loadAdminCalendar` and no longer mounts the staff grid, List, Workflow, the console, Day / Week / Timeline, Ask Vera or the Plan drawer; an old operator link (`?view=`, `?plan=`, `?item=`, `?console=`, `?look=`) is sent on to the team calendar. The operator-view paragraphs below (Admin Calendar views, the Calendar console, the stage host, Ask Vera on the page) describe the retired team mode of this tab and are history: its modules (the console, List, Workflow, Day / Week / Timeline and the Ask Vera box) were removed on 2026-11-27, and the staff grid goes with SCAN-1345. The team's tools are the suite's.
 
 **Admin Calendar views** ([ADR-1389](DECISIONS.md), [ADR-1450](DECISIONS.md), [ADR-1454](DECISIONS.md), [ADR-1456](DECISIONS.md), [ADR-1457](DECISIONS.md), [ADR-1458](DECISIONS.md), [ADR-1464](DECISIONS.md), [ADR-1467](DECISIONS.md)). A viewer who
 edits the Space (with the Calendar function), or platform staff previewing it, lands on **Admin**

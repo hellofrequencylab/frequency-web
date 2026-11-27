@@ -1,5 +1,5 @@
 import type { AstroMarker } from '../astro-markers'
-import { addDays, mondayOnOrBefore } from './days'
+import { addDays, weekStartOnOrBefore } from './days'
 
 // THE MONTH ENGINE (README 1.3). The grid of one month as day keys, and what the sky says about it:
 // the season and its line, the Sun's ingress, the moons. Pure. The sky comes in as the markers the
@@ -53,13 +53,14 @@ export function monthName(ym: string): string {
   return MONTH_NAMES[Number(ym.slice(5, 7)) - 1] ?? ym
 }
 
-/** The weeks of a month as day keys, Monday first: the Monday on or before the 1st, then rows until
+/** The weeks of a month as day keys, from the week's first day (lib/calendar/week-start.ts) on or
+ *  before the 1st, then rows until
  *  the next row would start in another month (5 or 6 rows). A week that crosses a boundary appears in
  *  both months, and each month blanks the other's days. */
 export function monthWeeks(ym: string): string[][] {
   const first = `${ym}-01`
   const weeks: string[][] = []
-  let start = mondayOnOrBefore(first)
+  let start = weekStartOnOrBefore(first)
   for (let w = 0; w < 6; w++) {
     weeks.push(Array.from({ length: 7 }, (_, i) => addDays(start, i)))
     const next = addDays(start, 7)

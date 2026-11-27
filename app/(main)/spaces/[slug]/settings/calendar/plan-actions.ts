@@ -10,8 +10,6 @@ import { parseHoldUntilInput, parsePlanInput, planPublishLag, planTargetDef, typ
 import { planStageTransition, type WorkflowStage } from '@/lib/calendar/workflow-board'
 import {
   archiveSpacePlanRows,
-  attachEntryToPlan,
-  createPenciledPlanRows,
   getPlanAnchorDayKey,
   getSpacePlan,
   insertPlaybook,
@@ -59,7 +57,6 @@ import {
 import { moveAnchoredDues, normalizeOffsetDays, resolveDueFromOffset } from '@/lib/calendar/relative-schedule'
 import { getCalendarEntryRow, listSpaceCalendarEntries } from '@/lib/calendar/entries-store'
 import { listDayNotes } from '@/lib/calendar/day-notes-store'
-import { parseEntryInput, type EntryInput } from '@/lib/calendar/entries'
 import { productionPrefill, readinessGaps } from '@/lib/calendar/production-prefill'
 import { availabilityWindow, busyDayKeysFor } from '@/lib/calendar/availability'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
@@ -242,72 +239,6 @@ export async function archiveSpacePlan(slug: string, planId: string): Promise<Ac
   const res = await archiveSpacePlanRows(editor.spaceId, planId)
   if ('error' in res) return fail(res.error)
   await recordPlanActivity({ planId, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'field', summary: 'Archived the Plan.' })
-  revalidate(slug)
-  return ok()
-}
-
-export async function startPlanFromEntry(
-  slug: string,
-  entryId: string,
-  title: string,
-): Promise<ActionResult<{ id: string }>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId)) return fail('That date no longer exists.')
-  const created = await saveSpacePlan(slug, null, { title })
-  if (isError(created)) return created
-  const attached = await attachEntryToPlan(editor.spaceId, entryId, created.data.id)
-  if ('error' in attached) return fail(attached.error)
-  revalidate(slug)
-  return created
-}
-
-/** Create the smallest useful production record from the operator Calendar:
- * one titled date, represented by one pencil entry linked to one Plan. */
-export async function createPenciledPlan(
-  slug: string,
-  title: string,
-  dayKey: string,
-  timeZone = 'UTC',
-): Promise<ActionResult<{ id: string; entryId: string }>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  const parsedPlan = parsePlanInput({ title, stage: 'pencil', targetKind: 'event' })
-  if ('error' in parsedPlan) return fail(parsedPlan.error)
-  const input: EntryInput = {
-    kind: 'pencil',
-    title,
-    allDay: true,
-    startDate: dayKey,
-    endDate: dayKey,
-    timeZone,
-    stage: 'pencil',
-    blocksTime: false,
-    showPublicly: false,
-    planId: null,
-  }
-  const parsedEntry = parseEntryInput(input)
-  if ('error' in parsedEntry) return fail(parsedEntry.error)
-  const created = await createPenciledPlanRows(editor.spaceId, parsedPlan.data.title, parsedEntry.data)
-  if ('error' in created) return fail(created.error)
-  revalidate(slug)
-  return ok({ id: created.data.planId, entryId: created.data.entryId })
-}
-
-export async function joinEntryToPlan(
-  slug: string,
-  entryId: string,
-  planId: string,
-): Promise<ActionResult<void>> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return fail('You do not have access to this calendar.')
-  if (!UUID_RE.test(entryId) || !UUID_RE.test(planId)) return fail('That Plan no longer exists.')
-  const res = await attachEntryToPlan(editor.spaceId, entryId, planId)
-  if ('error' in res) return fail(res.error)
-  // The Plan may have had no date until now, so anchored to-dos had nothing to resolve against.
-  // Giving it one resolves them; a failure here is reported, never left to look like nothing.
-  const anchored = await reanchorPlanTodos(slug, planId)
-  if ('error' in anchored) return anchored
   revalidate(slug)
   return ok()
 }

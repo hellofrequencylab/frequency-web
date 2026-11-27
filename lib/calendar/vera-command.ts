@@ -193,7 +193,7 @@ export type VeraFieldSpec =
 
 /**
  * The date side of the vocabulary, in the manifest's field shape, derived from `EntryInput`. Labels
- * are the drawer's (app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx). Not here on
+ * are the ones the retired staff drawer used (removed in SCAN-1345, 2026-11-27). Not here on
  * purpose: `kind`, `stage`, `status` and `planId` (each has its own change kind or its own seam),
  * `startDate` / `endDate` (`move` owns the day), `repeat` / `exceptionDates` / `candidateDates`
  * (a series is edited in the drawer). `showPublicly` is `EntryInput`'s name for the visibility;

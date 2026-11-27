@@ -21,7 +21,6 @@ import {
 } from '@/lib/calendar/vera-command'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { newDateZone } from '@/lib/calendar/browser-zone'
-import type { CalendarEvent } from '@/lib/calendar/item'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import {
   applyVeraChanges,
@@ -112,12 +111,19 @@ export function VeraCalendarBox({
   events,
   spaceTimeZone = null,
   onApplied,
+  initialAsk = '',
+  defaultOpen = false,
 }: {
   slug: string
   year: number
   month1: number
-  plans: SpacePlan[]
-  events: CalendarEvent[]
+  /** Only id and title are read: the names a line falls back to when the proposal brought none. */
+  plans: readonly Pick<SpacePlan, 'id' | 'title'>[]
+  events: readonly { entryId?: string | null; title: string }[]
+  /** Words handed over by the team calendar's command bar. Vera reads them on arrival. */
+  initialAsk?: string
+  /** Start open (the team calendar shows the box in its own sheet). */
+  defaultOpen?: boolean
   /** The Space's own zone (spaces.time_zone, LIVE-471). Every date Vera proposes is read and written
    *  in it; the viewer's browser zone decides only when the Space has never said. */
   spaceTimeZone?: string | null
@@ -127,9 +133,9 @@ export function VeraCalendarBox({
   const panelId = useId()
   const questionId = useId()
   const logId = useId()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [mode, setMode] = useState<VeraMode>(() => (typeof window === 'undefined' ? 'pencil' : (rememberedMode(slug) ?? 'pencil')))
-  const [ask, setAsk] = useState('')
+  const [ask, setAsk] = useState(initialAsk)
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [clarification, setClarification] = useState<Clarification | null>(null)
@@ -188,7 +194,11 @@ export function VeraCalendarBox({
 
   const send = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const text = ask.trim()
+    sendAsk(ask)
+  }
+
+  function sendAsk(raw: string) {
+    const text = raw.trim()
     if (!text || pending) return
     setError(null)
     setResults(null)
@@ -204,6 +214,17 @@ export function VeraCalendarBox({
       receive(res.data)
     })
   }
+
+  // HANDED OVER FROM THE COMMAND BAR: the words were already typed once, so Vera reads them as the
+  // sheet opens. It is still only a proposal; nothing changes until Accept.
+  const handedOver = useRef(false)
+  useEffect(() => {
+    if (handedOver.current || !initialAsk.trim()) return
+    handedOver.current = true
+    sendAsk(initialAsk)
+    // Once, on arrival: a later edit to the field is the person's own ask.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** Answer Vera's question: the transcript she returned goes back with the answer, and nothing
    *  else is kept. The ask text stays in the field in case the person wants to rephrase it. */

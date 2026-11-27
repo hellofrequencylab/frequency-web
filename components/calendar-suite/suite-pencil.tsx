@@ -8,7 +8,8 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Select } from '@/components/ui/select'
 import { clockLabel, dayLabel, lengthLabel, spansDay } from '@/lib/calendar/planner/days'
 import { HOLD_LENGTHS, holdEnd, holdReleaseNote } from '@/lib/calendar/planner/hold'
-import { monthName, monthWeeks, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthName, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthGridWeekdays, monthGridWeeks } from '@/components/calendar/month-grid'
 import { PENCIL_MAX_DATES } from '@/lib/calendar/planner/pencil-it-in'
 import { PLAYBOOKS, playbookHint } from '@/lib/calendar/planner/playbook-schedule'
 import type { PlannerItem } from '@/lib/calendar/planner/types'
@@ -69,7 +70,7 @@ export function SuitePencil({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const weeks = useMemo(() => monthWeeks(ym), [ym])
+  const weeks = useMemo(() => monthGridWeeks(ym).map((w) => w.map((d) => d.date)), [ym])
   const closed = useMemo(() => {
     const out = new Set<string>()
     const unavailable = items.filter((i) => i.kind === 'unavailable')
@@ -134,7 +135,7 @@ export function SuitePencil({
               </button>
             </div>
             <div className="cal-mini-grid">
-              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              {monthGridWeekdays('letter').map((d, i) => (
                 <span key={i} className="cal-mini-wd" aria-hidden>
                   {d}
                 </span>

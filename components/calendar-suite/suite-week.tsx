@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import type { AstroMarker } from '@/lib/calendar/astro-markers'
 import { dayItems, isInvitePending, isItemVisible, itemPartnerId } from '@/lib/calendar/planner/day-items'
-import { addDays, clockLabel, dayLabel, mondayOnOrBefore, weekdayName } from '@/lib/calendar/planner/days'
+import { addDays, clockLabel, dayLabel, weekStartOnOrBefore, weekdayName } from '@/lib/calendar/planner/days'
 import { DEFAULT_BLOCK_MINUTES } from '@/lib/calendar/planner/inbox-drop'
 import { KINDS } from '@/lib/calendar/planner/kinds'
 import { skyOnDay } from '@/lib/calendar/planner/month'
@@ -91,7 +91,7 @@ export function SuiteWeek({
   /** A click on empty time, or on a day's all-day cell, asks for a quick add there. */
   onQuick?: (anchor: QuickAnchor) => void
 }) {
-  const start = days === 7 ? mondayOnOrBefore(cursor) : cursor
+  const start = days === 7 ? weekStartOnOrBefore(cursor) : cursor
   const dayKeys = useMemo(() => Array.from({ length: days }, (_, i) => addDays(start, i)), [start, days])
   const last = dayKeys[dayKeys.length - 1]
   const own = ctx.ownSpaceId

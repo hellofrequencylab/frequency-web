@@ -197,7 +197,7 @@ export const CALENDAR_LAYERS: readonly CalendarLayer[] = [
 /** A kind of private entry. Mirrors the `kind` check on public.space_calendar_entries. */
 export type EntryKind = 'pencil' | 'unavailable' | 'private' | 'meeting'
 
-export interface EntryKindDef {
+interface EntryKindDef {
   kind: EntryKind
   /** The name staff see (docs/NAMING.md "Event", "Unavailable", "Private entry"). */
   label: string
