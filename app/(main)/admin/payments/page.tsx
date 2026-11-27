@@ -43,7 +43,7 @@ function PaymentRow({ p }: { p: FoundPayment }) {
         <p className="truncate text-meta text-muted">
           {KIND[p.kind]} · {p.buyer ?? 'Guest'} · {p.spaceName ?? 'No Space'} · {when} · {p.status === 'refunded' ? 'Refunded' : 'Paid'}
         </p>
-        {p.stripePaymentIntentId && <p className="truncate text-2xs text-subtle">{p.stripePaymentIntentId}</p>}
+        {p.stripePaymentIntentId && <p className="truncate text-2xs text-muted">{p.stripePaymentIntentId}</p>}
       </div>
       <div className="flex items-center gap-3">
         <span className="text-right text-body-sm">
@@ -106,7 +106,7 @@ export default async function AdminPaymentsPage({ searchParams }: { searchParams
             defaultValue={q}
             aria-label="Search payments"
             placeholder="Payment id (pi_...), guest email or buyer name"
-            className="min-w-[240px] flex-1 sm:max-w-md"
+            className="min-w-60 flex-1 sm:max-w-md"
           />
           <button type="submit" className={buttonClasses('secondary', 'sm')}>
             Search
