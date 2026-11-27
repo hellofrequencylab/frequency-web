@@ -201,18 +201,16 @@ describe('the ratchet promise', () => {
     for (const file of [
       'components/ui/segmented-control.tsx',
       'components/spaces/calendar-mode-toggle.tsx',
-      'components/spaces/calendar-list-view.tsx',
       'components/spaces/calendar-workspace.tsx',
-      'components/spaces/calendar-console.tsx',
       'components/marketplace/facet-nav.tsx',
     ]) {
       expect(read(file), `${file} hand-rolls a bg-primary button again`).not.toMatch(RAW_BUTTON_BG)
     }
   })
 
-  it('the three switchers compose the primitive and no pill row remains', () => {
+  // The List view's switcher left with the public tab's retired team mode (SCAN-1344).
+  it('the switchers compose the primitive and no pill row remains', () => {
     expect(read('components/spaces/calendar-mode-toggle.tsx')).toContain("from '@/components/ui/segmented-control'")
-    expect(read('components/spaces/calendar-list-view.tsx')).toContain("from '@/components/ui/segmented-control'")
     expect(read('components/marketplace/facet-nav.tsx')).toContain("from '@/components/ui/segmented-control'")
     expect(read('components/marketplace/facet-nav.tsx')).not.toContain('rounded-pill')
   })

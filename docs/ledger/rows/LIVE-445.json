@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-445",
+  "patch": {
+    "source": {
+      "file": "components/spaces/calendar-workspace.tsx",
+      "ref": "owner report 2026-09-21 \"It shows cancelled but the calendar listing still shows blue\"; ADR-1503; ADR-1388"
+    },
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/public-calendar-tab.mjs LIVE-445",
+      "note": "Rewritten 2026-11-27 for the SCAN-1344 follow-up (owner approved the rewrite, \"Yes, rewrite them\"). The tab's retired team mode, including the List view, was removed; the probe keeps what still applies and checks the retired surface stays gone."
+    }
+  },
+  "append": {
+    "detail": "2026-11-27 (SCAN-1344 follow-up): components/spaces/calendar-list-view.tsx was removed with the rest of the public tab's retired team mode; source re-pointed to the tab."
+  }
+}

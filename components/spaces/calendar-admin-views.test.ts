@@ -17,6 +17,13 @@ const RETIRED = [
   'components/spaces/calendar-pm-console.tsx',
   'lib/calendar/month-timeline.ts',
   'lib/calendar/project-board.ts',
+  // The public tab's retired team mode (SCAN-1344): the team works on the calendar suite.
+  'components/spaces/calendar-list-view.tsx',
+  'components/spaces/calendar-workflow-view.tsx',
+  'components/spaces/calendar-console.tsx',
+  'components/spaces/calendar-time-views.tsx',
+  'components/spaces/vera-calendar-box.tsx',
+  'lib/calendar/time-views.ts',
 ]
 
 describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
@@ -32,8 +39,6 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     'lib/calendar/admin-views.ts',
     'lib/calendar/list-index.ts',
     'lib/calendar/workflow-board.ts',
-    'components/spaces/calendar-list-view.tsx',
-    'components/spaces/calendar-workflow-view.tsx',
   ]
     .map((path) => readFileSync(path, 'utf8'))
     .join('\n')
@@ -81,7 +86,7 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     // The four views, by name, from the one registry the toggle renders.
     expect(views).toContain("['guest', 'admin', 'list', 'workflow']")
     for (const file of RETIRED) {
-      expect(existsSync(file), `${file} is back; the Projects chain was retired in HYG-118`).toBe(false)
+      expect(existsSync(file), `${file} is back; it was retired (HYG-118 for the Projects chain, SCAN-1344 for the tab team mode)`).toBe(false)
     }
     expect(shell).not.toContain('CalendarTimelineView')
     expect(shell).not.toContain('CalendarProjectsView')

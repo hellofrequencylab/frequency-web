@@ -32,7 +32,7 @@ type WorkflowCard = {
   events: CalendarEvent[]
   primaryEvent: CalendarEvent | null
 }
-export type WorkflowColumn = { stage: PlanStage; label: string; cards: WorkflowCard[] }
+type WorkflowColumn = { stage: PlanStage; label: string; cards: WorkflowCard[] }
 const STAGES: readonly { stage: PlanStage; label: string }[] = [
   { stage: 'pencil', label: planStageLabel('pencil') },
   { stage: 'plan', label: planStageLabel('plan') },
