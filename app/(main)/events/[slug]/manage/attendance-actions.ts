@@ -6,6 +6,8 @@ import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
 import { viewerActsAsEventHost } from '@/lib/events/host-gate'
 import { setSeatAttended, type SeatRef, type SetSeatAttendedResult } from '@/lib/events/attendance'
+import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
+import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
 
 // THE HOST'S MARK (PROG-GD4). The one action that writes `attended_at` / `attended_by` on a seat,
 // from the roster on the Manage Dashboard. Same posture as ./actions.ts: it runs on the admin
@@ -42,4 +44,43 @@ export async function setSeatAttendedFromManage(
     revalidatePath(`/events/${slug}`)
   }
   return result
+}
+
+export type ResendTicketResult = { ok: true } | { ok: false; error: 'forbidden' | 'not_found' }
+
+/** RESEND A TICKET (LIVE-2548). A guest's emailed ticket is the only copy they have, so "I can't
+ *  find my ticket" is a door problem the host has to be able to fix on the spot. Sends the same
+ *  receipt the sale sent, to the same address (the guest's checkout email, or the member's account
+ *  email), and nothing else. Manager-only, and only for a paid, unrefunded ticket on THIS event. */
+export async function resendTicketFromManage(eventId: string, ticketId: string): Promise<ResendTicketResult> {
+  const byProfileId = await authorizeManager(eventId)
+  if (!byProfileId) return { ok: false, error: 'forbidden' }
+
+  const { data } = await createAdminClient()
+    .from('event_tickets')
+    .select('id, event_id, buyer_profile_id, guest_email, ticket_type_id, qty, amount_cents, currency, status, refunded_at')
+    .eq('id', ticketId)
+    .eq('event_id', eventId)
+    .maybeSingle()
+  const t = data as {
+    buyer_profile_id: string | null
+    guest_email: string | null
+    ticket_type_id: string | null
+    qty: number | null
+    amount_cents: number | null
+    currency: string | null
+    status: string | null
+    refunded_at: string | null
+  } | null
+  if (!t || t.status !== 'succeeded' || t.refunded_at) return { ok: false, error: 'not_found' }
+
+  const common = { eventId, qty: Math.max(1, Number(t.qty) || 1), amountCents: t.amount_cents, currency: t.currency }
+  if (t.buyer_profile_id) {
+    await sendMemberTicketReceipt({ ...common, profileId: t.buyer_profile_id, ticketTypeId: t.ticket_type_id })
+  } else if (t.guest_email) {
+    await sendGuestTicketReceipt({ ...common, guestEmail: t.guest_email })
+  } else {
+    return { ok: false, error: 'not_found' }
+  }
+  return { ok: true }
 }

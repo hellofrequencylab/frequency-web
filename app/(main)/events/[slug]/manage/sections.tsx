@@ -29,6 +29,10 @@ import {
   loadFollowUps,
   type ManageGuest,
 } from './load'
+import { tierBreakdown } from './roster-tiers'
+import { RosterCsvButton, type RosterCsvRow } from './roster-csv-button'
+import { ResendTicketButton } from './resend-ticket-button'
+import { RefundTicketFromRosterButton } from './refund-ticket-button'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
 import {
   loadEventCrmAccess,
@@ -56,6 +60,10 @@ import { listEventGuests, type EventGuestListItem, type GuestRsvpStatus } from '
 
 function fmtDate(iso: string): string {
   return formatDateShort(iso)
+}
+
+function money(cents: number, currency = 'usd'): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 }
 
 const STATUS_CHIP: Record<
@@ -123,11 +131,14 @@ function RosterGroup({
               </span>
               <div className="min-w-0 flex-1">
                 <GuestName guest={g} />
-                {g.seat.kind === 'ticket' && (
-                  /* A ticket holder has no RSVP row (LIVE-317); this is the seat they hold. */
+                {(g.ticket || g.seat.kind === 'ticket') && (
+                  /* What they hold (LIVE-2548): the tier, how many seats, and what they paid. A ticket
+                     holder has no RSVP row (LIVE-317); a member with both carries the ticket here. */
                   <span className="ml-2 inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
                     <Ticket className="h-3 w-3" />
-                    Ticket
+                    {g.ticket?.tierName ?? 'Ticket'}
+                    {g.ticket && g.ticket.qty > 1 ? ` ×${g.ticket.qty}` : ''}
+                    {g.ticket && g.ticket.amountCents > 0 ? ` · ${money(g.ticket.amountCents, g.ticket.currency)}` : ''}
                   </span>
                 )}
                 {g.plusOnes > 0 && (
@@ -152,6 +163,17 @@ function RosterGroup({
                   <UserCheck className="h-3 w-3" />
                   Attended
                 </span>
+              )}
+              {g.ticket && <ResendTicketButton eventId={eventId} ticketId={g.ticket.ticketId} />}
+              {g.ticket && g.ticket.amountCents > 0 && (
+                /* The same refund the Sales list offers, where the host is already looking at the
+                   holder. The action re-checks the caller and the money path server-side. */
+                <RefundTicketFromRosterButton
+                  ticketId={g.ticket.ticketId}
+                  eventId={eventId}
+                  slug={slug}
+                  amountLabel={money(g.ticket.amountCents, g.ticket.currency)}
+                />
               )}
               <AttendedButton eventId={eventId} slug={slug} seat={g.seat} attended={g.attendedAt != null} />
               <span className="shrink-0 text-meta text-muted">{fmtDate(g.createdAt)}</span>
@@ -179,8 +201,40 @@ export async function RosterSection({ eventId, slug }: { eventId: string; slug: 
     )
   }
 
+  const tiers = tierBreakdown(roster)
+  const csvRows: RosterCsvRow[] = [...going, ...maybe, ...waitlist].map((g) => ({
+    name: g.displayName,
+    email: g.guestEmail ?? '',
+    status: STATUS_CHIP[g.status].label,
+    tier: g.ticket ? (g.ticket.tierName ?? 'General') : '',
+    tickets: g.ticket ? String(g.ticket.qty) : '',
+    amount: g.ticket ? money(g.ticket.amountCents, g.ticket.currency) : '',
+    attended: g.attendedAt ? 'Yes' : '',
+    joined: fmtDate(g.createdAt),
+  }))
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {tiers.length > 0 ? (
+          /* Who holds what, per ticket type (LIVE-2548). */
+          <ul className="flex flex-wrap gap-2" aria-label="Ticket holders by type">
+            {tiers.map((t) => (
+              <li key={t.tier} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2.5 py-1 text-meta text-text">
+                <Ticket className="h-3.5 w-3.5 text-muted" />
+                <span className="font-semibold">{t.tier}</span>
+                <span className="text-muted">
+                  {t.seats} {t.seats === 1 ? 'ticket' : 'tickets'}
+                  {t.holders !== t.seats ? `, ${t.holders} ${t.holders === 1 ? 'buyer' : 'buyers'}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span />
+        )}
+        <RosterCsvButton rows={csvRows} fileName={`${slug || 'event'}-guests.csv`} />
+      </div>
       <RosterGroup title="Going" guests={going} eventId={eventId} slug={slug} />
       <RosterGroup title="Interested" guests={maybe} eventId={eventId} slug={slug} />
       <RosterGroup title="Waitlist" guests={waitlist} eventId={eventId} slug={slug} />
