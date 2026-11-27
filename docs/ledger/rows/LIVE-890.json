@@ -1,6 +1,0 @@
-{
-  "id": "LIVE-890",
-  "append": {
-    "detail": "\n\n2026-11-18 (probe amended, owner-approved: Daniel answered \"1. A\" on 2026-11-18). The importer-delegation half of scripts/check-ai-caller-attribution-two.mjs now accepts Vera's coachTool seam (lib/ai/vera/block-coach.ts coachBlock) as the one delegate of lib/importer/compose.ts, beside writingCoach; reframe/run.ts must still use writingCoach. Each entrypoint must still delegate exactly once and never call completeRaw, completeText, runToolLoop or recordAiUsage itself, and the probe now also audits every seam actually used: exactly one completion whose accounting names feature, profileId and spaceId, and no local recordAiUsage (a negative run with spaceId removed from coachBlock fails). The 18-module, 21-call inventory and the context-drafting run are unchanged. With it, reseedBlockCopy (the editor's \"rewrite this block\", PROG-E8 item 2) asks through coachTool under the same seed-compose key, now with the Space's id (per-Space cap and attribution), and keeps the fixed WRITING_QUESTIONS when AI is off, over budget, rate limited, failed or unparseable."
-  }
-}
