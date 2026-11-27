@@ -46,6 +46,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { outboundDb } from './db'
 import { approverGate, writerGate } from './guard'
 import { logOutboundAction } from './audit'
+import { stampApprovalFingerprint } from '@/lib/email-studio/approval-fingerprint'
 
 /** The live console that lists campaigns, revalidated after every transition. The Beta
  *  Command Center used to be the surface these arms were pulled from; it is gone, and
@@ -247,6 +248,11 @@ export async function approve(
   if (scheduled) patch.scheduled_for = opts.scheduledFor
   const { error } = await outboundDb().from(TABLE[ref.type]).update(patch).eq('id', ref.id)
   if (error) return fail('Could not approve this.')
+  // EMAIL-086: approving a campaign locks its content and audience; the send refuses if either changes after this.
+  if (ref.type === 'campaign' && !(await stampApprovalFingerprint(ref.id))) {
+    await outboundDb().from(TABLE[ref.type]).update({ approval_status: from ?? 'ready' }).eq('id', ref.id)
+    return fail('Could not lock this campaign for sending. It was not approved. Try again.')
+  }
   await logOutboundAction({
     actorProfileId: gate.profileId,
     action: scheduled ? 'schedule' : 'approve',
@@ -347,6 +353,10 @@ export async function armPhase(phaseId: string): Promise<ActionResult<{ approved
       .update({ approval_status: 'approved', approved_by: gate.profileId, approved_at: now })
       .eq('id', item.id)
     if (error) continue
+    if (item.type === 'campaign' && !(await stampApprovalFingerprint(item.id))) {
+      await db.from(TABLE[item.type]).update({ approval_status: 'ready' }).eq('id', item.id)
+      continue
+    }
     approved++
     await logOutboundAction({
       actorProfileId: gate.profileId,
