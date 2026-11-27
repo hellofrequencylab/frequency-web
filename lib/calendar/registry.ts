@@ -195,7 +195,7 @@ export const CALENDAR_LAYERS: readonly CalendarLayer[] = [
 ] as const
 
 /** A kind of private entry. Mirrors the `kind` check on public.space_calendar_entries. */
-export type EntryKind = 'pencil' | 'unavailable' | 'private'
+export type EntryKind = 'pencil' | 'unavailable' | 'private' | 'meeting'
 
 export interface EntryKindDef {
   kind: EntryKind
@@ -210,6 +210,9 @@ export interface EntryKindDef {
   isPencil: boolean
   /** Default status when staff pick this kind. */
   defaultStatus: 'confirmed' | 'tentative'
+  /** A team meeting (LIVE-2533): an agenda (kept in `description`) and notes Vera turns into to-dos.
+   *  Optional so the other rows need not say false. */
+  isMeeting?: boolean
 }
 
 export const ENTRY_KINDS: readonly EntryKindDef[] = [
@@ -239,6 +242,18 @@ export const ENTRY_KINDS: readonly EntryKindDef[] = [
     canShowPublicly: false,
     isPencil: false,
     defaultStatus: 'confirmed',
+  },
+  // A TEAM MEETING (LIVE-2533). Team only, on the Private layer (it paints as a private entry and
+  // its title says what it is), never public, never blocking bookings unless staff say so.
+  {
+    kind: 'meeting',
+    label: 'Meeting',
+    layer: 'private',
+    defaults: { allDay: false, blocksTime: false },
+    canShowPublicly: false,
+    isPencil: false,
+    defaultStatus: 'confirmed',
+    isMeeting: true,
   },
 ] as const
 
