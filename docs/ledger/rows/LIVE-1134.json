@@ -1,9 +1,0 @@
-{
-  "id": "LIVE-1134",
-  "patch": {
-    "title": "The site's structured data lists the LinkedIn and Facebook profiles beside Instagram, TikTok and YouTube"
-  },
-  "append": {
-    "detail": "\n\n2026-11-16 (SCAN-1207): YouTube (@frequencylocal) is already in SOCIAL_PROFILES in lib/site.ts; the remaining gap is LinkedIn and Facebook, which wait on OWN-101."
-  }
-}

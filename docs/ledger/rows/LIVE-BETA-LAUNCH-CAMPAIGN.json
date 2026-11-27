@@ -1,6 +1,0 @@
-{
-  "id": "LIVE-BETA-LAUNCH-CAMPAIGN",
-  "append": {
-    "detail": "\n\n2026-11-16 CORRECTION (SCAN-1207): the dates above are superseded by the owner's 2026-11-11 change. lib/core/launch-dates.ts now has LAUNCH_ON 2027-01-01 and the Public Beta running through 2027-01-31 (BETA_ENDS_ON); the three phases are Early Beta (intake closes Nov 30), Hosts Beta (Dec 31) and Public Beta (Jan 31). Where this row says beta ends 2026-12-31 or opening copy says December 1, read January 31 and January 1. December 31 is Hosts Beta intake only. 2026-11-16 OWNER RULING (Daniel, multiple choice in the platform thread): audience for the launch emails is every member who has not unsubscribed; the pricing email leaves out anyone already paying."
-  }
-}

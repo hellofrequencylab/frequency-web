@@ -1,20 +1,8 @@
 {
   "id": "SCAN-1345",
-  "title": "One month grid draws the public, team and suite calendars",
-  "lane": "hygiene",
-  "priority": "P2",
-  "size": "L",
-  "status": "done",
-  "source": {
-    "file": "components/events/event-calendar.tsx",
-    "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
-  },
-  "detail": "FOUND 2026-11-25: Daniel ruled 2026-10-28 to merge the three month grids once the suite landed. They are still three: components/events/event-calendar.tsx (1,828 lines), the settings StaffCalendar (1,110) and components/calendar-suite/suite-month.tsx (322). A fix to one grid (a day band, a chip, a time zone) misses the others. Fix: one components/calendar/month-grid module both remaining surfaces import; StaffCalendar removed (with SCAN-1344). CLOSED 2026-11-27: StaffCalendar was removed in #5526. The public Calendar tab (event-calendar.tsx) and the team calendar (suite-month.tsx) now both draw from components/calendar/month-grid.tsx: one set of weeks, one week start (lib/calendar/week-start.ts, Sunday, owner card open on 11-27 with Sunday recommended), one header order. The team calendar was Monday-first and the public grid Sunday-first, so the same date sat in different columns; the team week view, mini-month, Pencil it in and a Space website month follow the same start now.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1345",
-    "note": "Fails today; passes once the consequence in the title holds."
-  },
-  "wave": "W7",
-  "closed": "2026-11-27"
+  "patch": {
+    "status": "done",
+    "detail": "FOUND 2026-11-25: Daniel ruled 2026-10-28 to merge the three month grids once the suite landed. They are still three: components/events/event-calendar.tsx (1,828 lines), the settings StaffCalendar (1,110) and components/calendar-suite/suite-month.tsx (322). A fix to one grid (a day band, a chip, a time zone) misses the others. Fix: one components/calendar/month-grid module both remaining surfaces import; StaffCalendar removed (with SCAN-1344). CLOSED 2026-11-27: StaffCalendar was removed in #5526. The public Calendar tab (event-calendar.tsx) and the team calendar (suite-month.tsx) now both draw from components/calendar/month-grid.tsx: one set of weeks, one week start (lib/calendar/week-start.ts, Sunday, owner card open on 11-27 with Sunday recommended), one header order. The team calendar was Monday-first and the public grid Sunday-first, so the same date sat in different columns; the team week view, mini-month, Pencil it in and a Space website month follow the same start now.",
+    "closed": "2026-11-27"
+  }
 }
