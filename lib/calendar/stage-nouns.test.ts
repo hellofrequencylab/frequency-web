@@ -31,7 +31,6 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
 const LABEL_SITES = [
   { file: 'app/(main)/spaces/[slug]/settings/calendar/plan-board.tsx', what: 'the board column heading' },
   { file: 'lib/calendar/workflow-board.ts', what: "the Workflow board's columns and transitions" },
-  { file: 'components/spaces/calendar-workspace.tsx', what: "the workspace's optimistic source label" },
   { file: 'lib/studio/entities/space-plan.ts', what: "the Studio manifest's stage options" },
   // The drawer is no longer a site: PROG-CAL2 composed it from the manifest, so it holds no stage
   // label of its own. The case below pins that it stays that way.

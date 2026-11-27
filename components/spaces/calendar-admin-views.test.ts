@@ -38,26 +38,23 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     .map((path) => readFileSync(path, 'utf8'))
     .join('\n')
 
-  it('gates the admin read on adminAllowed and mounts the slide shell', () => {
-    expect(page).toContain('if (!adminAllowed)')
-    expect(page).toContain('loadAdminCalendar(')
-    expect(page.indexOf('loadAdminCalendar(')).toBeGreaterThan(page.indexOf('if (!adminAllowed)'))
+  it('shows every viewer the guest calendar, never reads the team records, and links to the team calendar (SCAN-1344)', () => {
+    expect(page).not.toContain('loadAdminCalendar(')
     expect(page).toContain('CalendarWorkspace')
+    expect(page).toContain('showTeamLink={adminAllowed}')
+    // An old operator link still lands on the team calendar it meant.
+    expect(page).toMatch(/redirect\(/)
     // The Guest feed goes through guestLiveItems ONCE, inside the one public reader every month uses
     // (ADR-1457, LIVE-468). The page names the seam and calls that reader; it does not gate again.
     expect(page).toContain('guestLiveItems')
     expect(page).toContain('loadPublicSpaceWindow(')
     expect(page).not.toContain('guestLiveItems(')
     expect(publicMonth).toMatch(/return guestLiveItems\(/)
-    expect(page).not.toContain("view !== 'guest'")
-    expect(shell).toContain('StaffCalendar')
-    expect(shell).toContain('data-calendar-admin-grid')
-    expect(shell).not.toContain('CalendarPmConsole')
-    expect(shell).toContain('CalendarListView')
-    expect(shell).toContain('CalendarWorkflowView')
-    expect(shell).toContain('PlanDrawer')
-    expect(shell).toContain('history.replaceState')
-    expect(shell).toContain('rememberCalendarView')
+    expect(shell).not.toContain('StaffCalendar')
+    expect(shell).not.toContain('PlanDrawer')
+    expect(shell).not.toContain('CalendarConsole')
+    expect(shell).toContain("audienceHref(slug, 'team')")
+    expect(shell).toContain('Open team calendar')
   })
 
   it('switches views with buttons, not a Link navigation', () => {
