@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1370",
+  "title": "FlowWeb links keep their source in GA4",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/analytics/sanitize.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: GA4 page_location keeps utm_source/utm_medium only for a closed list of pairs (lib/analytics/sanitize.ts:224 and the browser copy at :256). FlowWeb short links carry utm_source=flowweb (lib/flowweb/short-link.ts:34), which is not on the list, so the main outbound channel shows in GA4 and Google Ads as direct or referral. Fix: add the flowweb pairs FlowWeb actually sends to both copies of the allowlist.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1370",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

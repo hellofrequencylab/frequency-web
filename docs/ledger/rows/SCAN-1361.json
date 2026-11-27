@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1361",
+  "title": "A new account made outside the /join induction still gets its first touch, referral credit, cohort tag and welcome",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/join/(induction)/actions.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: persistAcquisition, applyReferralAttribution, tagFunnelCohort, the beta Crew comp, sendWelcomeEmail and persona nurture run only inside writeInduction (app/join/(induction)/actions.ts:350-497); the only other caller, app/onboarding/actions.ts:98, is unreachable while FUNNEL_INDUCTION_ACTIVE is true. Accounts made through /launch-your-business, the four quick builders, Google from those pages, or /sign-in 'create a new account' get none of it. Production 2026-11-27: of 26 profiles created since 21 Sep, 14 carry no acquisition at all, and in every week the stamped count equals the onboarded count exactly. Because the Crew comp is skipped, a builder sign-up also cannot take donations on a free Space while an induction sign-up can (lib/pricing/paying-accounts.ts). Fix: one post-sign-up module called from the auth callback, password finish and /launch/claim that runs the account-level side effects idempotently; the induction keeps only its own answers.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1361",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

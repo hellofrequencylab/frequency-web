@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1367",
+  "title": "Vera autonomous sends stay held until the owner date in code, not only behind an admin toggle",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/platform-flags.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: the owner rule 'Vera drafts, rules send; autonomous sends held to Feb 2027' (2026-11-13) is written nowhere in code or docs. platform_flags.vera_autonomy_enabled (off in production) is the only hold, so one admin toggle opens autonomous sends. The plan cited at lib/lifecycle/registry.ts:4 (email/COACH-EMAIL-SYSTEM-BUILD-PLAN-2026-11-13.md) is not in the repo. Fix: an AUTONOMY_NOT_BEFORE date that isAutonomyEnabled checks beside the flag, and point the registry comment at the doc's real home.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1367",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
