@@ -6650,7 +6650,7 @@
       "migrations": [
         {
           "file": "supabase/migrations/20270346560000_calendar_only_me_entries.sql",
-          "sha256": "9990776034164b892cb22ed1d3e0ab7ebf9616c4ba0a01e27de98478a600a26e"
+          "sha256": "f408ef7dc4d3cef085a70b10956c46fbbc9698453a433ea0152d1a956f4bea12"
         }
       ],
       "reviewedChanges": [
@@ -6746,6 +6746,20 @@
           "headMode": "100644"
         },
         {
+          "file": "scripts/check-shipped-ids.mjs",
+          "status": "modified",
+          "sha256": "343ab47235848bb8605805df7eb2be94f5deb108eb3810eb90e61161e83da866",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "860c916f66fbc983609ac73550658c4d2db05e9257ac59a7686e33cfa1e3b8a1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
           "file": "scripts/probes/only-me-calendar-2026-11-27.mjs",
           "status": "added",
           "sha256": "2dffb81240c802f78197e34911bfdad2a3fcd856fbed610f3375db74b548d3a9",
@@ -6755,7 +6769,7 @@
         {
           "file": "supabase/migrations/20270346560000_calendar_only_me_entries.sql",
           "status": "added",
-          "sha256": "9990776034164b892cb22ed1d3e0ab7ebf9616c4ba0a01e27de98478a600a26e",
+          "sha256": "f408ef7dc4d3cef085a70b10956c46fbbc9698453a433ea0152d1a956f4bea12",
           "baseMode": "000000",
           "headMode": "100644"
         },
