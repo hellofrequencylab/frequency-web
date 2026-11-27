@@ -63,6 +63,69 @@ function oneBar() {
 }
 
 const CHECKS = {
+  // A server action is a callable endpoint. The ones only the tab's retired team mode called must
+  // not stay exported once nothing imports them (the LIVE-468 rule).
+  'HYG-254': async () => {
+    const { execSync } = await import('node:child_process')
+    const CAL = 'app/(main)/spaces/[slug]/settings/calendar/'
+    const f = []
+    for (const [file, names] of [
+      [CAL + 'vera-calendar-actions.ts', ['veraCalendarCommand', 'undoVeraChanges', 'listVeraChangeLog']],
+      [CAL + 'plan-actions.ts', ['startPlanFromEntry', 'createPenciledPlan', 'joinEntryToPlan']],
+    ]) {
+      const src = code(file)
+      for (const name of names) {
+        if (!new RegExp(`export async function ${name}\\b`).test(src)) continue
+        const users = execSync(`git grep -lw ${name} -- app components lib || true`, { encoding: 'utf8' })
+          .split('\n').filter((p) => p && p !== file && !/\.test\./.test(p))
+        if (users.length === 0) f.push(`${file} still exports ${name}, which nothing imports: a callable endpoint with no caller`)
+      }
+    }
+    return f
+  },
+  // Stage presentation comes from the registry. The List view this row first fixed left with the
+  // tab's team mode (SCAN-1344 follow-up); the registry and the Space profile block still carry it.
+  'LIVE-445': async () => {
+    const f = oneCalendarForEveryone()
+    if (existsSync('components/spaces/calendar-list-view.tsx')) f.push('the retired List view is back beside the team calendar')
+    if (/isCancelled:\s*false/.test(code('components/widgets/space-profile/events.tsx')))
+      f.push('space-profile/events.tsx hardcodes isCancelled: false again, so a cancelled event renders as a live brand chip')
+    const reg = await import('../../lib/calendar/registry.ts')
+    const chips = reg.ENTRY_STAGES.map((s) => s.chipClass)
+    if (chips.length < 4 || chips.some((c) => !c)) f.push('a stage resolves no chip of its own')
+    if (chips.some((c) => /primary|warning|signal|\/\d/.test(c))) f.push('a stage chip spends the brand accent, warning, signal or an opacity modifier again (ADR-1503)')
+    if (new Set(chips).size !== chips.length) f.push('two stages resolve to the same chip')
+    const off = reg.entryStage('cancelled')
+    if (!/line-through/.test(off.titleClass) || !/text-muted/.test(off.titleClass)) f.push('a cancelled title is no longer struck through and muted')
+    if (/bg-primary/.test(off.chipClass)) f.push('the cancelled chip carries the brand fill again')
+    return f
+  },
+  // The List detail pane and its hero left with the tab's team mode; nothing may bring the retired
+  // List back as a second team surface beside the team calendar.
+  'LIVE-496': () => {
+    const f = oneCalendarForEveryone()
+    if (existsSync('components/spaces/calendar-list-view.tsx')) f.push('the retired List view is back beside the team calendar')
+    return f
+  },
+  // A host that takes a control off the grid draws it. The console is gone; the page is the host now.
+  'LIVE-478': async () => {
+    const f = [...oneCalendarForEveryone(), ...oneBar()]
+    const hook = read('scripts/probe-ts.mjs')
+    if (!/^registerHooks\(/m.test(hook)) f.push('scripts/probe-ts.mjs never installs its resolver')
+    if (/\bload\s*\(/.test(hook)) f.push('scripts/probe-ts.mjs registers a load hook, so a probe no longer measures the shipped file')
+    const grd = await import('../../lib/events/calendar-grid.ts')
+    const host = grd.calendarChrome(true)
+    const page = grd.calendarChrome(false)
+    if (host.monthTitle !== false || host.paging !== false) f.push('the grid draws its own month and paging under a host again')
+    if (page.monthTitle !== true || page.paging !== true) f.push('a grid under no host draws no month or paging')
+    const marks = grd.PAGE_DRAWN_CONTROL_MARKS || {}
+    const ws = code(WORKSPACE)
+    for (const key of Object.keys(host)) {
+      if (host[key] !== false || key === 'viewSwitch') continue
+      if (!marks[key] || !ws.includes(marks[key])) f.push(`the tab takes ${key} off its grid and draws nothing in its place`)
+    }
+    return f
+  },
   // The tab shows everyone published events only; the team gets the full calendar one click away.
   'LIVE-380': () => {
     const f = oneCalendarForEveryone()
@@ -172,7 +235,7 @@ if (!check) {
   console.error(`unknown row ${id}; known: ${Object.keys(CHECKS).join(', ')}`)
   process.exit(2)
 }
-const failures = check()
+const failures = await check()
 if (failures.length) {
   for (const m of failures) console.error(`${id}: ${m}`)
   process.exit(1)

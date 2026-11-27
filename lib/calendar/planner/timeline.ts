@@ -8,14 +8,14 @@ import type { PlannerData } from './types'
 // percentages of the 63 day span, clamped to it; a bar that runs past either edge says so, so the
 // view can draw a chevron instead of passing off a clamped edge as a real date.
 
-export const TIMELINE_WEEKS = 9
+const TIMELINE_WEEKS = 9
 export const TIMELINE_DAYS = TIMELINE_WEEKS * 7
 /** The narrowest a bar or mark is drawn, in percent of the span, so a one-day date stays visible. */
 const MIN_MARK_PCT = 1.6
 
 type DueState = 'upcoming' | 'overdue' | 'done'
 
-export interface TimelineMark {
+interface TimelineMark {
   id: string
   leftPct: number
   widthPct: number
