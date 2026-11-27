@@ -11,6 +11,9 @@ import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
 import { belongsToRoomScope, isScopedRoomVisibility, scopedRoomRefusal } from '@/lib/messages/room-scope'
 import { extractReferences } from '@/lib/mentions/references'
 import { notifyRoomMentions, recordMessageReferences } from '@/lib/mentions/store'
+import { after } from 'next/server'
+import { firstLink } from '@/lib/link-preview/core'
+import { getLinkPreview } from '@/lib/link-preview'
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
 
@@ -270,6 +273,10 @@ export async function sendRoomMessage(roomId: string, body: string) {
       })
     }
   }
+
+  // The first outside link gets its preview card fetched after the reply (LIVE-2530), never in the way of the send.
+  const link = firstLink(trimmed)
+  if (link) after(() => getLinkPreview(admin, link))
 
   revalidatePath(`/messages/r/${roomId}`)
 }

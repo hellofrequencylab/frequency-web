@@ -246,7 +246,6 @@ async function nudgeOverdue(
     .eq('status', 'open')
     .not('plan_id', 'is', null)
     .not('space_id', 'is', null)
-    .not('assignee_profile_id', 'is', null)
     .gte('due_at', from)
     .lte('due_at', to)
     .limit(limit)
@@ -259,8 +258,10 @@ async function nudgeOverdue(
   out.remaining += tasks.length >= limit ? 1 : 0
   await spaceFacts(admin, tasks.map((t) => t.space_id as string), now, spaces)
   const planIds = [...new Set(tasks.map((t) => t.plan_id as string))]
-  const { data: plans } = await admin.from('space_plans').select('id, title, archived_at').in('id', planIds)
-  const planTitle = new Map((plans ?? []).filter((p) => !p.archived_at).map((p) => [p.id, p.title]))
+  const { data: plans } = await admin.from('space_plans').select('id, title, archived_at, owner_profile_id').in('id', planIds)
+  const live = (plans ?? []).filter((p) => !p.archived_at)
+  const planTitle = new Map(live.map((p) => [p.id, p.title]))
+  const planOwner = new Map(live.map((p) => [p.id, p.owner_profile_id as string | null]))
 
   const bySpace = new Map<string, OverdueTask[]>()
   for (const t of tasks) {
@@ -268,7 +269,16 @@ async function nudgeOverdue(
     const space = spaces.get(t.space_id as string)
     if (title === undefined || !space?.notifyNow) continue
     const list = bySpace.get(space.id) ?? []
-    list.push({ id: t.id, title: t.title, planTitle: title, assigneeProfileId: t.assignee_profile_id, dueDay: t.due_at ? t.due_at.slice(0, 10) : null, status: t.status })
+    list.push({
+      id: t.id,
+      title: t.title,
+      planTitle: title,
+      assigneeProfileId: t.assignee_profile_id,
+      // An unclaimed to-do (SCAN-1343) goes to the Plan's owner, else the Space's owner.
+      fallbackProfileId: planOwner.get(t.plan_id as string) ?? space.ownerProfileId ?? null,
+      dueDay: t.due_at ? t.due_at.slice(0, 10) : null,
+      status: t.status,
+    })
     bySpace.set(space.id, list)
   }
 

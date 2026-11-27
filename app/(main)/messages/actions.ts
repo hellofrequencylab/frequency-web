@@ -12,6 +12,9 @@ import { recordContactInteraction } from '@/lib/crm/interactions'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { extractReferences } from '@/lib/mentions/references'
 import { recordMessageReferences } from '@/lib/mentions/store'
+import { after } from 'next/server'
+import { firstLink } from '@/lib/link-preview/core'
+import { getLinkPreview } from '@/lib/link-preview'
 
 // ── In-app message → CRM timeline adapter (ADR-372 Phase 1) ────────────────────────────────────────
 // Fold a sent 1:1 DM onto the ONE interaction timeline (contact_interactions) so the contact card shows
@@ -235,6 +238,10 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     const refs = extractReferences(body).filter((r) => r.kind !== 'profile')
     await recordMessageReferences(admin, { sourceType: 'direct_message', sourceId: inserted.id as string, createdBy: myProfileId, refs })
   }
+
+  // The first outside link gets its preview card fetched after the reply (LIVE-2530), never in the way of the send.
+  const link = firstLink(body)
+  if (link) after(() => getLinkPreview(admin, link))
 
   // Tell the recipient (EMAIL-055): bell, push and email per their own Mentions switches, once per burst.
   if (others.length === 1) {

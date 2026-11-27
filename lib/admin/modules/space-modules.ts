@@ -221,7 +221,7 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Calendar (Events EC2/EC3): the space's own events on a month grid + a subscribe link to share. The
   // ONE place an owner reaches "create an event", the calendar view, and the public subscribe feed — so a
   // new business space has calendar options from day one, not only after it already has events.
-  { id: 'space.calendar', label: 'Calendar', desc: 'Your events on a calendar, create a new one, and share a subscribe link.', Icon: CalendarDays, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included', parent: 'space.content' },
+  { id: 'space.calendar', label: 'Calendar', desc: 'Your events, Plans and to-dos on one calendar, and a subscribe link to share.', Icon: CalendarDays, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included', parent: 'space.content' },
   // BOX 6 "Offerings and money" (ADR-846, reversing the ADR-544b split). ONE box for everything the space
   // charges for, opening the adaptive /settings/offerings surface that already stacks whichever services
   // apply. The commerce services stay first-class rows nested inside it, each still opening its own

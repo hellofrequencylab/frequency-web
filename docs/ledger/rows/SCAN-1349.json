@@ -4,16 +4,17 @@
   "lane": "live",
   "priority": "P3",
   "size": "M",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "lib/calendar/planner/suite-model.ts",
     "ref": "Plans and calendar clarity audit 2026-11-25 (project thread: Audit the project and calendar system; doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-25: the suite's view control has seven segments (Day, Week, Month, Agenda, List, Kanban, Timeline); three of them (List, Kanban, Timeline) all show every Plan. On a phone seven segments do not fit one row. Fix: Month, Week, Agenda, Plans; Day opens by tapping a date; inside Plans, Board, List and Timeline are a sort, not separate views.",
+  "detail": "FOUND 2026-11-25: the suite's view control has seven segments (Day, Week, Month, Agenda, List, Kanban, Timeline); three of them (List, Kanban, Timeline) all show every Plan. On a phone seven segments do not fit one row. Fix: Month, Week, Agenda, Plans; Day opens by tapping a date; inside Plans, Board, List and Timeline are a sort, not separate views. DONE 2026-11-25: SUITE_VIEWS is the four tabs (Month, Week, Agenda, Plans). Day opens from a date in the Week view; inside Plans a second control sorts the same Plans as Board, List or Timeline, and the Plans tab reopens the layout used last. Old cookie words still resolve.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/pm-audit-2026-11-25.mjs SCAN-1349",
-    "note": "Fails today; passes once the consequence in the title holds."
+    "note": "Passes while the calendar header offers four tabs or fewer."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-11-25"
 }

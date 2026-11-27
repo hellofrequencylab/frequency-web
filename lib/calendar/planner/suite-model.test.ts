@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { countByMonth, layerCounts, parseSuiteView, resolveSuiteView, suiteKeyAction, viewCookieValue } from './suite-model'
+import {
+  SUITE_VIEWS,
+  countByMonth,
+  layerCounts,
+  parseSuiteView,
+  resolveSuiteView,
+  suiteKeyAction,
+  tabOf,
+  viewCookieValue,
+  viewForTab,
+} from './suite-model'
 import type { PlannerData } from './types'
 
 const data: PlannerData = {
@@ -31,14 +41,32 @@ const data: PlannerData = {
   ],
 }
 
+describe('tabs', () => {
+  it('offers four: Month, Week, Agenda and Plans', () => {
+    expect(SUITE_VIEWS).toEqual(['month', 'week', 'agenda', 'plans'])
+  })
+  it('puts a day under its week and every Plan layout under Plans', () => {
+    expect(tabOf('day')).toBe('week')
+    expect(tabOf('month')).toBe('month')
+    expect(tabOf('list')).toBe('plans')
+    expect(tabOf('board')).toBe('plans')
+    expect(tabOf('timeline')).toBe('plans')
+  })
+  it('opens Plans on the layout used last', () => {
+    expect(viewForTab('plans', 'timeline')).toBe('timeline')
+    expect(viewForTab('agenda', 'timeline')).toBe('agenda')
+  })
+})
+
 describe('views', () => {
-  it('remembers Kanban as the word the Workflow tab used', () => {
+  it('remembers the Board as the word the Workflow tab used', () => {
     expect(viewCookieValue('board')).toBe('workflow')
     expect(viewCookieValue('week')).toBe('week')
   })
   it('reads old and new cookie words', () => {
     expect(parseSuiteView('admin')).toBe('month')
     expect(parseSuiteView('workflow')).toBe('board')
+    expect(parseSuiteView('plans')).toBe('board')
     expect(parseSuiteView('list')).toBe('list')
     expect(parseSuiteView('timeline')).toBe('timeline')
     expect(parseSuiteView('guest')).toBeNull()
@@ -55,7 +83,7 @@ describe('views', () => {
 })
 
 describe('keys', () => {
-  it('maps the seven view keys, today and paging', () => {
+  it('maps the view keys, today and paging', () => {
     expect(suiteKeyAction({ key: 'D' })).toEqual({ type: 'view', view: 'day' })
     expect(suiteKeyAction({ key: 'w' })).toEqual({ type: 'view', view: 'week' })
     expect(suiteKeyAction({ key: 'm' })).toEqual({ type: 'view', view: 'month' })

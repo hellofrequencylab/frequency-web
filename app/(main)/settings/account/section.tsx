@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import { getMyProfileId } from '@/lib/auth'
 import { getBlockedProfiles } from '@/lib/blocking'
 import { getInitials } from '@/lib/utils'
@@ -13,6 +14,8 @@ import { YourStanding } from './standing'
 import { createClient } from '@/lib/supabase/server'
 import { requestPasswordReset } from '@/app/sign-in/actions'
 import { SignInSubmit } from '@/app/sign-in/submit'
+import { turnOffMfa } from '@/app/sign-in/mfa-actions'
+import { isStaffAccount } from '@/lib/auth/staff-account'
 
 // The Account and privacy SECTION of the unified Settings page (DAWN 2 screen pass).
 // This is the server half that used to be app/(main)/settings/account/page.tsx,
@@ -37,6 +40,11 @@ export async function AccountSection() {
     data: { user: authUser },
   } = await (await createClient()).auth.getUser()
   const signInEmail = authUser?.email ?? null
+  // TWO-STEP CODE (SEC-046): shown to staff only, because only the staff gates enforce it. Resetting it
+  // needs a session that already proved a code (mfa-actions.ts re-checks), and the next admin visit asks
+  // for a fresh setup, which is how someone moves to a new phone.
+  const isStaff = await isStaffAccount()
+  const hasTwoStep = (authUser?.factors ?? []).some((f) => f.factor_type === 'totp' && f.status === 'verified')
 
   return (
     <div className="space-y-8">
@@ -53,6 +61,7 @@ export async function AccountSection() {
         <div>
           <p className="eyebrow text-muted mb-2">Sign-in and password</p>
           <form action={requestPasswordReset} className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+            <BotCheck />
             <input type="hidden" name="email" value={signInEmail} />
             <span className="min-w-0 flex-1 text-body-sm text-text">
               Sign in with a magic link, Google, or a password. To set or change your password, we will email a link
@@ -60,6 +69,24 @@ export async function AccountSection() {
             </span>
             <SignInSubmit variant="secondary">Email me a password link</SignInSubmit>
           </form>
+          {isStaff && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+              <span className="min-w-0 flex-1 text-body-sm text-text">
+                {hasTwoStep
+                  ? 'Two-step code is on. Admin asks for a code from your authenticator app once per sign-in. New phone? Reset it and set it up again.'
+                  : 'Staff need a two-step code from an authenticator app to open admin.'}
+              </span>
+              {hasTwoStep ? (
+                <form action={turnOffMfa}>
+                  <SignInSubmit variant="secondary">Reset two-step code</SignInSubmit>
+                </form>
+              ) : (
+                <Link href="/sign-in?step=mfa-setup&next=%2Fsettings%2Faccount" className="btn pa sm">
+                  Set up two-step code
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       )}
 

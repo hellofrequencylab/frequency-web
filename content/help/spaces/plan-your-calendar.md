@@ -5,7 +5,7 @@ category: spaces
 order: 8
 group: Run it day to day
 published: 2026-10-26
-updated: 2026-11-24
+updated: 2026-11-25
 audience: host
 featureKeys: [events]
 keywords: [tag a teammate, mention, pencil in a date, hold a date, planning, to-dos, kanban, team calendar, google calendar sync, time zone]
@@ -43,7 +43,7 @@ Quick add on any day also lets you drop in a **To-do**, a **Private** entry, or 
 
 ## Switch views
 
-The calendar has seven views: **Day**, **Week**, **Month**, **Agenda**, **List**, **Kanban** and **Timeline**. List, Kanban and Timeline show every Plan instead of a stretch of time, and Kanban groups them by stage. The calendar remembers the last view you used.
+The calendar has four views: **Month**, **Week**, **Agenda** and **Plans**. Tap a date in the Week view to see that one day. Plans shows every Plan instead of a stretch of time, laid out as a **Board** grouped by stage, a **List** or a **Timeline**. The calendar remembers the last view you used.
 
 **Team view** and **Public view** at the top switch between everything your team sees and what a visitor sees.
 

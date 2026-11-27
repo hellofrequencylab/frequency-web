@@ -114,12 +114,27 @@ export async function getDeal(id: string, spaceId?: string): Promise<CrmDeal | n
 
 // Activities on a deal. Optional spaceId scopes the read to one Space (a defense-in-depth
 // filter on top of deal_id, so a cross-space deal id leaks nothing); absent = global.
+// A deal's tasks live in crm_tasks (HYG-251) and are read in beside the activities, so the deal
+// timeline still shows them in one list, newest first.
 export async function getActivities(dealId: string, spaceId?: string): Promise<CrmActivity[]> {
-  const { data } = await scopeBySpace(
-    db().from('crm_activities').select('*').eq('deal_id', dealId),
-    spaceId,
-  ).order('created_at', { ascending: false })
-  const rows = (data as Record<string, unknown>[] | null) ?? []
+  const [{ data }, { data: taskData }] = await Promise.all([
+    scopeBySpace(db().from('crm_activities').select('*').eq('deal_id', dealId), spaceId).order('created_at', {
+      ascending: false,
+    }),
+    scopeBySpace(
+      db().from('crm_tasks').select('id, deal_id, title, status, due_at, completed_at, updated_at, created_by, created_at').eq('deal_id', dealId),
+      spaceId,
+    ).order('created_at', { ascending: false }),
+  ])
+  const taskRows: Record<string, unknown>[] = ((taskData as Record<string, unknown>[] | null) ?? []).map((t) => ({
+    ...t,
+    kind: 'task',
+    body: t.title,
+    completed_at: (t.completed_at as string) ?? (t.status === 'done' ? ((t.updated_at as string) ?? null) : null),
+  }))
+  const rows: Record<string, unknown>[] = [...((data as Record<string, unknown>[] | null) ?? []), ...taskRows].sort((a, b) =>
+    String(b.created_at).localeCompare(String(a.created_at)),
+  )
   const people = await resolvePeople(rows.map((r) => r.created_by).filter(Boolean) as string[])
   return rows.map((r) => ({
     id: r.id as string,
@@ -134,13 +149,14 @@ export async function getActivities(dealId: string, spaceId?: string): Promise<C
   }))
 }
 
-// Count of open tasks (a due-dated activity not yet completed). Optional spaceId scopes the
+// Count of open CRM tasks (not done, not snoozed). Optional spaceId scopes the
 // count to one Space (absent = the global admin count, unchanged).
+// Tasks live in crm_tasks (HYG-251); a Plan to-do is counted on its Plan, not here.
 export async function countOpenTasks(spaceId?: string): Promise<number> {
   const { count } = await scopeBySpace(
-    db().from('crm_activities').select('id', { count: 'exact', head: true }).eq('kind', 'task'),
+    db().from('crm_tasks').select('id', { count: 'exact', head: true }).eq('status', 'open'),
     spaceId,
-  ).is('completed_at', null)
+  ).is('plan_id', null)
   return count ?? 0
 }
 
@@ -335,12 +351,13 @@ export async function getFirstOpenStage(spaceId: string): Promise<{ id: string; 
   }
 }
 
-// ── Per-space tasks (CRM-STRATEGY §6/§7; crm_activities kind='task') ───────────────────────────────
-// A task is a crm_activities row with kind='task': a title (the `body`), an optional due date (due_at),
-// and a completion stamp (completed_at). It can hang off a deal (deal_id) and/or a contact (contact_id),
-// always scoped by space_id. The board's Tasks panel reads these and labels each one with the deal /
-// contact it points at. WRITES live in lib/crm/space-tasks.ts (owner-gated, space-scoped); this file
-// only READS (fail-safe, [] on error), matching the rest of the per-space pipeline read layer.
+// ── Per-space tasks (CRM-STRATEGY §6/§7; crm_tasks, HYG-251) ──────────────────────────────────────
+// A Space CRM task is a crm_tasks row with no plan_id: a title, an optional due date (due_at), and a
+// completion stamp (completed_at, with status 'done'). It can hang off a deal (deal_id) and/or a contact
+// (contact_id), always scoped by space_id. It lives in the one task table beside Plan to-dos and the
+// operator queue (it used to be a crm_activities row with kind='task'). The board's Tasks panel reads
+// these and labels each one with the deal / contact it points at. WRITES live in
+// lib/crm/space-tasks.ts (owner-gated, space-scoped); this file only READS (fail-safe, [] on error).
 
 /** PURE: split a Space's tasks into OPEN (due-soon first, then undated, then by creation) and DONE
  *  (most recently completed first). Deterministic with a stable id tiebreak so equal timestamps keep a
@@ -373,18 +390,18 @@ export function partitionTasks(tasks: SpaceTask[]): { open: SpaceTask[]; done: S
   return { open, done }
 }
 
-/** Every task (kind='task') for a Space, scoped by space_id, each labeled with the deal / contact it
- *  points at. FAIL-SAFE: [] on any read error / missing column (CRM-STRATEGY P3 fail-safe contract). */
+/** Every CRM task (crm_tasks, no Plan) for a Space, scoped by space_id, each labeled with the deal /
+ *  contact it points at. FAIL-SAFE: [] on any read error / missing column (CRM-STRATEGY P3 contract). */
 export async function getSpaceTasks(spaceId: string, limit = 200): Promise<SpaceTask[]> {
   if (!spaceId) return []
   try {
     const { data } = await scopeBySpace(
       db()
-        .from('crm_activities')
-        .select('id, body, due_at, completed_at, deal_id, contact_id, created_at')
-        .eq('kind', 'task'),
+        .from('crm_tasks')
+        .select('id, title, status, due_at, completed_at, updated_at, deal_id, contact_id, created_at'),
       spaceId,
     )
+      .is('plan_id', null)
       .order('created_at', { ascending: false })
       .limit(limit)
     const rows = (data as Record<string, unknown>[] | null) ?? []
@@ -405,9 +422,10 @@ export async function getSpaceTasks(spaceId: string, limit = 200): Promise<Space
         (dealId ? dealLabels.get(dealId) : null) ?? (contactId ? contactLabels.get(contactId) : null) ?? null
       return {
         id: r.id as string,
-        title: (r.body as string) ?? '',
+        title: (r.title as string) ?? '',
         due_at: (r.due_at as string) ?? null,
-        completed_at: (r.completed_at as string) ?? null,
+        // A task finished from the operator queue sets status only; its last touch is when.
+        completed_at: (r.completed_at as string) ?? (r.status === 'done' ? ((r.updated_at as string) ?? null) : null),
         deal_id: dealId,
         contact_id: contactId,
         created_at: r.created_at as string,

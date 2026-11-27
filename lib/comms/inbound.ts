@@ -25,7 +25,10 @@ import {
   verifyConversationToken,
   buildConversationReplyAddress,
   conversationSigningAvailable,
+  parseThreadReplyAddress,
+  verifyNoticeToken,
 } from '@/lib/comms/reply-address'
+import { routeThreadReply } from '@/lib/comms/thread-reply'
 import {
   getConversationByRef,
   appendConversationMessage,
@@ -355,6 +358,10 @@ type InboundRouteStatus =
   | 'error'
   | 'quarantined_alias'
   | 'no_owner'
+  // A reply into a hub thread (EMAIL-090) that was empty once its quoted trail was cut, or whose
+  // sender is no longer allowed in that thread.
+  | 'thread_empty'
+  | 'thread_refused'
 
 interface InboundRouteResult {
   status: InboundRouteStatus
@@ -393,6 +400,20 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
       await quarantineTenantReplyAlias(tenantAlias.reason, parsed.recipients, parsed.messageId)
       return { status: 'quarantined_alias' }
     }
+    // 1b) A reply to a hub notice email (EMAIL-090): the address names the bell row, which names who
+    //     may answer and where. Verified like a conversation token, then posted as that person.
+    const threadAddress = tenantAlias.kind === 'ready' ? null : parseThreadReplyAddress(parsed.recipients)
+    if (threadAddress) {
+      if (isAutomatedMessage(parsed)) return { status: 'dropped_automated' }
+      if (!verifyNoticeToken(threadAddress.noticeId, threadAddress.token)) return { status: 'bad_token' }
+      const posted = await routeThreadReply(createAdminClient(), threadAddress.noticeId, parsed.text)
+      if (posted === 'recorded') return { status: 'recorded' }
+      if (posted === 'duplicate') return { status: 'duplicate' }
+      if (posted === 'error') return { status: 'error' }
+      if (posted === 'no_notice') return { status: 'no_conversation' }
+      return { status: posted === 'empty' ? 'thread_empty' : 'thread_refused' }
+    }
+
     const token = tenantAlias.kind === 'ready'
       ? { ref: tenantAlias.ref, role: 'member' as const, token: '' }
       : parseConversationReplyAddress(parsed.recipients)

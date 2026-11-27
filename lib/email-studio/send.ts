@@ -21,6 +21,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
 import { keepConsentedRecipients } from '@/lib/email-studio/consent'
+import {
+  FINGERPRINT_MISMATCH_COPY,
+  FINGERPRINT_UNREADABLE_COPY,
+  checkApprovalFingerprint,
+  resetChangedCampaign,
+  stampApprovalFingerprint,
+} from '@/lib/email-studio/approval-fingerprint'
 import { loadCampaignPurpose, sendCategoryForPurpose } from '@/lib/email-studio/campaign-purpose'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
@@ -570,6 +577,13 @@ export async function scheduleCampaign(
     .eq('id', campaignId)
   if (error) return fail('Could not schedule this campaign.')
 
+  // EMAIL-086: scheduling locks the exact content and audience. Without the lock the send would go out unguarded,
+  // so a lock that cannot be written un-schedules the campaign instead.
+  if (!(await stampApprovalFingerprint(campaignId))) {
+    await db.from('campaigns').update({ status: row.status }).eq('id', campaignId)
+    return fail('Could not lock this campaign for sending. It was not scheduled. Try again.')
+  }
+
   return ok({ scheduledFor: when.toISOString(), count: audience.data.count })
 }
 
@@ -756,6 +770,15 @@ export async function sendCampaignNow(
   // scheduling cannot slip through).
   const personalError = row.segment === PERSONAL_LIST_SEGMENT ? personalListSenderError(row.segment, await loadCampaignFromName(campaignId)) : null
   if (personalError) return fail(personalError)
+
+  // EMAIL-086: the approval lock. A campaign approved or scheduled carries a fingerprint of its content and audience;
+  // if either changed since, refuse BEFORE the claim and put it back in draft. Unlocked campaigns (Send now) pass.
+  const lock = await checkApprovalFingerprint(campaignId)
+  if (lock === 'unreadable') return fail(FINGERPRINT_UNREADABLE_COPY)
+  if (lock === 'mismatch') {
+    await resetChangedCampaign(campaignId)
+    return fail(FINGERPRINT_MISMATCH_COPY)
+  }
 
   // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
   // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4). The Event and

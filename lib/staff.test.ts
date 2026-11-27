@@ -35,6 +35,8 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/auth', () => ({ getMyProfileId }))
 vi.mock('@/lib/view-as', () => ({ readViewAsTarget }))
 vi.mock('@/lib/permissions', () => ({ getCapabilityOverrides }))
+// SEC-046: the two-step step-up has its own tests (lib/auth/mfa.test.ts); here it always passes.
+vi.mock('@/lib/auth/mfa', () => ({ requireStaffAal2: async () => {} }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),

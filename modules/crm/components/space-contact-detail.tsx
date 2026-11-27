@@ -32,6 +32,9 @@ import { SpacePlaybookPicker } from '@/components/crm/space-playbook-picker'
 import { relativeTime, summarizeTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import { formatCustomFieldValue } from '@/lib/crm/import/custom-fields'
 import type { ValueType } from '@/lib/crm/import/types'
+import { getCallerProfile } from '@/lib/auth'
+import { spaceTeamPeople } from '@/lib/threads/team'
+import { ItemThread, ItemThreadToggle } from '@/components/threads/item-thread'
 
 // Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
 // instead of a row of identical clocks. Notes and QR scans keep their origin icon; everything else
@@ -116,6 +119,10 @@ export async function SpaceContactDetail({
   // how many touches there are and when the last one was, in plain relative voice.
   const { count: touchCount, lastTouchAt } = summarizeTimeline(timeline)
   const lastTouchAgo = relativeTime(lastTouchAt)
+  // The team thread on this person and on each deal (LIVE-2527): the Space's team only, so a staff
+  // read-only preview shows none.
+  const viewer = readOnly ? null : await getCallerProfile()
+  const team = viewer ? await spaceTeamPeople(spaceId, viewer.id) : []
 
   return (
     <section className="space-y-6">
@@ -207,19 +214,32 @@ export async function SpaceContactDetail({
         ) : (
           <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
             {deals.map((deal) => (
-              <li key={deal.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-body-sm font-semibold text-text">{deal.title}</p>
-                  <p className="mt-0.5 text-meta capitalize text-muted">{deal.status}</p>
+              <li key={deal.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-body-sm font-semibold text-text">{deal.title}</p>
+                    <p className="mt-0.5 text-meta capitalize text-muted">{deal.status}</p>
+                  </div>
+                  <p className="shrink-0 text-body-sm font-bold tabular-nums text-text">
+                    {formatMoney(deal.value, deal.currency)}
+                  </p>
                 </div>
-                <p className="shrink-0 text-body-sm font-bold tabular-nums text-text">
-                  {formatMoney(deal.value, deal.currency)}
-                </p>
+                {viewer && (
+                  <ItemThreadToggle subjectType="deal" subjectId={deal.id} spaceId={spaceId} people={team} label="Talk about this deal" placeholder="Write to your team about this deal" />
+                )}
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {/* Team thread on this person (LIVE-2527) */}
+      {viewer && (
+        <div>
+          <SectionHeader title="Team thread" />
+          <ItemThread subjectType="contact" subjectId={identity.id} spaceId={spaceId} people={team} placeholder="Write to your team about this person" />
+        </div>
+      )}
 
       {/* Timeline (interactions + private notes, newest first) */}
       <div>

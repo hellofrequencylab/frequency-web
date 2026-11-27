@@ -1,4 +1,5 @@
 import { GoogleMark } from '@/components/google-mark'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
 import Link from 'next/link'
 import { AuthFrame } from '@/components/frequency/auth/auth-frame'
 import { Field, Input } from '@/components/ui/field'
@@ -62,6 +63,7 @@ export function FrequencySignIn({
           you keep one account.
         </p>
         <form action={signInWithMagicLink} className="fqa-form">
+          <BotCheck />
           <input type="hidden" name="email" value={newAccountEmail} />
           <input type="hidden" name="mode" value="create" />
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
@@ -119,6 +121,7 @@ export function FrequencySignIn({
 
       {method === 'password' ? (
         <form action={signInWithPassword} className="fqa-form">
+          <BotCheck />
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           {emailField}
           <PasswordField mode="current" describedBy={errorMessage ? ALERT_ID : undefined} />
@@ -129,6 +132,7 @@ export function FrequencySignIn({
         </form>
       ) : (
         <form action={signInWithMagicLink} className="fqa-form">
+          <BotCheck />
           {nextValue && <input type="hidden" name="next" value={nextValue} />}
           <input type="hidden" name="mode" value="signin" />
           {emailField}
