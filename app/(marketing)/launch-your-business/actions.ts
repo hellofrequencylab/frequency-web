@@ -19,6 +19,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { signInWithGoogle, sendSignupLink } from '@/app/sign-in/actions'
 import { getMyProfileId } from '@/lib/auth'
+import { BOT_CHECK_FIELD, botCheckToken } from '@/lib/auth/bot-check'
 import { claimedHandle, serializeDraft } from '@/lib/create-space/builder'
 import { claimErrorHref, type ClaimErrorCode } from '@/lib/create-space/claim-error'
 import { readDraftByToken, saveDraft } from '@/lib/create-space/draft-io'
@@ -129,6 +130,9 @@ export async function claimWithEmail(formData: FormData): Promise<ClaimResult> {
   const send = new FormData()
   send.set('email', email)
   send.set('next', handed.next)
+  // The invisible bot check (SEC-047) rides through: sendSignupLink refuses a send without it once the check is on.
+  const token = botCheckToken(formData)
+  if (token) send.set(BOT_CHECK_FIELD, token)
   const sent = await sendSignupLink(send)
   return sent.ok ? { ok: true, email, keepBuildingHref: handed.keepBuildingHref } : { ok: false, error: sent.error }
 }

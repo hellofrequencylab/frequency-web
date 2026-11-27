@@ -10,6 +10,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
+import { BOT_CHECK_FIELD } from '@/lib/auth/bot-check'
 import { claimWithEmail, claimWithGoogle, continueSignedIn } from '@/app/(marketing)/launch-your-business/actions'
 import { serializeDraft } from '@/lib/create-space/builder'
 import { browserZone } from '@/lib/create-space/lead'
@@ -62,6 +64,9 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
   const zone = useSyncExternalStore(subscribeZone, browserZone, serverZone)
   const [err, setErr] = useState('')
   const [pending, start] = useTransition()
+  // The invisible bot check (SEC-047). A token works once, so each send remounts the widget for a fresh one.
+  const [botToken, setBotToken] = useState('')
+  const [botRound, setBotRound] = useState(0)
   const email = draft.email.trim()
   const hostName = draft.hostName.trim() || 'you'
 
@@ -75,7 +80,10 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
       data.set('draft', serializeDraft(draft))
       const tz = browserZone()
       if (tz) data.set('tz', tz)
+      if (botToken) data.set(BOT_CHECK_FIELD, botToken)
       const res = await claimWithEmail(data)
+      setBotToken('')
+      setBotRound((n) => n + 1)
       if (!res.ok) { setErr(res.error); return }
       onHandOver()
       onSaved({ email: res.email, keepBuildingHref: res.keepBuildingHref })
@@ -124,6 +132,7 @@ export function SaveCard({ draft, handle, siteName, kitLabel, coverSrc, trapped,
             </button>
           </form>
           <button type="button" className="cs-email-go" onClick={sendLink} disabled={pending}>Email my link to {email || 'my email'}</button>
+          <BotCheck key={botRound} onToken={setBotToken} />
           <p className="cs-fine cs-fine-c">No password, no card. Saving makes your free account and host profile. You agree to the <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
         </>
       )}
@@ -144,6 +153,8 @@ interface SavedCardProps {
 export function SavedCard({ draft, firstOffer, tools, saved, trapped }: SavedCardProps) {
   const [again, setAgain] = useState<'idle' | 'sent' | 'failed'>('idle')
   const [pending, start] = useTransition()
+  const [botToken, setBotToken] = useState('')
+  const [botRound, setBotRound] = useState(0)
 
   const resend = () => {
     if (trapped) { setAgain('sent'); return }
@@ -153,7 +164,11 @@ export function SavedCard({ draft, firstOffer, tools, saved, trapped }: SavedCar
       data.set('draft', serializeDraft(draft))
       const tz = browserZone()
       if (tz) data.set('tz', tz)
-      setAgain((await claimWithEmail(data)).ok ? 'sent' : 'failed')
+      if (botToken) data.set(BOT_CHECK_FIELD, botToken)
+      const res = await claimWithEmail(data)
+      setBotToken('')
+      setBotRound((n) => n + 1)
+      setAgain(res.ok ? 'sent' : 'failed')
     })
   }
 
@@ -178,6 +193,7 @@ export function SavedCard({ draft, firstOffer, tools, saved, trapped }: SavedCar
         {saved.keepBuildingHref ? <Link className="cs-go" href={saved.keepBuildingHref}>Keep building<FqIcon name="arrow" size={16} /></Link> : null}
         {again === 'sent' ? <span className="cs-again-ok">Sent again</span> : <button type="button" className="cs-again" onClick={resend} disabled={pending}>Send it again</button>}
         {again === 'failed' ? <span role="alert" className="cs-err">That did not send. Try again in a few minutes.</span> : null}
+        {again === 'sent' ? null : <BotCheck key={botRound} onToken={setBotToken} />}
       </div>
     </div>
   )

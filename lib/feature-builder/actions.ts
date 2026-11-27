@@ -8,6 +8,7 @@
 import { redirect } from 'next/navigation'
 import { signInWithGoogle, sendSignupLink } from '@/app/sign-in/actions'
 import { getMyProfileId } from '@/lib/auth'
+import { BOT_CHECK_FIELD, botCheckToken } from '@/lib/auth/bot-check'
 import { feature as featureEntry, finishHref, isFeatureId, type FeatureId } from './catalog'
 import { parseDraft } from './draft'
 import { applyFeature } from './apply'
@@ -45,6 +46,9 @@ export async function claimFeatureWithEmail(formData: FormData): Promise<ClaimRe
   const send = new FormData()
   send.set('email', email)
   send.set('next', finishHref(got.feature))
+  // The invisible bot check (SEC-047) rides through: sendSignupLink refuses a send without it once the check is on.
+  const token = botCheckToken(formData)
+  if (token) send.set(BOT_CHECK_FIELD, token)
   const sent = await sendSignupLink(send)
   return sent.ok ? { ok: true, email } : { ok: false, error: sent.error }
 }
