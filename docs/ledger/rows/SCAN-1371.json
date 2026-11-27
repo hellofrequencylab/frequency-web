@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1371",
+  "title": "The welcome email cannot go out twice for one member",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/email.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: sendWelcomeEmail (lib/email.ts:234-258) queues with no dedupeKey although the outbox supports one, and writeInduction runs from both completeInduction and finalizePendingInduction (app/join/(induction)/actions.ts:512,728). A double submit or a finalize after a complete sends the welcome twice. Fix: dedupeKey welcome:<profile id>.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1371",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1365",
+  "title": "The 150 Founding Year seats cannot be oversold by checkout sessions opened before the last seat went",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/billing/space-plan-checkout.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: the seat cap is read once, when the checkout session is created (lib/billing/space-plan-checkout.ts:335-336). The session sets no expires_at (Stripe default is 24 hours) and lib/billing/founding-year-record.ts records a seat from any paid session without checking the cap. Several sessions opened at seat 149 can all complete. Low risk today (3 seats taken) but the offer is sold as '150, numbered'. Fix: a short expires_at on Founding Year sessions, and the recorder refunds or falls back to the plain yearly price past the cap.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1365",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

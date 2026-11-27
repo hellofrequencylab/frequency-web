@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1362",
+  "title": "A /pricing plan button carries the chosen plan into the builder, signed in or out",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/create-space/door.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: the plan cards link to /spaces/new?plan=business (lib/site.ts:240-252, lib/pricing/pricing-grid.ts:385). Signed out, the proxy sends that to /launch-your-business and lib/create-space/door.ts never reads plan. Signed in with LAUNCH_SYSTEM_ENABLED on (it is, production 2026-11-27), app/(main)/spaces/new/page.tsx:57-64 rebuilds the /launch/start query from niche and mode only. Someone who clicked Business finishes on a free Space with no prompt to buy. Fix: carry plan through door.ts and the launch start query, and open the plan step (or the billing page) at the end of the launch when it is set.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1362",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

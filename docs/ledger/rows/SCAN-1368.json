@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1368",
+  "title": "A quick-builder draft survives a link opened in another browser, and the four quick builders are measured",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/feature-builder/hold.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: /free-spotlight, /create-a-space, /launch-your-website and /email-marketing keep the draft only in the fq_feature_hold cookie (3 days, lib/feature-builder/hold.ts), with no server copy and no reminder, unlike Launch Your Business (create_space_drafts plus 1h/1d/3d reminders). A magic link opened in another browser lands on /feed with nothing saved. No component under components/frequency/site/pages/feature-builder emits an event. Fix: save to the same draft store with the same reminder rules, and emit start, claim and finish signals through the create-space signal pipe.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1368",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1363",
+  "title": "The /join magic link opened in another browser still finishes the induction with the answers given",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/sign-in/actions.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: sendSignupLink (app/sign-in/actions.ts:211-214) stamps no funnel_seq on the account, unlike the seq path (:158), and the induction answers sit only in the fq_pending_induction cookie (join actions.ts:732-734). Mail apps and Instagram open links in a different browser, so the person lands on /feed with a generated handle and no name, photo or town; the lead row that holds the name is never used to recover. Production 2026-11-27: 28 beta_induction leads, 16 converted (57%). Fix: stash the pending answers server side against the lead (signup_leads already has payload and a claim token) and stamp the funnel on the account at send time, so /join/complete can finish from any browser.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1363",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

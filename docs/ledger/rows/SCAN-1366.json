@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1366",
+  "title": "A Space plan Upgrade click and a Space plan trial start are both counted",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/billing/space-plan-checkout.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: commerce.checkout_started fires only on marketplace and ticket buttons; the Space plan billing page and space-plan-checkout never emit it. A trial-only Checkout Session completes with payment_status other than paid, and purchaseConversionFromSession returns null for it (lib/analytics/purchase.ts:48), with no event in lib/billing/space-subscriptions.ts either, so the first sale of the business cannot be measured from click to trial. Landing, sign-up start and return are covered by EMAIL-089; this row is the money end only.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1366",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}
