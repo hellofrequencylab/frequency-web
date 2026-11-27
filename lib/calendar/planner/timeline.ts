@@ -1,21 +1,21 @@
 import { KINDS, TODO_DOT } from './kinds'
-import { addDays, dayLabel, diffDays, lastDay, mondayOnOrBefore, monthDayLabel } from './days'
+import { addDays, dayLabel, diffDays, lastDay, weekStartOnOrBefore, monthDayLabel } from './days'
 import { planStats, stageLabel, type Health } from './board'
 import type { PlannerData } from './types'
 
-// THE TIMELINE: nine weeks that start the Monday before this week, one row per live Plan, with a bar
+// THE TIMELINE: nine weeks that start the week before this one (lib/calendar/week-start.ts), one row per live Plan, with a bar
 // from its first date or due to-do to its last, a mark per date and a dot per to-do. Positions are
 // percentages of the 63 day span, clamped to it; a bar that runs past either edge says so, so the
 // view can draw a chevron instead of passing off a clamped edge as a real date.
 
-export const TIMELINE_WEEKS = 9
+const TIMELINE_WEEKS = 9
 export const TIMELINE_DAYS = TIMELINE_WEEKS * 7
 /** The narrowest a bar or mark is drawn, in percent of the span, so a one-day date stays visible. */
 const MIN_MARK_PCT = 1.6
 
 type DueState = 'upcoming' | 'overdue' | 'done'
 
-export interface TimelineMark {
+interface TimelineMark {
   id: string
   leftPct: number
   widthPct: number
@@ -50,7 +50,7 @@ export interface TimelineRow {
 }
 
 export interface Timeline {
-  /** First day of the span: last Monday. */
+  /** First day of the span: the first day of last week. */
   start: string
   weeks: { label: string; leftPct: number }[]
   todayPct: number
@@ -64,7 +64,7 @@ export function dueState(due: string, done: boolean, today: string): DueState {
 
 /** The nine-week timeline for the live (not cancelled) Plans. */
 export function buildTimeline(data: PlannerData, today: string): Timeline {
-  const start = addDays(mondayOnOrBefore(today), -7)
+  const start = addDays(weekStartOnOrBefore(today), -7)
   const spanEnd = addDays(start, TIMELINE_DAYS)
   const pos = (key: string) => Math.max(0, Math.min(100, (diffDays(start, key) * 100) / TIMELINE_DAYS))
   const past = (key: string): 'before' | 'after' | null => (key < start ? 'before' : key >= spanEnd ? 'after' : null)

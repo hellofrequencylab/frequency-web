@@ -1,16 +1,20 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-describe('createPenciledPlan action contract', () => {
+// The staff calendar's createPenciledPlan action retired with that calendar (SCAN-1345, 2026-11-27).
+// The team calendar pencils a date in through pencilItIn (pencil-actions.ts), and Vera still creates
+// a penciled Plan through the one transactional database function.
+describe('penciling a Plan in: one Plan, its dates, behind the editor gate', () => {
   const source = readFileSync('app/(main)/spaces/[slug]/settings/calendar/plan-actions.ts', 'utf8')
+  const pencil = readFileSync('app/(main)/spaces/[slug]/settings/calendar/pencil-actions.ts', 'utf8')
   const migration = readFileSync('supabase/migrations/20270345007000_create_penciled_plan.sql', 'utf8')
 
-  it('validates title and date, then creates one entry, one Plan, and links them', () => {
-    expect(source).toContain('export async function createPenciledPlan(')
-    expect(source).toContain('parsePlanInput({ title, stage: \'pencil\', targetKind: \'event\' })')
-    expect(source).toContain('parseEntryInput(input)')
-    expect(source).toContain('createPenciledPlanRows(editor.spaceId, parsedPlan.data.title, parsedEntry.data)')
-    expect(source).toContain('return ok({ id: created.data.planId, entryId: created.data.entryId })')
+  it('validates the Plan and each date, and archives the Plan when a date cannot be held', () => {
+    const action = pencil.slice(pencil.indexOf('export async function pencilItIn('))
+    expect(action).toContain("parsePlanInput({ title: p.title, stage: 'pencil', targetKind: 'event' })")
+    expect(action).toContain('parseEntryInput(input)')
+    expect(action).toContain('await archiveSpacePlanRows(editor.spaceId, planId)')
+    expect(source).not.toContain('export async function createPenciledPlan(')
     expect(migration).toContain('create or replace function public.create_penciled_plan(')
     expect(migration).toContain('insert into public.space_plans')
     expect(migration).toContain('insert into public.space_calendar_entries')
@@ -18,9 +22,9 @@ describe('createPenciledPlan action contract', () => {
   })
 
   it('keeps the action behind the existing editor capability gate', () => {
-    const action = source.slice(source.indexOf('export async function createPenciledPlan('))
+    const action = pencil.slice(pencil.indexOf('export async function pencilItIn('))
     expect(action).toContain('const editor = await resolveEditor(slug)')
-    expect(action).toContain('if (!editor) return fail(\'You do not have access to this calendar.\')')
+    expect(action).toContain("if (!editor) return fail('You do not have access to this calendar.')")
   })
 
   it('moves a Plan and every linked calendar date through one transactional action', () => {

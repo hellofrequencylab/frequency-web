@@ -62,6 +62,13 @@ describe('planItemEdit', () => {
     expect(planItemEdit(item(), { title: '   ' })).toEqual({ kind: 'refused', line: 'Give the date a title.' })
   })
 
+  it('writes the public description of an event on its way, and an unchanged one is a no-op', () => {
+    const { call } = written(planItemEdit(item(), { description: '  A slow supper by the water.  ' }))
+    expect(call.input.description).toBe('A slow supper by the water.')
+    expect(written(planItemEdit(item({}, { description: 'Old copy' }), { description: '   ' })).call.input.description).toBeNull()
+    expect(planItemEdit(item({}, { description: 'Same' }), { description: 'Same ' })).toEqual({ kind: 'noop' })
+  })
+
   it('says nothing when nothing changed', () => {
     expect(planItemEdit(item(), { title: 'Supper club', date: '2026-10-21', startMin: 1080, durMin: 120, notes: 'Bring plates' })).toEqual({ kind: 'noop' })
   })

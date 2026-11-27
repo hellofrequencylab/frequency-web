@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-379",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readFileSync(\"supabase/migrations/20270345005500_calendar_stages_and_description.sql\",\"utf8\");if(!/stage in \\(.pencil., .planning., .production., .cancelled.\\)/.test(mig))fail(\"the stage check is missing\");if(!mig.includes(\"function public.keep_pencil_date\"))fail(\"keep this date is not atomic\");if(!mig.includes(\"create trigger space_calendar_entries_stage_sync\"))fail(\"the database does not own the stage and status pairing\");const reg=fs.readFileSync(\"lib/calendar/registry.ts\",\"utf8\");if(!/export const ENTRY_STAGES/.test(reg))fail(\"no stage registry\");const form=fs.readFileSync(\"components/calendar-suite/suite-details.tsx\",\"utf8\");if(!/label=\"Stage\"/.test(form)||!/edit\\(\\{ stage: next \\}\\)/.test(form))fail(\"the team calendar Details panel has no stage control, so a Pencil cannot be moved to anything else\");if(!form.includes(\"data-entry-description\")||!/edit\\(\\{ description \\}\\)/.test(form))fail(\"the team calendar Details panel has no description field, so the copy an event on its way carries cannot be written on the calendar\");const t=fs.readFileSync(\"components/calendar-suite/suite-details.render.test.tsx\",\"utf8\");if(!/description: .A slow supper by the water../.test(t))fail(\"no render test proves the description field saves\")'",
+      "note": "Passes when the migration declares the four stages, the trigger and the atomic keep function, the registry declares ENTRY_STAGES, and the drawer has an unlocked Type plus stage and description fields. Written 2026-09-16."
+    }
+  },
+  "append": {
+    "detail": "2026-11-27 (SCAN-1345, owner approved the probe rewrite 11-27): the staff calendar drawer was retired; the stage and description arms now read the team calendar Details panel (suite-details.tsx), which gained the Description field in the same PR, and its render test."
+  }
+}

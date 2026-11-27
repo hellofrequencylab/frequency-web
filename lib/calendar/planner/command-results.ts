@@ -22,6 +22,8 @@ export type CommandRow =
   | { id: string; type: 'today'; label: string; meta: string }
   | { id: string; type: 'plan'; ref: string; label: string; meta: string }
   | { id: string; type: 'item'; ref: string; day: string; label: string; meta: string }
+  /** Hand the words to Ask Vera, who proposes changes and writes nothing until they are accepted. */
+  | { id: string; type: 'vera'; ask: string; label: string; meta: string }
 
 const MAX_ROWS = 9
 
@@ -41,6 +43,8 @@ export function commandRows(opts: {
   views: readonly SuiteTab[]
   plans: readonly Pick<PlannerPlan, 'id' | 'title' | 'stage'>[]
   items: readonly Pick<PlannerItem, 'id' | 'title' | 'kind' | 'date'>[]
+  /** The viewer may change this calendar, so Ask Vera is offered for anything typed. */
+  vera?: boolean
 }): CommandRow[] {
   const q = opts.query.trim().toLowerCase()
   const rows: CommandRow[] = []
@@ -62,6 +66,13 @@ export function commandRows(opts: {
     for (const i of opts.items.filter((i) => i.title.toLowerCase().includes(q)).slice(0, 4)) {
       rows.push({ id: `item:${i.id}`, type: 'item', ref: i.id, day: i.date, label: i.title, meta: `${KINDS[i.kind].word} · ${dayLabel(i.date)}` })
     }
+  }
+  // ASK VERA, LAST AND ALWAYS THERE (owner ruling 2026-11-27: Vera comes to the team calendar). The
+  // bar reads one thing at a time; Vera reads a sentence like "move every Friday supper club in
+  // December to 8pm" and answers with a proposal. It keeps its own slot past the row cap.
+  const raw = opts.query.trim()
+  if (opts.vera && raw.length > 2) {
+    return [...rows.slice(0, MAX_ROWS - 1), { id: 'vera', type: 'vera', ask: raw, label: `Ask Vera: ${raw}`, meta: 'Proposes changes' }]
   }
   return rows.slice(0, MAX_ROWS)
 }

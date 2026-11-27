@@ -51,11 +51,11 @@ afterEach(() => {
   container = null
 })
 
-function mount() {
+function mount(extra: { initialAsk?: string; defaultOpen?: boolean } = {}) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
-  act(() => root!.render(<VeraCalendarBox slug="lab" year={2026} month1={9} plans={[]} events={[]} />))
+  act(() => root!.render(<VeraCalendarBox slug="lab" year={2026} month1={9} plans={[]} events={[]} {...extra} />))
   return container!
 }
 
@@ -81,6 +81,35 @@ function openAndAsk(el: HTMLElement, ask: string) {
 }
 
 const buttonNamed = (el: ParentNode, text: string) => [...el.querySelectorAll('button')].find((b) => b.textContent === text)
+
+describe('VeraCalendarBox, handed an ask by the team calendar command bar', () => {
+  it('opens, reads the words once on arrival, and shows the proposal without applying anything', async () => {
+    mocks.command.mockResolvedValueOnce({
+      data: {
+        kind: 'proposal',
+        changes: [{ kind: 'archive', planId: PLAN_B }],
+        note: 'Archived the sequel.',
+        timeZone: 'UTC',
+        context: { plans: { [PLAN_B]: 'Sound bath, the sequel' }, entries: {} },
+      },
+    })
+    let el!: HTMLDivElement
+    await settle(() => {
+      el = mount({ initialAsk: 'archive the sequel', defaultOpen: true })
+    })
+    expect(mocks.command).toHaveBeenCalledTimes(1)
+    expect(mocks.command.mock.calls[0][1]).toMatchObject({ ask: 'archive the sequel', year: 2026, month1: 9 })
+    expect(el.textContent).toContain('Sound bath, the sequel')
+    expect(mocks.apply).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing on arrival when nothing was handed over', async () => {
+    await settle(() => {
+      mount({ defaultOpen: true })
+    })
+    expect(mocks.command).not.toHaveBeenCalled()
+  })
+})
 
 describe('VeraCalendarBox, clarify before proposing', () => {
   it('renders the question with its options, sends the answer with the transcript, then renders the proposal', async () => {

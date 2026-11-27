@@ -1,0 +1,13 @@
+{
+  "id": "PROG-CAL1",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const walk=(d,out)=>{for(const n of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,n.name);if(n.isDirectory()){if(n.name!==\"node_modules\")walk(p,out)}else if(/\\.tsx?$/.test(n.name)&&!/\\.test\\./.test(n.name))out.push(p)}return out};const files=[\"app\",\"components\",\"lib\"].flatMap((d)=>fs.existsSync(d)?walk(d,[]):[]);const callers=(sym,own)=>files.filter((f)=>f!==own&&fs.readFileSync(f,\"utf8\").indexOf(sym)>=0);if(!callers(\"notesForDay\",\"lib/calendar/day-notes.ts\").length)fail(\"day notes are dead: nothing outside lib/calendar/day-notes.ts and its own test reads notesForDay, so a note written on a day never reaches a calendar anyone looks at\");if(!callers(\"findClashes\",\"lib/calendar/planner/clash.ts\").length)fail(\"clash warnings are dead: nothing outside lib/calendar/planner/clash.ts and its own test calls findClashes, so a Pencil can be laid on an occupied slot with no warning\");const s=[\"components/calendar-suite/suite-month.tsx\",\"components/calendar-suite/suite-week.tsx\"].map((f)=>fs.readFileSync(f,\"utf8\")).join(\"\\n\");if(!/ctx\\.clashes\\.has\\(/.test(s))fail(\"the team calendar computes clashes and never draws them, so the warning exists only in data the owner never sees\");if(!fs.existsSync(\"components/calendar-suite/suite-pencil.tsx\"))fail(\"the team calendar offers no Pencil it in, so an owner cannot hold a tentative date at all\")'",
+      "note": "Measures the consequences: notesForDay has a non-test caller outside its own module (components/events/event-calendar.tsx renders the labels), findEntryClashes has one outside entry-actions.ts (staff-calendar.tsx), the staff calendar RENDERS the clashes it fetches rather than dropping them, and it offers a pencil stage at all. Walks app/, components/ and lib/ in pure node, no grep or rg, so the verdict is the same on a runner without either. Replaced an existence-grep probe (HYG-108) that asserted day-notes.ts contained the string notesForDay. Re-probed 2026-09-21: all four were already true, so the row stays done — this is the one PROG-CAL phase the old probe was accidentally right about."
+    }
+  },
+  "append": {
+    "detail": "2026-11-27 (SCAN-1345, owner approved the probe rewrite 11-27): the staff calendar was retired; the clash and pencil arms now read the team calendar (findClashes in lib/calendar/planner/clash.ts, drawn by suite-month and suite-week, and suite-pencil.tsx). findEntryClashes was removed with it."
+  }
+}

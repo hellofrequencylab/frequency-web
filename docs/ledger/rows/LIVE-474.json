@@ -5,9 +5,13 @@
       "kind": "cmd",
       "cmd": "node scripts/probes/public-calendar-tab.mjs LIVE-474",
       "note": "Rewritten 2026-11-27 for SCAN-1344 (owner approved the rewrite, \"Yes, rewrite them\"). The public Calendar tab is now one guest calendar for everyone with an Open team calendar button; the team half of this row lives on the team calendar (components/calendar-suite). The probe checks what still applies to the tab and that the team half has its home there. The old probe read the team mode out of calendar-workspace.tsx."
+    },
+    "source": {
+      "file": "components/spaces/calendar-workspace.tsx",
+      "ref": "owner report and design asks 2026-09-23, on the live console"
     }
   },
   "append": {
-    "detail": "2026-11-27 (SCAN-1344): the public Calendar tab stopped carrying its own team mode, per the owner ruling of 2026-11-25 (\"Public only, link to team\"). The team half of this row now lives on the team calendar at /spaces/<slug>/settings/calendar; the probe was rewritten to measure that."
+    "detail": "2026-11-27 (SCAN-1344): the public Calendar tab stopped carrying its own team mode, per the owner ruling of 2026-11-25 (\"Public only, link to team\"). The team half of this row now lives on the team calendar at /spaces/<slug>/settings/calendar; the probe was rewritten to measure that.\n\n2026-11-27 (SCAN-1344 follow-up): components/spaces/calendar-console.tsx was removed with the rest of the public tab's retired team mode; source re-pointed to the tab."
   }
 }

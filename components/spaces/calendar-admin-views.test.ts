@@ -17,7 +17,15 @@ const RETIRED = [
   'components/spaces/calendar-pm-console.tsx',
   'lib/calendar/month-timeline.ts',
   'lib/calendar/project-board.ts',
+  // The public tab's retired team mode (SCAN-1344): the team works on the calendar suite.
+  'components/spaces/calendar-list-view.tsx',
+  'components/spaces/calendar-workflow-view.tsx',
+  'components/spaces/calendar-console.tsx',
+  'components/spaces/calendar-time-views.tsx',
+  'lib/calendar/time-views.ts',
 ]
+// Ask Vera left the public tab with its team mode and came back on the team calendar (owner ruling
+// 2026-11-27): the box exists again, and the public tab must still not mount it.
 
 describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
   const page = readFileSync('app/(main)/spaces/[slug]/(profile)/calendar/page.tsx', 'utf8')
@@ -32,8 +40,6 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     'lib/calendar/admin-views.ts',
     'lib/calendar/list-index.ts',
     'lib/calendar/workflow-board.ts',
-    'components/spaces/calendar-list-view.tsx',
-    'components/spaces/calendar-workflow-view.tsx',
   ]
     .map((path) => readFileSync(path, 'utf8'))
     .join('\n')
@@ -81,10 +87,11 @@ describe('Admin Calendar views (ADR-1464, ADR-1467, HYG-118)', () => {
     // The four views, by name, from the one registry the toggle renders.
     expect(views).toContain("['guest', 'admin', 'list', 'workflow']")
     for (const file of RETIRED) {
-      expect(existsSync(file), `${file} is back; the Projects chain was retired in HYG-118`).toBe(false)
+      expect(existsSync(file), `${file} is back; it was retired (HYG-118 for the Projects chain, SCAN-1344 for the tab team mode)`).toBe(false)
     }
     expect(shell).not.toContain('CalendarTimelineView')
     expect(shell).not.toContain('CalendarProjectsView')
+    expect(shell).not.toContain('VeraCalendarBox')
     // An old bookmark or a stale freq-cal-view cookie holding the retired values must still resolve.
     expect(views).toMatch(/value === 'projects'\)\s*return 'workflow'/)
     expect(views).toMatch(/value === 'timeline'\)\s*return 'admin'/)
