@@ -15,7 +15,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-type SpaceSaleKind = 'ticket' | 'donation'
+type SpaceSaleKind = 'ticket' | 'donation' | 'order'
 
 export interface SpaceSale {
   id: string
@@ -180,4 +180,121 @@ export async function listSpaceTicketAndDonationSales(spaceId: string, opts: { l
     })
   }
   return out.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+}
+
+/**
+ * WHAT ONE PERSON BOUGHT FROM A SPACE (LIVE-2549), for their contact record: tickets to this Space's
+ * events, gifts to this Space, and shop orders this Space sold, newest first. The person is matched by
+ * their member profile when they have one, and by the email on a guest ticket otherwise. Scoped to the
+ * Space on every read, so a contact record never shows what the person bought somewhere else.
+ * FAIL-SOFT to [].
+ */
+export async function listSpacePurchasesForPerson(
+  spaceId: string,
+  person: { profileId: string | null; email: string | null },
+  opts: { limit?: number } = {},
+): Promise<SpaceSale[]> {
+  const email = person.email?.trim().toLowerCase() || null
+  if (!spaceId || (!person.profileId && !email)) return []
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200)
+  try {
+    const mine = (s: { buyerProfileId: string | null; guestEmail: string | null }) =>
+      (person.profileId && s.buyerProfileId === person.profileId) || (email && s.guestEmail?.toLowerCase() === email)
+
+    const [tickets, donations, orders] = await Promise.all([
+      ticketSales(spaceId, 200).catch(() => ({ rows: [] as TicketRow[], titles: new Map<string, string>() })),
+      person.profileId
+        ? donationSales(spaceId, 200).catch(() => [] as DonationRow[])
+        : Promise.resolve([] as DonationRow[]),
+      person.profileId ? orderSales(spaceId, person.profileId, limit).catch(() => [] as SpaceSale[]) : Promise.resolve([] as SpaceSale[]),
+    ])
+    const out: SpaceSale[] = [...orders]
+    for (const t of tickets.rows) {
+      if (!mine({ buyerProfileId: t.buyer_profile_id, guestEmail: t.guest_email })) continue
+      const status = saleStatus(t.status, t.refunded_at)
+      if (!status) continue
+      out.push({
+        id: t.id,
+        kind: 'ticket',
+        title: tickets.titles.get(t.event_id) ?? 'Event',
+        qty: Math.max(1, Number(t.qty) || 1),
+        amountCents: Number(t.amount_cents) || 0,
+        feeCents: Number(t.platform_fee_cents) || 0,
+        currency: t.currency ?? 'usd',
+        buyer: null,
+        buyerEmail: t.guest_email,
+        at: t.succeeded_at,
+        status,
+        stripePaymentIntentId: t.stripe_payment_intent_id,
+      })
+    }
+    for (const d of donations) {
+      if (d.donor_profile_id !== person.profileId) continue
+      const status = saleStatus(d.status, d.refunded_at)
+      if (!status) continue
+      out.push({
+        id: d.id,
+        kind: 'donation',
+        title: 'Donation',
+        qty: 1,
+        amountCents: Number(d.amount_cents) || 0,
+        feeCents: Number(d.platform_fee_cents) || 0,
+        currency: d.currency ?? 'usd',
+        buyer: null,
+        buyerEmail: null,
+        at: d.succeeded_at,
+        status,
+        stripePaymentIntentId: d.stripe_payment_intent_id,
+      })
+    }
+    return out.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, limit)
+  } catch (error) {
+    console.error('[commerce/space-sales] purchases unreadable:', error)
+    return []
+  }
+}
+
+/** Shop orders one member bought from one Space (settled or refunded). */
+async function orderSales(spaceId: string, profileId: string, limit: number): Promise<SpaceSale[]> {
+  const { data, error } = await db()
+    .from('commerce_orders')
+    .select('id, amount_cents, platform_fee_cents, currency, status, created_at, stripe_payment_intent_id, commerce_order_items ( title, qty )')
+    .eq('owner_space_id', spaceId)
+    .eq('buyer_profile_id', profileId)
+    .in('status', ['paid', 'fulfilled', 'refunded'])
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(error.message)
+  type Row = {
+    id: string
+    amount_cents: number | null
+    platform_fee_cents: number | null
+    currency: string | null
+    status: string
+    created_at: string
+    stripe_payment_intent_id: string | null
+    commerce_order_items: { title: string | null; qty: number | null }[] | null
+  }
+  return ((data ?? []) as unknown as Row[]).map((o) => {
+    const items = o.commerce_order_items ?? []
+    return {
+      id: o.id,
+      kind: 'order' as const,
+      title: (items[0]?.title ?? 'Order') + (items.length > 1 ? ` +${items.length - 1}` : ''),
+      qty: items.reduce((n, i) => n + (Number(i.qty) || 1), 0) || 1,
+      amountCents: Number(o.amount_cents) || 0,
+      feeCents: Number(o.platform_fee_cents) || 0,
+      currency: o.currency ?? 'usd',
+      buyer: null,
+      buyerEmail: null,
+      at: o.created_at,
+      status: o.status === 'refunded' ? ('refunded' as const) : ('paid' as const),
+      stripePaymentIntentId: o.stripe_payment_intent_id,
+    }
+  })
+}
+
+/** What a person has spent with a Space, net of refunds. PURE. */
+export function lifetimeSpendCents(sales: Pick<SpaceSale, 'amountCents' | 'status'>[]): number {
+  return sales.reduce((n, s) => n + (s.status === 'paid' ? s.amountCents : 0), 0)
 }

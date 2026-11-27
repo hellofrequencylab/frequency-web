@@ -43,7 +43,7 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Failed',
 }
 
-const KIND_LABEL: Record<SpaceSale['kind'], string> = { ticket: 'Ticket', donation: 'Donation' }
+const KIND_LABEL: Record<SpaceSale['kind'], string> = { ticket: 'Ticket', donation: 'Donation', order: 'Order' }
 
 type Row = { at: string; order: CommerceOrder; sale?: undefined } | { at: string; sale: SpaceSale; order?: undefined }
 
