@@ -7,6 +7,7 @@ import { listSpaceTicketAndDonationSales, type SpaceSale } from '@/lib/commerce/
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
 import { OrderShareNote } from '@/components/marketplace/order-share-note'
 import { setOrderFulfillmentAction } from './shop-actions'
+import { RefundSaleButton } from './refund-sale-button'
 
 // The Orders tab of the Shop console (ADR-596). A Space's sales + earnings, scoped by owner_space_id
 // (listOrdersForSeller filters owner_profile_id, which is null for a Space, so a Space's orders are
@@ -24,6 +25,9 @@ import { setOrderFulfillmentAction } from './shop-actions'
 // ticket sales and donations; the list used to read shop orders alone, so a ticket sale showed in the
 // totals and nowhere else. Every sale now lists with who bought, what, how much, when and its status,
 // newest first, so the list and the cards count the same sales.
+//
+// EVERY SALE THAT STANDS CAN BE REFUNDED HERE (LIVE-2550), by the owner or a Space admin. A split
+// order (this Space's share of a charge that pays other sellers too) has no door: it stays with staff.
 
 function usd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -47,7 +51,18 @@ const KIND_LABEL: Record<SpaceSale['kind'], string> = { ticket: 'Ticket', donati
 
 type Row = { at: string; order: CommerceOrder; sale?: undefined } | { at: string; sale: SpaceSale; order?: undefined }
 
-export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: string; slug: string; readOnly?: boolean }) {
+export async function OrdersTab({
+  spaceId,
+  slug,
+  readOnly = false,
+  canRefund = false,
+}: {
+  spaceId: string
+  slug: string
+  readOnly?: boolean
+  /** The viewer is the owner or a Space admin, so each sale that stands carries a Refund door. */
+  canRefund?: boolean
+}) {
   const [orders, sales, earnings] = await Promise.all([
     listSpaceOrders(spaceId, { limit: 50 }),
     listSpaceTicketAndDonationSales(spaceId, { limit: 50 }),
@@ -104,6 +119,9 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
                 </div>
                 <p className="shrink-0 text-body-sm font-semibold text-text">{usd(r.sale.amountCents)}</p>
               </div>
+              {canRefund && r.sale.status === 'paid' && r.sale.kind !== 'order' && r.sale.amountCents > 0 ? (
+                <RefundSaleButton slug={slug} kind={r.sale.kind} id={r.sale.id} amountLabel={usd(r.sale.amountCents)} />
+              ) : null}
             </li>
           ) : (
             <li key={r.order.id} className="p-4" data-order-fulfilment={r.order.needsFulfilment ? r.order.fulfillmentStatus : undefined}>
@@ -121,6 +139,9 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
                 <p className="shrink-0 text-body-sm font-semibold text-text">{usd(r.order.amountCents)}</p>
               </div>
               <OrderShareNote order={r.order} />
+              {canRefund && !r.order.share && r.order.fundsFlow !== 'separate' && (r.order.status === 'paid' || r.order.status === 'fulfilled') ? (
+                <RefundSaleButton slug={slug} kind="order" id={r.order.id} amountLabel={usd(r.order.amountCents)} />
+              ) : null}
               <OrderFulfilmentControl
                 order={r.order}
                 action={setOrderFulfillmentAction.bind(null, slug, r.order.id)}

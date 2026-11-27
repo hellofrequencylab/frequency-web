@@ -417,6 +417,48 @@ async function recordSpaceDonationRefund(paymentIntentId: string | null): Promis
   }
 }
 
+/**
+ * A Space refunds a gift it received (LIVE-2550). Before this a donation could only go back from the
+ * Stripe dashboard, which a Space owner cannot open for a destination charge. The donation is pinned
+ * to the Space, so a manager of one Space cannot refund another's gift. A destination charge unwinds
+ * with both flags: the transfer comes back from the Space's account and any fee Frequency kept is
+ * returned, so the donor is made whole. Idempotent: an already refunded gift answers ok.
+ */
+export async function refundSpaceDonation(donationId: string, spaceId: string): Promise<{ ok?: true; error?: string }> {
+  if (!stripe || !(await payoutsLive())) return { error: 'Giving is not turned on yet.' }
+  const { data, error } = await db()
+    .from('space_donations')
+    .select('id, status, refunded_at, stripe_payment_intent_id')
+    .eq('id', donationId)
+    .eq('space_id', spaceId)
+    .maybeSingle()
+  if (error) return { error: 'We could not read that donation. Try again.' }
+  const row = data as { id: string; status: string | null; refunded_at: string | null; stripe_payment_intent_id: string | null } | null
+  if (!row) return { error: 'Donation not found.' }
+  if (row.status === 'refunded' || row.refunded_at) return { ok: true }
+  if (row.status !== 'succeeded') return { error: 'Only a completed donation can be refunded.' }
+  if (!row.stripe_payment_intent_id) return { error: 'This donation has no charge to refund.' }
+  try {
+    await stripe.refunds.create({
+      payment_intent: row.stripe_payment_intent_id,
+      reverse_transfer: true,
+      refund_application_fee: true,
+      metadata: { kind: 'space_donation', donation_id: row.id, space_id: spaceId },
+    })
+  } catch (err) {
+    console.error('[space-donation] refund failed', { donationId, err })
+    return { error: 'Refund failed at the payment processor.' }
+  }
+  // The money has moved. The charge.refunded webhook records the same flip, so a DB refusal here is
+  // logged and left for its redelivery, never reported as a failed refund.
+  try {
+    await recordSpaceDonationRefund(row.stripe_payment_intent_id)
+  } catch (err) {
+    console.error('[space-donation] refund not recorded yet; the charge.refunded webhook retries it', { donationId, err })
+  }
+  return { ok: true }
+}
+
 /** The `charge.refunded` shape, matching recordTipRefundFromCharge: only a FULL refund flips the row
  *  (a partial refund leaves the gift recorded and the ledger honest), and the PaymentIntent is what
  *  resolves it back to a donation. No-ops for a charge that is not ours. */

@@ -224,3 +224,10 @@ describe('the finder’s fee on a donation', () => {
     expect(src).not.toMatch(/spaceTakeRateCents\(/)
   })
 })
+
+describe('refundSpaceDonation (LIVE-2550)', () => {
+  it('refuses while giving is off, before reading or moving anything', async () => {
+    const { refundSpaceDonation } = await import('./space-donation-checkout')
+    expect(await refundSpaceDonation('d1', 's1')).toEqual({ error: 'Giving is not turned on yet.' })
+  })
+})
