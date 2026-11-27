@@ -25,19 +25,6 @@ export function parseTimeView(raw: string | string[] | null | undefined): Calend
   return CALENDAR_TIME_VIEWS.includes(value as CalendarTimeView) ? (value as CalendarTimeView) : null
 }
 
-/** Per-Space cookie for the last time view, beside the surface cookie (ADR-1467). A separate cookie
- *  because `freq-cal-view-*` names the operator PANEL and its values are pinned. An empty value
- *  means "back on the month". */
-export function timeViewCookieName(slug: string): string {
-  const safe = slug.replace(/[^a-z0-9-]/gi, '').slice(0, 80).toLowerCase()
-  return `freq-cal-look-${safe || 'space'}`
-}
-
-export function rememberTimeView(slug: string, view: CalendarTimeView | null): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `${timeViewCookieName(slug)}=${view ?? ''}; Path=/; Max-Age=31536000; SameSite=Lax`
-}
-
 // ─── DAY KEYS ────────────────────────────────────────────────────────────────────────────────────
 
 const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/

@@ -1,18 +1,8 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from 'react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import { createPortal } from 'react-dom'
-import { LayoutDashboard, Maximize2, Plus } from 'lucide-react'
+import { LayoutDashboard } from 'lucide-react'
 import { EventCalendar } from '@/components/events/event-calendar'
 import {
   CalendarLayerChips,
@@ -23,153 +13,38 @@ import {
   monthCount,
 } from '@/components/events/calendar-chrome'
 import { addMonth, monthLabel } from '@/lib/events/calendar-grid'
-import { headerZone } from '@/lib/time/header-zone'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StaffCalendar, STAFF_CALENDAR_LAYERS } from '@/app/(main)/spaces/[slug]/settings/calendar/staff-calendar'
 import { CalendarModeToggle } from '@/components/spaces/calendar-mode-toggle'
-import { CalendarListView } from '@/components/spaces/calendar-list-view'
-import { CalendarWorkflowView } from '@/components/spaces/calendar-workflow-view'
-import { CalendarTimeViews } from '@/components/spaces/calendar-time-views'
-import { CalendarConsole, keyTargetIsTyping } from '@/components/spaces/calendar-console'
-import {
-  adminViewHref,
-  calendarViewBlurb,
-  CALENDAR_ADMIN_VIEWS,
-  rememberCalendarView,
-  type CalendarAdminView,
-  surfaceOf,
-  listScopeOf,
-  viewForSurface,
-  surfaceHasMonth,
-  type CalendarSurface,
-  type CalendarListScope,
-} from '@/lib/calendar/admin-views'
-import {
-  CALENDAR_TIME_VIEW_DEFS,
-  rememberTimeView,
-  type CalendarTimeView,
-} from '@/lib/calendar/time-views'
+import { calendarViewBlurb, surfaceHasMonth, surfaceOf, viewForSurface, type CalendarSurface } from '@/lib/calendar/admin-views'
 import { MEMBER_SURFACES } from '@/lib/calendar/member-calendar'
 import { audienceHref } from '@/lib/calendar/audience'
-import { listIndexItems, selectListItem } from '@/lib/calendar/list-index'
-import { workflowBoard } from '@/lib/calendar/workflow-board'
 import type { CalendarEvent } from '@/lib/calendar/item'
 import type { CalendarLayerKey } from '@/lib/calendar/registry'
-// Type only: astro-markers.ts pulls astronomy-engine (116 KB minified in the browser build).
 import type { AstroMarker as SkyMarker } from '@/lib/calendar/astro-markers'
-import type { DayNote } from '@/lib/calendar/day-notes'
-import { planStageLabel, type SpacePlan } from '@/lib/calendar/plans'
-import type { WorkflowStage } from '@/lib/calendar/workflow-board'
-import { PlanDrawer } from '@/app/(main)/spaces/[slug]/settings/calendar/plan-drawer'
-import { VeraCalendarBox } from '@/components/spaces/vera-calendar-box'
-import { cn } from '@/lib/utils'
 
-// OPERATOR CALENDAR SHELL (ADR-1467). Guest and Admin data load once on the
-// server. Switching a view slides the already-mounted panels. The last view
-// is a cookie. Unsigned visitors never receive this shell with admin events.
+// THE PUBLIC CALENDAR TAB (SCAN-1344, owner ruling 2026-11-25: "Public only, link to team").
 //
-// THE CONSOLE (PROG-CAL12, redesigned 2026-09-22). The same panel set, shown in one of two homes:
-// inline on the page, or inside CalendarConsole, a full-screen overlay. There is ONE panel tree and
-// ONE Plan drawer either way; the workspace keeps the month, the view, the List selection and the
-// open Plan, and the panels read them wherever they sit. On the page the staff grid pages by its
-// buttons only (owner ruling); in the console the wheel and a swipe page too. `?console=1` travels
-// with `view`, `item` and `plan`, pushed as a history entry on open so the Back button is an exit.
+// /spaces/<slug>/calendar is the calendar a guest sees, and it is the same calendar for EVERYONE,
+// the Space's own team included. It used to carry a second team calendar for operators (the older
+// staff grid, a List index, a Workflow board, a full-screen console and Ask Vera) beside the team
+// calendar at /spaces/<slug>/settings/calendar, so a team member learned two tools that shared
+// data but not behaviour. The team's tools live in one place now. A viewer who may run the Space's
+// events gets one button, "Open team calendar", that goes there; nobody else sees it.
 //
-// 🔴 THE BLINK, AND WHY THE STAGE IS A PORTAL NOW (owner report 2026-09-22: "both event edit and
-// full screen calendar console are super glitchy, blinking on and off"). The panel set used to be
-// written into the tree TWICE, once as `<CalendarConsole>{panels}</CalendarConsole>` and once as a
-// bare `<>{vera}{panels}</>`, with a ternary choosing between them. React reconciles children by
-// their POSITION under a parent, so flipping that ternary is not a move: it unmounts the whole
-// calendar and mounts a fresh one. Every open and every close destroyed both EventCalendar grids,
-// StaffCalendar, VeraCalendarBox, every month those grids had fetched, and (because the entry form
-// is a Dialog rendered by StaffCalendar) the entry being edited, then rebuilt all of it while the
-// console's own panel replayed its 0.3s slide. Proven in calendar-workspace.render.test.tsx by DOM
-// node identity: the `[data-calendar-root]` node before the toggle was not the node after it.
-//
-// The fix is to stop moving it in the React tree. The set is rendered at ONE position, into a
-// portal whose container (`makeStageHost`) is a plain div this component owns and React never
-// renders; a layout effect appends that div to the page slot or to the console's stage. The React
-// parent never changes, so nothing unmounts, and because the move happens in the layout phase of
-// the same commit the browser paints once. The host is held back until after hydration (the
-// `isClient` shape components/ui/dialog.tsx already uses) so the server still ships the calendar
-// inside its page slot and the first client render is one React accepts against that HTML.
-//
-// 🔴 THE SERVER'S COPY IS INERT, AND THE LIVE SET IS BUILT ONCE (LIVE-481). The hold above used to
-// mean the client rendered the panels INLINE for the hydration pass and then, one commit later,
-// through the portal: a change of React position, so both grids, the Vera box and every month they
-// had fetched were unmounted and built a second time on the first paint of every Space calendar
-// page. The row's first fix (render the host and move the rendered subtree) was built and reverted:
-// `createPortal` is load-bearing for React's event delegation, and a rendered subtree re-parented
-// under the console Dialog's own portal container never gets its keystrokes. So the portal stays,
-// and the position change goes instead: on the client the page slot never holds the panels as React
-// children. The server renders them into the slot as before, and the client's hydration pass renders
-// the same slot as a LEAF (`dangerouslySetInnerHTML` with `suppressHydrationWarning`), which is the
-// documented way to tell React that what the server put inside an element is content the client
-// will manage itself. React adopts the element, leaves its children alone, and creates no fiber for
-// them. After hydration the live set mounts once, through the portal, and the layout effect that
-// parks the host sweeps the server's copy out of the slot in the same layout phase, so the reader
-// sees the server's grid until the live one replaces it in one paint. `calendar-workspace.render.
-// test.tsx` measures it end to end: a real `renderToString`, a real `hydrateRoot`, one grid mount per
-// grid alive, no recoverable hydration error. Guests keep the plain inline slot: they never get a
-// host, so their position never changes and there is nothing to adopt.
-//
-// TWO HOSTS, NOT ONE (PROG-CAL13). Ask Vera used to ride inside the stage, which put it in a
-// full-width band above the grid in both homes. The owner asked for it at the FOOT OF THE SIDE BAR,
-// which is a different place in the console and the same place on the page, so it gets a host of its
-// own and travels the same live way: one React position, one DOM move, the same node either side.
-// Moving it by writing it into two places would be the very bug this file exists to document.
-
-/** Marks the history entry the console pushed, so popstate can tell Back from any other traversal. */
-const CONSOLE_STATE = '__frequencyCalendarConsole'
-
-// True on the client, false during SSR + the first hydration pass, without a setState-in-effect.
-const emptySubscribe = () => () => {}
-const onTheClient = () => true
-const duringHydration = () => false
-
-/** What the client renders INTO a slot whose live content comes through a portal: nothing of its own.
- *  One frozen object, so React never sees a changed prop and never writes the slot's innerHTML
- *  (which would wipe the server's copy before the live set is there, or the host after it is). See
- *  🔴 THE SERVER'S COPY IS INERT above. */
-const INERT_MARKUP = Object.freeze({ __html: '' })
-
-// The layout phase on the client, a plain effect on the server, where react-dom/server warns about
-// useLayoutEffect and the move below has no DOM to make anyway. The idiom dock-bar.tsx and the
-// space-canvas editor mount already use.
-const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
-
-/** The stage's portal container: a plain div this component owns and React never renders, so moving
- *  it between homes is a DOM move and nothing in the tree above or below it unmounts. `display:
- *  contents` as an inline style, not a class, because no class scanner would ever see it. */
-function makeStageHost(): HTMLDivElement | null {
-  if (typeof document === 'undefined') return null
-  const el = document.createElement('div')
-  el.style.display = 'contents'
-  return el
-}
+// What stays here is what a visitor needs: the Up next band, one control bar (the month, paging,
+// the jump panel, the member's filter, Grid or List, and Subscribe), and the month grid. The bar
+// draws the month controls, so the grid runs with `hostChrome` and draws none of its own.
 
 export function CalendarWorkspace({
   slug,
-  spaceId,
   brandName,
-  adminAllowed,
-  canManage,
-  initialView,
-  initialListItem,
-  initialPlanId,
-  initialConsole = false,
-  initialTimeView = null,
-  initialDay,
+  showTeamLink = false,
   initialYear,
   initialMonth1,
   monthPinned = false,
   guestEvents,
   guestFirstUse,
-  adminEvents,
-  dayNotes,
-  plans,
-  spaceTimeZone = null,
   subscribe,
   upcoming = null,
   memberLayers = [],
@@ -179,64 +54,28 @@ export function CalendarWorkspace({
 }: {
   eventOrigin?: string
   slug: string
-  spaceId: string
   brandName: string
-  adminAllowed: boolean
-  canManage: boolean
-  initialView: CalendarAdminView
-  initialListItem: string | null
-  initialPlanId: string | null
-  /** `?console=1`: open the console on load, on the same view and drawer the link names. */
-  initialConsole?: boolean
-  /** `?look=day|week|timeline` or the remembered one: the operator's Day, Week or Timeline (LIVE-1178). */
-  initialTimeView?: CalendarTimeView | null
-  /** The Space's own day when the page loaded (YYYY-MM-DD). Today's mark and the time views' first day. */
-  initialDay?: string
+  /** The viewer may run this Space's events: draw the one button to the team calendar. */
+  showTeamLink?: boolean
   initialYear: number
   initialMonth1: number
   /** The link named the month (`?y=&m=`): the browser leaves it where the link put it. */
   monthPinned?: boolean
   guestEvents: CalendarEvent[]
   guestFirstUse: boolean
-  adminEvents: CalendarEvent[]
-  dayNotes: DayNote[]
-  plans: SpacePlan[]
-  /** The Space's own zone (spaces.time_zone, LIVE-471). One value, read once on the server, so the
-   *  console header, the staff drawer and Ask Vera cannot name three different zones. Null when the
-   *  Space has never said, and only then does the viewer's browser zone decide. */
-  spaceTimeZone?: string | null
   subscribe: ReactNode
-  /** THE UP NEXT BAND (LIVE-520), server-rendered and slotted in the way `subscribe` is: what is
-   *  next at this Space, above the control bar. Null (or a component that renders null) when the
-   *  Space has published nothing ahead — honest-empty, so no heading over nothing. */
+  /** THE UP NEXT BAND (LIVE-520), server-rendered: what is next at this Space, above the control
+   *  bar. Null (or a component that renders null) when nothing is ahead, so no heading over nothing. */
   upcoming?: ReactNode
-  /** The layers a MEMBER may filter by, already reduced to the ones that would filter something
-   *  (`memberLayerChoices`). Empty means no chips are drawn at all, because a one-option filter
-   *  cannot change what you see. */
+  /** The layers a member may filter by, already reduced to the ones that would filter something
+   *  (`memberLayerChoices`). Empty means no chips at all: a one-option filter changes nothing. */
   memberLayers?: readonly CalendarLayerKey[]
-  /** THE SKY (LIVE-526), server-computed and handed straight through to BOTH grids. Passing it to
-   *  only one is the LIVE-478 failure shape: the marker would be in this file, satisfying a source
-   *  probe, while the audience that needed it saw nothing. */
+  /** THE SKY (LIVE-526), server-computed and handed straight to the grid. */
   skyMarkers?: readonly SkyMarker[]
   loadGuestMonth: (year: number, month1: number) => Promise<CalendarEvent[]>
 }) {
-  const [view, setView] = useState<CalendarAdminView>(adminAllowed ? initialView : 'guest')
-  const [listKey, setListKey] = useState<string | null>(initialListItem)
-  const [planId, setPlanId] = useState<string | null>(initialPlanId)
-  const [planEntryId, setPlanEntryId] = useState<string | null>(null)
-  // The shown month, owned here so the grids, the console header and its agenda read one value.
   const [month, setMonth] = useState({ year: initialYear, month1: initialMonth1 })
-  // ONE HEADER BAR (LIVE-485). The grid's month-or-list view and its hidden layers are owned here
-  // for the same reason `month` is: the console header draws both controls now, and a control drawn
-  // outside the grid cannot hold state that lives inside it. On the page the grid draws them itself
-  // and reports through the same two setters, so a switch made on the page is still the one the
-  // console opens on.
   const [gridView, setGridView] = useState<'grid' | 'list'>('grid')
-  // DAY, WEEK OR TIMELINE (LIVE-1178): a way of looking that rides on the Calendar panel. Null is
-  // the month grid or the agenda, whichever `gridView` says. The anchor is the day the view is on.
-  const todayDay = initialDay ?? `${initialYear}-${String(initialMonth1).padStart(2, '0')}-01`
-  const [timeView, setTimeView] = useState<CalendarTimeView | null>(adminAllowed && initialView === 'admin' ? initialTimeView : null)
-  const [timeAnchor, setTimeAnchor] = useState(todayDay)
   const [hiddenLayers, setHiddenLayers] = useState<ReadonlySet<CalendarLayerKey>>(() => new Set())
   const toggleLayer = useCallback((key: CalendarLayerKey) => {
     setHiddenLayers((cur) => {
@@ -246,602 +85,65 @@ export function CalendarWorkspace({
       return next
     })
   }, [])
-  const [consoleOpen, setConsoleOpen] = useState(adminAllowed && initialConsole)
-  const [newEntryRequest, setNewEntryRequest] = useState(0)
-  const [currentPlans, setCurrentPlans] = useState(plans)
-  const [currentAdminEvents, setCurrentAdminEvents] = useState(adminEvents)
-  const [serverSnapshot, setServerSnapshot] = useState({ plans, adminEvents })
-  // Bumped when Vera's accepted proposal lands (PROG-CAL10): the month grid drops its fetched
-  // months the same way it does after a drawer save. The fresh plans and entries for the page's
-  // own month arrive as props in the action's round trip (revalidate), as every save's do.
-  const [veraRefreshKey, setVeraRefreshKey] = useState(0)
-  // THE ONE LINE A MOVE LEAVES (PROG-CAL15). The grid announces it, the console header shows it, and
-  // it is the same string: it is held here because those are two different children of this shell.
-  const [moveLine, setMoveLine] = useState('')
-  if (plans !== serverSnapshot.plans || adminEvents !== serverSnapshot.adminEvents) {
-    setServerSnapshot({ plans, adminEvents })
-    setCurrentPlans(plans)
-    setCurrentAdminEvents(adminEvents)
+
+  // Grid or List, the member's two surfaces (MEMBER_SURFACES). No cookie and no URL write: the
+  // grid/list choice has never been in the address, so a share link stays clean.
+  const surface = surfaceOf('guest', gridView)
+  const selectSurface = useCallback((next: CalendarSurface) => {
+    if (!MEMBER_SURFACES.includes(next)) return
+    setGridView(viewForSurface(next, 'month', 'guest').gridView)
+  }, [])
+
+  const monthButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [jumpOpen, setJumpOpen] = useState(false)
+  const [jumpYear, setJumpYear] = useState(month.year)
+  const countByMonth = useMemo(() => countByMonthKey(guestEvents), [guestEvents])
+  const closeJump = () => {
+    setJumpOpen(false)
+    monthButtonRef.current?.focus()
   }
-  const openControlRef = useRef<HTMLButtonElement>(null)
-  // Set by every exit; the effect below puts focus back on the control that opened the console once
-  // the console's own Dialog has finished restoring (its cleanup runs first).
-  const restoreFocusRef = useRef(false)
-
-  // THE STAGE HOST. See the 🔴 note at the top of this file: one panel set, one React parent, and a
-  // plain div that moves between the page slot and the console's stage.
-  const isClient = useSyncExternalStore(emptySubscribe, onTheClient, duringHydration)
-  const [stageHostEl] = useState(makeStageHost)
-  const [veraHostEl] = useState(makeStageHost)
-  // Held back until after hydration, so nothing is portalled while React is still adopting the
-  // server's HTML. Guests never get one: they have no console to move a stage into, and a viewer who
-  // cannot edit gets no Vera host.
-  const stageHost = isClient && adminAllowed ? stageHostEl : null
-  const veraHost = isClient && adminAllowed && canManage ? veraHostEl : null
-  // Whether a slot is the page's home for a travelling host (its live content arrives through the
-  // portal) or the plain inline home the server and a guest render into. The server pass renders the
-  // panels inline either way, so the HTML it ships has the calendar in it; on the client a slot that
-  // will hold a host is a leaf from its very first render, the server's copy inside it left alone
-  // (🔴 THE SERVER'S COPY IS INERT). Read per render, not at module load, so the server pass is the
-  // one without a window rather than the one that imported first.
-  const serverPass = typeof window === 'undefined'
-  const stageIsHome = adminAllowed && !serverPass
-  const veraIsHome = stageIsHome && canManage
-  const stageSlotRef = useRef<HTMLDivElement>(null)
-  const veraSlotRef = useRef<HTMLDivElement>(null)
-  const consoleStageRef = useRef<HTMLDivElement>(null)
-  const consoleVeraRef = useRef<HTMLDivElement>(null)
-
-  const items = useMemo(() => (adminAllowed ? listIndexItems(currentAdminEvents) : []), [adminAllowed, currentAdminEvents])
-  const selected = useMemo(() => selectListItem(items, listKey), [items, listKey])
-  const workflowColumns = useMemo(() => (adminAllowed ? workflowBoard(currentPlans, currentAdminEvents) : []), [adminAllowed, currentPlans, currentAdminEvents])
-  const openPlan = useMemo(() => currentPlans.find((plan) => plan.id === planId) ?? null, [currentPlans, planId])
-
-  const stageChanged = useCallback((changedPlanId: string, stage: WorkflowStage) => {
-    const planStage = stage === 'cancelled' ? 'plan' : stage
-    setCurrentPlans((all) => stage === 'cancelled'
-      ? all.filter((plan) => plan.id !== changedPlanId)
-      : all.map((plan) => plan.id === changedPlanId ? { ...plan, stage: planStage } : plan))
-    setCurrentAdminEvents((all) => all.map((event) => event.planId === changedPlanId
-      ? {
-          ...event,
-          stage: stage === 'plan' ? 'planning' : stage,
-          isCancelled: stage === 'cancelled',
-          // The stage's one word (LIVE-470). This line used to title-case the raw value and
-          // special-case `plan`, which is a fifth spelling of the registry's table.
-          sourceLabel: planStageLabel(stage),
-        }
-      : event))
-  }, [])
-
-  // Archive (HYG-120) mirrors the store: the Plan leaves the board, its pencilled dates leave the
-  // grid, a date that became an event stays and forgets the Plan. The server re-render that follows
-  // the action's revalidatePath then confirms this from the row, through serverSnapshot above.
-  const planArchived = useCallback((archivedPlanId: string) => {
-    setCurrentPlans((all) => all.filter((plan) => plan.id !== archivedPlanId))
-    setCurrentAdminEvents((all) => all
-      .filter((event) => !(event.planId === archivedPlanId && !event.eventId))
-      .map((event) => (event.planId === archivedPlanId ? { ...event, planId: null } : event)))
-  }, [])
-
-  // The URL mirrors view, item, plan and the console flag, and the console's own marker survives a
-  // view switch or a drawer opened inside it.
-  //
-  // ⚠️ NEVER HAND NEXT'S OWN STATE BACK TO replaceState. Next patches history (app-router.js) and its
-  // patch returns EARLY, without telling the router the URL moved, whenever the state it is given
-  // already carries `__NA`. The router's canonicalUrl then stays on the old address and its next
-  // commit replaceStates the browser back to it, so `?plan=` written while a drawer opened vanished a
-  // moment later (caught by test/e2e/operator-calendar.spec.ts). Passing OUR marker alone, or null,
-  // keeps the patch on its normal path: it copies `__NA` and the internals tree onto whatever object
-  // it is handed, so nothing of Next's is lost and the router learns the new URL.
-  const consoleStateOnly = useCallback(() => {
-    const state = window.history.state as Record<string, unknown> | null
-    return state && state[CONSOLE_STATE] ? { [CONSOLE_STATE]: true } : null
-  }, [])
-
-  const syncUrl = useCallback(
-    (next: CalendarAdminView, extras?: { item?: string | null; plan?: string | null; look?: string | null; year?: number; month1?: number }) => {
-      if (typeof window === 'undefined') return
-      window.history.replaceState(
-        consoleStateOnly(),
-        '',
-        adminViewHref(slug, next, {
-          ...extras,
-          plan: extras?.plan === undefined ? planId : extras.plan,
-          look: extras?.look === undefined ? timeView : extras.look,
-          console: consoleOpen,
-        }),
-      )
-    },
-    [slug, planId, timeView, consoleOpen, consoleStateOnly],
-  )
-
-  const selectPlan = useCallback((nextPlanId: string, entryId?: string | null) => {
-    setPlanId(nextPlanId)
-    setPlanEntryId(entryId ?? null)
-    syncUrl(view, { item: view === 'list' ? listKey : null, plan: nextPlanId })
-  }, [listKey, syncUrl, view])
-
-  const closePlan = useCallback(() => {
-    setPlanId(null)
-    setPlanEntryId(null)
-    syncUrl(view, { item: view === 'list' ? listKey : null, plan: null })
-  }, [listKey, syncUrl, view])
-
-  const selectView = useCallback(
-    (next: CalendarAdminView) => {
-      if (!adminAllowed) return
-      setView(next)
-      setTimeView(null)
-      rememberCalendarView(slug, next)
-      rememberTimeView(slug, null)
-      if (next === 'list') syncUrl(next, { item: listKey ?? selected?.key, look: null })
-      else syncUrl(next, { look: null })
-    },
-     [adminAllowed, slug, listKey, selected?.key, syncUrl],
-  )
-
-  // DAY, WEEK, TIMELINE (LIVE-1178). They sit on the Calendar panel, so picking one brings the team
-  // panel up if Guest, List or Workflow was showing. The anchor starts on today when the month on
-  // screen is this one, and on the first of the month otherwise, so the view opens where the reader was.
-  const selectTimeView = useCallback(
-    (next: CalendarTimeView) => {
-      if (!adminAllowed) return
-      const shownMonth = `${month.year}-${String(month.month1).padStart(2, '0')}`
-      if (!timeView && !timeAnchor.startsWith(shownMonth)) {
-        setTimeAnchor(todayDay.startsWith(shownMonth) ? todayDay : `${shownMonth}-01`)
-      }
-      setTimeView(next)
-      setView('admin')
-      setGridView('grid')
-      rememberCalendarView(slug, 'admin')
-      rememberTimeView(slug, next)
-      syncUrl('admin', { look: next })
-    },
-    [adminAllowed, month.year, month.month1, timeView, timeAnchor, todayDay, slug, syncUrl],
-  )
-
-  // A column header in the Week view opens that day.
-  const openTimeDay = useCallback(
-    (dayKey: string) => {
-      setTimeAnchor(dayKey)
-      setTimeView('day')
-      rememberTimeView(slug, 'day')
-      syncUrl('admin', { look: 'day' })
-    },
-    [slug, syncUrl],
-  )
-
-  // ONE CONTROL OVER TWO PIECES OF STATE (LIVE-490). The panel (`view`) and the grid's own
-  // grid/list switch (`gridView`) are unchanged underneath -- every `?view=` deep link still
-  // resolves -- but a reader now steers ONE thing: which SURFACE they are looking at, and, on the
-  // List surface, how much of it. The two controls that both said "List" are this one control.
-  const surface = surfaceOf(view, gridView)
-  const listScope = listScopeOf(view)
-  const audience: 'guest' | 'staff' = view === 'guest' ? 'guest' : 'staff'
-
-  const applySurface = useCallback(
-    (nextSurface: CalendarSurface, nextScope: CalendarListScope) => {
-      // 🔴 A MEMBER STEERS THIS TOO (LIVE-520). This used to be `if (!adminAllowed) return`, and
-      // together with the `adminAllowed` gate on the control row below that is how the visitor half
-      // of this page shipped with NO WAY TO CHANGE VIEW: the owner saw Grid / List / Workflow
-      // because they were the owner, and a member got the month grid and a dead end. Nothing could
-      // catch it — `data-calendar-page-view-switch` is in this file, so the LIVE-478 host/control
-      // probe read it and passed, while the markup carrying the marker never rendered for a guest.
-      //
-      // The mapping is the SAME `viewForSurface`, asked with the guest audience, so there is one
-      // definition of what a surface means. What a member does NOT get is a cookie or a URL write:
-      // `?view=` names the operator's PANEL (its `guest` value is the operator's audience preview),
-      // the grid/list choice has never been in the URL, and writing `?view=guest` onto a visitor's
-      // address would put an operator flag on a member's share link for no gain.
-      if (!adminAllowed) {
-        if (!MEMBER_SURFACES.includes(nextSurface)) return
-        setGridView(viewForSurface(nextSurface, nextScope, 'guest').gridView)
-        return
-      }
-      const { view: nextView, gridView: nextGrid } = viewForSurface(nextSurface, nextScope, audience)
-      setGridView(nextGrid)
-      setView(nextView)
-      setTimeView(null)
-      rememberCalendarView(slug, nextView)
-      rememberTimeView(slug, null)
-      // The all-time index is the one surface that carries a selected item in the URL, the way the
-      // List panel always did; every other surface drops it.
-      if (nextView === 'list') syncUrl(nextView, { item: listKey ?? selected?.key, look: null })
-      else syncUrl(nextView, { look: null })
-    },
-    [adminAllowed, audience, slug, listKey, selected?.key, syncUrl],
-  )
-
-  const selectSurface = useCallback(
-    (next: CalendarSurface) => applySurface(next, listScope),
-    [applySurface, listScope],
-  )
-
-  const selectListScope = useCallback(
-    (next: CalendarListScope) => applySurface('list', next),
-    [applySurface],
-  )
-
-  const selectList = useCallback(
-    (key: string) => {
-      setListKey(key)
-      syncUrl('list', { item: key })
-    },
-    [syncUrl],
-  )
-
-  // A block in Day, Week or Timeline goes where the month chip's edit goes: its Plan when it has
-  // one, otherwise its row in the List, where the gathering's console lives. An item with neither
-  // (an Unavailable block, a to-do with no Plan) is drawn as text, not a button.
-  const listKeys = useMemo(() => new Set(items.map((item) => item.key)), [items])
-  const canOpenTimeItem = useCallback(
-    (item: CalendarEvent) => !!item.planId || listKeys.has(`${item.slug}|${item.dayKey}`),
-    [listKeys],
-  )
-  const openTimeItem = useCallback(
-    (item: CalendarEvent) => {
-      if (item.planId) {
-        selectPlan(item.planId, item.entryId)
-        return
-      }
-      const key = `${item.slug}|${item.dayKey}`
-      setListKey(key)
-      setView('list')
-      setTimeView(null)
-      rememberCalendarView(slug, 'list')
-      rememberTimeView(slug, null)
-      syncUrl('list', { item: key, look: null })
-    },
-    [selectPlan, slug, syncUrl],
-  )
-
-  // An agenda row selects the same item the List view selects, on whichever view is showing.
-  const selectAgendaItem = useCallback(
-    (key: string) => {
-      setListKey(key)
-      syncUrl(view, { item: key })
-    },
-    [syncUrl, view],
-  )
-
-  // ENTER. Only from the control or the F key: a pushState so Back is an exit, the URL carrying the
-  // view, item and plan the console opens on.
-  const openConsole = useCallback(() => {
-    if (!adminAllowed || consoleOpen) return
-    setConsoleOpen(true)
-    setMoveLine('')
-    if (typeof window === 'undefined') return
-    window.history.pushState(
-      { [CONSOLE_STATE]: true },
-      '',
-      adminViewHref(slug, view, { item: view === 'list' ? listKey : null, plan: planId, console: true }),
-    )
-  }, [adminAllowed, consoleOpen, slug, view, listKey, planId])
-
-  // EXIT. When the entry on top of the stack is the console's own, Back pops it and the URL comes
-  // back on its own; a pasted `?console=1` link has no such entry, so the flag is rewritten in place.
-  const closeConsole = useCallback(() => {
-    if (!consoleOpen) return
-    restoreFocusRef.current = true
-    setConsoleOpen(false)
-    if (typeof window === 'undefined') return
-    const state = window.history.state as Record<string, unknown> | null
-    if (state && state[CONSOLE_STATE]) window.history.back()
-    else {
-      // null, not `state`: see the warning on syncUrl. The marker is being dropped here anyway.
-      window.history.replaceState(
-        null,
-        '',
-        adminViewHref(slug, view, { item: view === 'list' ? listKey : null, plan: planId, console: false }),
-      )
-    }
-  }, [consoleOpen, slug, view, listKey, planId])
-
-  // Esc is layered. The Dialog stack already hands Esc to the drawer when it opened over the console;
-  // this covers a drawer that was already open when the console came up: it closes first, and a
-  // second Esc closes the console.
-  const requestConsoleClose = useCallback(() => {
-    if (planId) closePlan()
-    else closeConsole()
-  }, [planId, closePlan, closeConsole])
-
-  // BROWSER BACK (and Forward). Our entry leaving the stack closes the console; arriving on it again
-  // reopens it. The URL is rewritten without the flag on the way out, so a drawer or List selection
-  // that opened inside the console keeps its address.
-  useEffect(() => {
-    if (!adminAllowed) return
-    const onPop = (e: PopStateEvent) => {
-      const state = e.state as Record<string, unknown> | null
-      const marked = !!(state && state[CONSOLE_STATE])
-      if (consoleOpen && !marked) {
-        restoreFocusRef.current = true
-        setConsoleOpen(false)
-        // null, not `state`: see the warning on syncUrl. The entry we landed on is not the console's.
-        window.history.replaceState(
-          null,
-          '',
-          adminViewHref(slug, view, { item: view === 'list' ? listKey : null, plan: planId, console: false }),
-        )
-      } else if (!consoleOpen && marked) {
-        setConsoleOpen(true)
-      }
-    }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [adminAllowed, consoleOpen, slug, view, listKey, planId])
-
-  // F opens the console from the page when focus is not in a field or in a dialog.
-  useEffect(() => {
-    if (!adminAllowed || consoleOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || (e.key !== 'f' && e.key !== 'F') || e.ctrlKey || e.metaKey || e.altKey) return
-      if (keyTargetIsTyping(e.target)) return
-      const target = e.target as HTMLElement | null
-      if (target && typeof target.closest === 'function' && target.closest('[role="dialog"]')) return
-      e.preventDefault()
-      openConsole()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [adminAllowed, consoleOpen, openConsole])
-
-  // Focus returns to the control that opened the console, whichever way it closed. Runs after the
-  // console Dialog's own cleanup (a child's unmount effects run before a parent's effects).
-  useEffect(() => {
-    if (consoleOpen || !restoreFocusRef.current) return
-    restoreFocusRef.current = false
-    openControlRef.current?.focus()
-  }, [consoleOpen])
-
-  // THE MOVE. Layout phase, so it lands before the browser paints: the console's DOM went in during
-  // the same commit's mutation phase, and its ref is attached by the time a parent's layout effect
-  // runs. One paint, no torn frame, and nothing in the panel set unmounts either way.
-  useIsoLayoutEffect(() => {
-    const moves: [HTMLDivElement | null, HTMLDivElement | null, HTMLDivElement | null][] = [
-      [stageHost, consoleStageRef.current, stageSlotRef.current],
-      [veraHost, consoleVeraRef.current, veraSlotRef.current],
-    ]
-    for (const [host, consoleHome, pageHome] of moves) {
-      if (!host) continue
-      // The server's copy leaves the page home the moment the live set has a host to arrive in, in
-      // this same layout phase, so one paint swaps the inert grid for the live one. The slot has no
-      // React children on the client, so everything in it that is not the host is that copy.
-      if (pageHome) for (const node of Array.from(pageHome.childNodes)) if (node !== host) node.remove()
-      const target = (consoleOpen ? consoleHome : pageHome) ?? pageHome
-      if (target && host.parentNode !== target) target.appendChild(host)
-    }
-    return () => {
-      // The console is going away this commit; put both hosts back on the page before it does.
-      for (const [host, , pageHome] of moves) {
-        if (host && pageHome && host.parentNode !== pageHome) pageHome.appendChild(host)
-      }
-    }
-  }, [consoleOpen, stageHost, veraHost])
-
-  const pencilIn = useCallback(() => setNewEntryRequest((n) => n + 1), [])
-
-  const guestBody = (
-    <div className={consoleOpen ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
-      <EventCalendar
-        events={guestEvents}
-        eventOrigin={eventOrigin}
-        /* THE SKY REACHES THE MEMBER GRID (LIVE-526). This mount is the one a member and a
-           signed-out visitor actually see, so if the markers only reached the staff grid below the
-           feature would be invisible to everyone it was asked for. */
-        skyMarkers={skyMarkers}
-        initialYear={initialYear}
-        initialMonth1={initialMonth1}
-        monthPinned={monthPinned}
-        loadMonth={loadGuestMonth}
-        month={month}
-        onMonthChange={setMonth}
-        view={gridView}
-        onViewChange={setGridView}
-        /* THE MEMBER'S FILTER REACHES THE GRID (LIVE-520). `hostChrome` means this mount draws no
-           chips of its own, so without these two the page's chips would toggle state nothing read.
-           The set offered is `memberLayers`, which is empty unless the Space actually publishes
-           more than one layer. */
-        hiddenLayers={hiddenLayers}
-        onHiddenLayersChange={setHiddenLayers}
-        fill={consoleOpen}
-        /* THE MONTHS SCROLL (LIVE-530, owner ask 2026-09-27: "infinitely scrolls through that
-           section instead of flipping pages"). The member calendar first: this mount has no drag
-           surface, so the scroll mechanics stand on their own here. `month` keeps its one meaning
-           (the anchor) and every control in the page bar and the console header works unchanged. */
-        monthFlow="scroll"
-        /* THE PAGE IS A HOST TOO NOW (LIVE-494), so this is unconditional rather than
-           `consoleOpen`: whichever bar is showing -- the page's two rows or the console's one --
-           draws the month, the paging, the jump and the chips, and the grid draws none of them. */
-        hostChrome
-        hostViewSwitch
-      />
-      {guestFirstUse && (
-        <EmptyState
-          variant="first-use"
-          title="Nothing on the calendar yet."
-          description={`${brandName} has not published a gathering. Subscribe and new dates will land in your own calendar.`}
-        />
-      )}
-    </div>
-  )
-
-  // One definition of the view controls, rendered in the page bar and again in the console header.
-  //
-  // TWO AUDIENCES, ONE CONTROL (LIVE-520). This used to render NOTHING at all unless
-  // `adminAllowed`, which is how a member ended up with a month grid and no way to change it. A
-  // member now gets the same segmented box over the surfaces a member has (MEMBER_SURFACES: Grid
-  // and List). What stays operator-only, and why, is written on MEMBER_SURFACES itself:
-  //   · Workflow      — a board of `space_plans`, the team's internal working records; a visitor is
-  //                     never handed `plans` or `adminEvents`, so the segment would steer an empty
-  //                     board, and "fixing" that later would be the leak.
-  //   · Guest preview — an audience, not a way of looking. A guest already is that audience.
-  //   · the List ALL scope — the all-time index panel is the event control console (stage pill,
-  //                     share links, stats), not a way of reading a month.
-  const viewControls = adminAllowed ? (
-    <>
-      <Button
-        type="button"
-        size="sm"
-        variant={view === 'guest' ? 'primary' : 'secondary'}
-        aria-pressed={view === 'guest'}
-        onClick={() => selectView('guest')}
-      >
-        Guest preview
-      </Button>
-      <CalendarModeToggle
-        surface={view === 'guest' ? null : surface}
-        onSelect={selectSurface}
-        scope={listScope}
-        onScope={selectListScope}
-        timeView={timeView}
-        onTimeView={selectTimeView}
-      />
-    </>
-  ) : (
-    <CalendarModeToggle surface={surface} onSelect={selectSurface} surfaces={MEMBER_SURFACES} />
-  )
-
-  // TWO LINES, NOT FIVE (owner ask 2026-09-22). Line one is the name of the page with the blurb
-  // beside it from `sm` up; line two is every control, in one wrapping row. The first-visit hint
-  // that used to sit on a third line is gone: it only ever said the console exists and how to reach
-  // it, which is what the Fullscreen control's own title says, so the sentence moved onto the
-  // control and the row (and its localStorage dismissal) retired.
-  const heading = (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      {/* ONE PAGE, AND IT SAYS SO (LIVE-520). Calendar and Events were two menu rows over one
-          subject; this is the page they folded into, so the page names both. The TAB stays
-          "Calendar" — see the comment on it in lib/spaces/profile-nav.ts — because the URL, the
-          `.ics` feed and every operator deep link say calendar, and a menu word that disagreed with
-          all of them would be a second name for one thing. */}
-      <h2 className="text-lead font-bold text-text">{adminAllowed ? 'Calendar & Events' : 'What\u2019s happening'}</h2>
-      <p className="text-body-sm text-muted">{calendarViewBlurb(view, brandName)}</p>
-    </div>
-  )
-
-  // ── THE PAGE CONTROL BAR (LIVE-494, owner ask 2026-09-24: "no more than two rows") ──────────
-  //
-  // The page used to spend FIVE bands above the month: the heading with its own control row, Ask
-  // Vera, Pencil it in, the grid's month-and-paging strip, and the grid's layer chips. The console
-  // has fitted the same set on ONE line since LIVE-485, because its header draws all of it and the
-  // grid inside draws none. The page never got that treatment -- LIVE-485 scoped it out in so many
-  // words ("on the page, where nothing else draws them, the grid's own header is unchanged") --
-  // so the two halves of the same calendar were arranged by where each control happened to be
-  // implemented. They are the same four groups in the same order now, at two densities:
-  //
-  //   page     row 1  WHEN (month, zone, Prev / Today / Next)   ...  WHAT (the layer chips)
-  //            row 2  HOW (Guest preview + surface switch)       ...  ACTIONS (Pencil, Fullscreen)
-  //   console  row 1  WHEN ... WHAT ... HOW ... ACTIONS, all on one line at `micro`
-  //
-  // ROW ONE IS WHAT YOU ARE LOOKING AT, ROW TWO IS WHAT YOU DO ABOUT IT (owner ask 2026-09-28).
-  // WHEN and HOW shared row one until now, which put the month title next to a surface switch that
-  // can take the month away entirely (Workflow and the all-time List have no month -- see
-  // `pageHasMonth`), and left WHAT stranded on a row of its own above the actions. The chips answer
-  // the same question the month title asks, so they sit with it; Guest preview, the surface switch
-  // and Pencil it in are the one cluster an operator reaches for, so they sit together.
-  //
-  // 🔴 IT IS ABOVE THE SLIDER, NOT INSIDE THE GRID CARD, and that is a correctness rule rather
-  // than a layout taste. The page keeps all four panels mounted at once, so a bar drawn inside the
-  // grid renders TWICE (Guest and Calendar are both mounted); and List and Workflow are not grid
-  // mounts at all, so scoping it to the showing panel would leave those two surfaces with no
-  // surface control and no way back to the month -- the reachable dead end LIVE-475 exists to
-  // prevent. Above the slider there is exactly one bar and it is there on every panel.
-  //
-  // 🔴 AND THE PAGE IS NOW A HOST, so it carries the `HOST_DRAWN_CONTROL_MARKS` markers for every
-  // control it takes off the grid, exactly as the console does. `calendarChrome(true)` is passed
-  // by the page mounts whether or not the console is open. The LIVE-478 probe reads both host
-  // files now; a control taken from the grid that neither host draws still fails the build.
-  const pageMonthButtonRef = useRef<HTMLButtonElement | null>(null)
-  const [pageJumpOpen, setPageJumpOpen] = useState(false)
-  const [pageJumpYear, setPageJumpYear] = useState(month.year)
-  const pageCountByMonth = useMemo(() => countByMonthKey(items), [items])
-  const closePageJump = useCallback(() => {
-    setPageJumpOpen(false)
-    pageMonthButtonRef.current?.focus()
-  }, [])
-  const pageStep = useCallback(
-    (delta: number) => setMonth(addMonth(month.year, month.month1, delta)),
-    [month.year, month.month1],
-  )
-  const pageToday = useCallback(() => {
+  const step = (delta: number) => setMonth(addMonth(month.year, month.month1, delta))
+  const today = () => {
     const now = new Date()
     setMonth({ year: now.getFullYear(), month1: now.getMonth() + 1 })
-  }, [])
-  const nowForPage = new Date()
-  const pageOnCurrentMonth =
-    month.year === nowForPage.getFullYear() && month.month1 === nowForPage.getMonth() + 1
+  }
+  const now = new Date()
+  const onCurrentMonth = month.year === now.getFullYear() && month.month1 === now.getMonth() + 1
+  const hasMonth = surfaceHasMonth(surface, 'month')
 
-  // The zone, named on the page too. THE SPACE'S ZONE ONLY, never the viewer fallback: headerZone
-  // falls back to the browser's zone and the browser cannot be read in the SSR pass. The console
-  // gets away with it because Dialog portals it client-side; this bar does not. A Space that has
-  // not set a zone says nothing here rather than saying two different things in two renders.
-  // The same two derivations the console call makes, named once so the page bar and the console
-  // cannot disagree about whether the surface showing has a month.
-  const timeViewLabel = timeView ? CALENDAR_TIME_VIEW_DEFS.find((d) => d.view === timeView)?.label ?? null : null
-  const pageSurfaceTitle = timeViewLabel ?? (surface === 'workflow' ? 'Workflow' : 'Gatherings')
+  const heading = (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h2 className="text-lead font-bold text-text">What&rsquo;s happening</h2>
+      <p className="text-body-sm text-muted">{calendarViewBlurb('guest', brandName)}</p>
+    </div>
+  )
 
-  const pageZone = spaceTimeZone ? headerZone(spaceTimeZone, null) : null
-
-  // A VISITOR GETS THIS BAR TOO, and that is not a nicety. The grid runs with `hostChrome` on the
-  // page now, so it draws no month, no paging and no jump for ANYONE; if the bar were gated on
-  // `adminAllowed` a signed-out visitor would be left looking at a month grid with no way to leave
-  // the month it opened on.
-  //
-  // WHAT A VISITOR DOES NOT GET IS NOW A SHORTER LIST (LIVE-520): no console to open, no Guest
-  // preview (they are the guest), no Workflow segment, and no layer chips unless the Space
-  // publishes more than one layer. The surface switch is NOT on that list any more — it was, and
-  // that was the dead end this row closed.
-  //
-  // One expression for both audiences now, rather than `true` for a visitor: a member's List is the
-  // month's agenda, so `surfaceHasMonth` answers true for both of their surfaces anyway, and a
-  // hardcoded `true` would silently become a lie the day a member is offered a surface with no
-  // month (the all-time index, if it is ever opened up).
-  // The time views page by their own Prev / Today / Next, so the month's controls would steer nothing.
-  const pageHasMonth = surfaceHasMonth(surface, listScope) && !timeView
-
+  // TWO ROWS (LIVE-494): row one is what you are looking at (the month and the filter), row two is
+  // what you do about it (the way of looking, the team door, Subscribe). The bar is drawn for every
+  // viewer, signed out included: the grid draws no month controls of its own here, so without the
+  // bar a visitor could not leave the month the page opened on.
   const pageBar = (
     <div data-calendar-page-header className="flex flex-col gap-2.5 rounded-card border border-border bg-surface px-4 py-3 sm:px-5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div data-calendar-page-month data-calendar-page-month-jump className="relative flex min-w-0 items-center gap-1.5">
           <CalendarMonthTitle
             label={monthLabel(month.year, month.month1)}
-            hasMonth={pageHasMonth}
-            fallbackTitle={pageSurfaceTitle}
-            jumpOpen={pageJumpOpen}
+            hasMonth={hasMonth}
+            fallbackTitle="Gatherings"
+            jumpOpen={jumpOpen}
             onToggleJump={() => {
-              setPageJumpYear(month.year)
-              setPageJumpOpen((o) => !o)
+              setJumpYear(month.year)
+              setJumpOpen((o) => !o)
             }}
-            buttonRef={pageMonthButtonRef}
+            buttonRef={monthButtonRef}
           />
-          {pageHasMonth && pageZone ? (
-            <span
-              className="shrink-0 text-2xs text-muted"
-              title={`This Space keeps its calendar in ${pageZone.name}. Today and new dates use it.`}
-            >
-              {pageZone.words}
-            </span>
-          ) : null}
-          {pageHasMonth ? (
+          {hasMonth ? (
             <div data-calendar-page-paging className="shrink-0">
-              <CalendarPaging onStep={pageStep} onToday={pageToday} onCurrentMonth={pageOnCurrentMonth} />
+              <CalendarPaging onStep={step} onToday={today} onCurrentMonth={onCurrentMonth} />
             </div>
           ) : null}
         </div>
-        {/* WHAT, beside WHEN (owner ask 2026-09-28). The filters describe the month the title
-            names, so they belong on the line that names it; the ways of LOOKING at it dropped to
-            row two. `shrink-0` keeps the chips whole and lets the month title be the thing that
-            truncates, since the title has the jump panel as its escape and a clipped chip has
-            none. */}
-        {adminAllowed && view === 'admin' ? (
-          <div data-calendar-page-layers className="flex shrink-0 items-center">
-            <CalendarLayerChips layers={STAFF_CALENDAR_LAYERS} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
-          </div>
-        ) : memberLayers.length > 0 ? (
-          // THE MEMBER'S FILTER (LIVE-520): Events and Unavailable, and only when the Space actually
-          // publishes both — `memberLayerChoices` returns nothing below two layers, so a Space with
-          // only gatherings draws no chips rather than one chip that filters nothing. An operator on
-          // Guest preview lands here too, which is right: they are looking at the member's bar.
+        {memberLayers.length > 0 ? (
           <div data-calendar-page-layers className="flex shrink-0 items-center">
             <CalendarLayerChips layers={memberLayers} hidden={hiddenLayers} onToggle={toggleLayer} density="micro" />
           </div>
@@ -851,43 +153,21 @@ export function CalendarWorkspace({
       </div>
 
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        {/* UNCONDITIONAL (LIVE-520). The marker has to be on markup that actually renders for the
-            audience that needs the control, not merely present in this file: the LIVE-478 probe
-            reads the source, so an `adminAllowed` wrapper around it satisfied the gate while
-            shipping a member a grid with no way out of it. `viewControls` decides what each
-            audience is offered.
-
-            IT MOVED DOWN A ROW (owner ask 2026-09-28), so Guest preview, the surface switch and
-            Pencil it in read as the one cluster they always were -- they were split across two rows
-            only because the switch is a way of looking and Pencil is an action. */}
         <div data-calendar-page-view-switch className="flex min-w-0 flex-wrap items-center gap-2">
-          {viewControls}
+          <CalendarModeToggle surface={surface} onSelect={selectSurface} surfaces={MEMBER_SURFACES} />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {canManage && (
-            <Button type="button" size="sm" variant="secondary" onClick={pencilIn}>
-              <Plus className="h-4 w-4" aria-hidden /> Pencil it in
-            </Button>
-          )}
-          {adminAllowed && (
-            <Button type="button" size="sm" variant="secondary" asChild data-calendar-manager-link>
-              <Link href={audienceHref(slug, 'team')} title="Open the full calendar manager" aria-label="Calendar manager">
+          {showTeamLink && (
+            <Button size="sm" variant="secondary" asChild>
+              <Link
+                href={audienceHref(slug, 'team')}
+                title="Plan, pencil and run events on the team calendar"
+                data-calendar-manager-link
+                data-calendar-team-link
+              >
                 <LayoutDashboard className="h-4 w-4" aria-hidden />
-                <span className="hidden sm:inline">Calendar manager</span>
+                Open team calendar
               </Link>
-            </Button>
-          )}
-          {adminAllowed && (
-            <Button
-              ref={openControlRef}
-              type="button"
-              size="sm"
-              variant="secondary"
-              data-calendar-console-open
-              title="Open the console (F)"
-              onClick={openConsole}
-            >
-              <Maximize2 className="h-4 w-4" aria-hidden /> Fullscreen
             </Button>
           )}
           {subscribe}
@@ -895,27 +175,26 @@ export function CalendarWorkspace({
       </div>
 
       {/* The jump panel spans the bar under both rows, so opening it never reflows the controls.
-          Escape closes it and hands focus back to the month button, the same contract the console
-          header keeps. */}
-      {pageJumpOpen && pageHasMonth ? (
+          Escape closes it and hands focus back to the month button. */}
+      {jumpOpen && hasMonth ? (
         <div
           className="border-t border-border pb-1 pt-2"
           onKeyDown={(e) => {
             if (e.key !== 'Escape') return
             e.preventDefault()
             e.stopPropagation()
-            closePageJump()
+            closeJump()
           }}
         >
           <MonthJumpPanel
             shownYear={month.year}
             shownMonth1={month.month1}
-            jumpYear={pageJumpYear}
-            onJumpYear={setPageJumpYear}
-            countFor={(y, m1) => monthCount(pageCountByMonth, y, m1)}
+            jumpYear={jumpYear}
+            onJumpYear={setJumpYear}
+            countFor={(y, m1) => monthCount(countByMonth, y, m1)}
             onPick={(next) => {
               setMonth(next)
-              closePageJump()
+              closeJump()
             }}
           />
         </div>
@@ -923,201 +202,41 @@ export function CalendarWorkspace({
     </div>
   )
 
-  if (!adminAllowed) {
-    return (
-      <div className="space-y-4" data-calendar-workspace data-calendar-view="guest">
-        {heading}
-        {/* ABOVE THE CONTROL BAR, NOT BELOW IT (LIVE-520). The band is CONTENT — what is next — and
-            the bar is chrome for the grid under it, so the bar stays touching the thing it steers
-            and the feed is the first thing read. It renders nothing when there is nothing ahead. */}
-        {upcoming}
-        {pageBar}
-        {guestBody}
-      </div>
-    )
-  }
-
-  const index = Math.max(0, CALENDAR_ADMIN_VIEWS.indexOf(view))
-
-  const vera = canManage ? (
-    <VeraCalendarBox
-      slug={slug}
-      year={month.year}
-      month1={month.month1}
-      plans={currentPlans}
-      events={currentAdminEvents}
-      spaceTimeZone={spaceTimeZone}
-      onApplied={() => setVeraRefreshKey((k) => k + 1)}
-    />
-  ) : null
-
-  // THE PANEL SET. In the console the wrapper is the scroll container (x clipped for the slide, y its
-  // own, overscroll contained) and the grid fills whatever height the row has.
-  //
-  // ONLY THE SHOWING PANEL HAS A HEIGHT (LIVE-469). The four sit in one flex row, and a row is as
-  // tall as its tallest child, so a long List index once left Calendar, Guest and Workflow scrolling
-  // into blank space beneath them. `items-start` stops the row stretching the others to match, and
-  // an inert panel is `h-0 overflow-hidden` so it adds no height at all. In the console the showing
-  // panel stretches itself instead (`self-stretch`), which is what lets the grid fill the row.
-  //
-  // 🔴 AND THE ROW NEEDS A DEFINITE HEIGHT FOR `self-stretch` TO MEAN ANYTHING (LIVE-485). This
-  // slider used to carry `min-h-full`. A single-line flex container only hands its own cross size to
-  // its line when that cross size is DEFINITE, and a `min-height` is not one: the line was sized to
-  // the tallest item instead, so `self-stretch` stretched the showing panel to its own content and
-  // `h-full` under it had no definite parent to resolve against. The month then drew at its natural
-  // height with the rest of the stage left empty under it, which is the dead space the owner was
-  // looking at. `h-full` in the console makes the cross size definite; a panel taller than the
-  // console (a long List index) still overflows it and the wrapper above scrolls, vertically.
-  const panels = (
-    <div className={cn('overflow-hidden', consoleOpen && 'min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain')}>
-      <div
-        className={cn('flex items-start transition-transform duration-300 ease-out motion-reduce:transition-none', consoleOpen && 'h-full')}
-        style={{ transform: `translateX(-${index * 100}%)` }}
-      >
-        {CALENDAR_ADMIN_VIEWS.map((panel) => {
-          const active = panel === view
-          return (
-            <section
-              key={panel}
-              className={cn('w-full shrink-0', active ? consoleOpen && 'self-stretch' : 'h-0 overflow-hidden')}
-              aria-hidden={!active}
-              {...(!active ? { inert: true } : {})}
-              data-calendar-panel={panel}
-            >
-              {panel === 'guest' ? guestBody : null}
-              {panel === 'admin' ? (
-                <div data-calendar-admin-grid className={cn(consoleOpen && 'h-full', timeView && 'hidden')}>
-                  <StaffCalendar
-                    slug={slug}
-                    spaceId={spaceId}
-                    events={currentAdminEvents}
-                    initialYear={initialYear}
-                    initialMonth1={initialMonth1}
-                    monthPinned={monthPinned}
-                    canEdit={canManage}
-                    spaceTimeZone={spaceTimeZone}
-                    dayNotes={dayNotes}
-                    skyMarkers={skyMarkers}
-                    plans={currentPlans}
-                    onOpenPlan={selectPlan}
-                    externalRefreshKey={veraRefreshKey}
-                    wheelPaging={consoleOpen}
-                    month={month}
-                    onMonthChange={setMonth}
-                    gridView={gridView}
-                    onGridViewChange={setGridView}
-                    hiddenLayers={hiddenLayers}
-                    onHiddenLayersChange={setHiddenLayers}
-                    newEntryRequest={newEntryRequest}
-                    /* Pencil it in is a control, so it lives in the control bar with the rest of
-                       them. It was a band of its own above the grid, which is one of the five the
-                       page was spending before this row. */
-                    pencilButton={false}
-                    fill={consoleOpen}
-                    /* The operator calendar scrolls too (LIVE-530). Drag-to-move is asked for
-                       in the console as before and REFUSED at the grid's seam under the scroll,
-                       because planEntryMove still refuses cross-month targets with a sentence
-                       that is false once October is three inches below September. */
-                    monthFlow="scroll"
-                    hostChrome
-                    hostViewSwitch
-                    moveByDrag={consoleOpen}
-                    moveNotice={moveLine}
-                    onMoveResult={setMoveLine}
-                  />
-                </div>
-              ) : null}
-              {panel === 'admin' && timeView ? (
-                <CalendarTimeViews
-                  view={timeView}
-                  items={currentAdminEvents}
-                  plans={currentPlans}
-                  hiddenLayers={hiddenLayers}
-                  anchorDay={timeAnchor}
-                  onAnchor={setTimeAnchor}
-                  todayDay={todayDay}
-                  spaceTimeZone={spaceTimeZone}
-                  skyMarkers={skyMarkers}
-                  canOpen={canOpenTimeItem}
-                  onOpen={openTimeItem}
-                  onOpenPlan={selectPlan}
-                  onOpenDay={openTimeDay}
-                />
-              ) : null}
-              {panel === 'list' ? (
-                <CalendarListView items={items} selected={selected} onSelect={selectList} onOpenPlan={selectPlan} />
-              ) : null}
-              {panel === 'workflow' ? (
-                <CalendarWorkflowView columns={workflowColumns} slug={slug} canManage={canManage} onOpenPlan={selectPlan} onStageChanged={stageChanged} />
-              ) : null}
-            </section>
-          )
-        })}
-      </div>
-    </div>
-  )
-
   return (
-    <div className="space-y-4" data-calendar-workspace data-calendar-view={view} data-calendar-console-open={consoleOpen || undefined}>
+    <div className="space-y-4" data-calendar-workspace data-calendar-view="guest">
       {heading}
-      {/* The page's homes for the two travelling hosts, in the order the page reads: Ask Vera above
-          the panels. The server renders each straight into its slot; on the client a slot that is a
-          host's home is a leaf holding the server's copy until the layout effect above parks the host
-          here or in the console and sweeps that copy out (🔴 THE SERVER'S COPY IS INERT). A guest's
-          slot is the plain inline home on both sides. */}
-      <div data-calendar-stage className={cn('space-y-4', consoleOpen && 'hidden')}>
-        {/* Inside the stage div, so the band goes away with the page when the console takes over:
-            the console is the operator's edit surface and the band is the member's read. */}
-        {upcoming}
-        {pageBar}
-        {vera ? (
-          veraIsHome ? (
-            <div ref={veraSlotRef} suppressHydrationWarning dangerouslySetInnerHTML={INERT_MARKUP} />
-          ) : (
-            <div ref={veraSlotRef}>{vera}</div>
-          )
-        ) : null}
-        {stageIsHome ? (
-          <div ref={stageSlotRef} suppressHydrationWarning dangerouslySetInnerHTML={INERT_MARKUP} />
-        ) : (
-          <div ref={stageSlotRef}>{panels}</div>
-        )}
-      </div>
-      {veraHost ? createPortal(vera, veraHost) : null}
-      {stageHost ? createPortal(panels, stageHost) : null}
-      {consoleOpen ? (
-        <CalendarConsole
-          open
-          onClose={requestConsoleClose}
+      {/* ABOVE THE CONTROL BAR (LIVE-520): the band is content, the bar is chrome for the grid under it. */}
+      {upcoming}
+      {pageBar}
+      <div className="space-y-4">
+        <EventCalendar
+          events={guestEvents}
+          eventOrigin={eventOrigin}
+          skyMarkers={skyMarkers}
+          initialYear={initialYear}
+          initialMonth1={initialMonth1}
+          monthPinned={monthPinned}
+          loadMonth={loadGuestMonth}
           month={month}
           onMonthChange={setMonth}
-          viewControls={viewControls}
-          hasMonth={pageHasMonth}
-          surfaceTitle={pageSurfaceTitle}
-          layers={view === 'admin' ? STAFF_CALENDAR_LAYERS : undefined}
+          view={gridView}
+          onViewChange={setGridView}
           hiddenLayers={hiddenLayers}
-          onToggleLayer={view === 'admin' ? toggleLayer : undefined}
-          items={items}
-          selectedKey={selected?.key ?? null}
-          onSelectItem={selectAgendaItem}
-          onOpenPlan={selectPlan}
-          onPencil={canManage ? pencilIn : undefined}
-          resultLine={moveLine}
-          spaceTimeZone={spaceTimeZone}
-          stageRef={consoleStageRef}
-          veraRef={veraHost ? consoleVeraRef : undefined}
+          onHiddenLayersChange={setHiddenLayers}
+          /* THE MONTHS SCROLL (LIVE-530): one continuous run of months instead of flipped pages. */
+          monthFlow="scroll"
+          /* The bar above draws the month, the paging, the jump and the chips, so the grid draws none. */
+          hostChrome
+          hostViewSwitch
         />
-      ) : null}
-      <PlanDrawer
-        slug={slug}
-        plan={openPlan}
-        entryId={planEntryId}
-        open={openPlan !== null}
-        onClose={closePlan}
-        onSaved={(savedPlanId, stage) => stageChanged(savedPlanId, stage)}
-        onArchived={planArchived}
-        deepSettingsHref={`/spaces/${slug}/settings/calendar?plan=${planId ?? ''}`}
-      />
+        {guestFirstUse && (
+          <EmptyState
+            variant="first-use"
+            title="Nothing on the calendar yet."
+            description={`${brandName} has not published a gathering. Subscribe and new dates will land in your own calendar.`}
+          />
+        )}
+      </div>
     </div>
   )
 }
