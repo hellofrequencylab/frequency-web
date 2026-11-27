@@ -56,7 +56,7 @@ vi.mock('@/lib/engagement/events', () => {
   throw new Error('the host mark must not import the engagement ledger')
 })
 
-import { setSeatAttendedFromManage } from './attendance-actions'
+import { setSeatAttendedFromManage, resendTicketFromManage } from './attendance-actions'
 
 beforeEach(() => {
   fx.profileId = 'host-1'
@@ -123,5 +123,14 @@ describe('setSeatAttendedFromManage', () => {
     const res = await setSeatAttendedFromManage('event-1', 'moon-circle', { kind: 'rsvp', id: 'rsvp-guest' }, false)
     expect(res.ok).toBe(true)
     expect(fx.calls[0].patch).toEqual({ attended_at: null, attended_by: null })
+  })
+})
+
+describe('resendTicketFromManage (LIVE-2548)', () => {
+  it('refuses anyone but a manager and reads nothing', async () => {
+    fx.host = false
+    fx.cohost = false
+    expect(await resendTicketFromManage('event-1', 'ticket-1')).toEqual({ ok: false, error: 'forbidden' })
+    expect(fx.tables).toEqual([])
   })
 })
