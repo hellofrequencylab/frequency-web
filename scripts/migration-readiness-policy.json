@@ -6544,6 +6544,105 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5519,
+      "expiresAt": "2026-12-04T00:00:00Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346520000_calendar_meeting_kind.sql",
+          "sha256": "a4156bc67bf70a6174e23781a2608df73db22360051fb8b2da403d7c0ad5d216"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/meeting-actions.ts",
+          "status": "added",
+          "sha256": "36b20e7920240d7001756bd1678083f1fa6327a6446327d690c3498ccb0907fc",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/meeting-todos-panel.tsx",
+          "status": "added",
+          "sha256": "2b7833fa3db95e450a012b4ddc689e451e460fcf45637377193e49086f7c01ac",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx",
+          "status": "modified",
+          "sha256": "db777a1b9f34628651958da87e0cb11f8c07061b9e97221dc9bcf9065a7b2d21",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2533.json",
+          "status": "modified",
+          "sha256": "5fc0ab3d9a7897125b0a029c338e54304b5607c638e331357976f582d3898208",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/entries.test.ts",
+          "status": "modified",
+          "sha256": "97f4f57ee59eb5ad40575bf0166fe2b0722c5bf1ee2b062128e04ca9b8149025",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/entries.ts",
+          "status": "modified",
+          "sha256": "a6b257d45ca6d10c8245efd4cad5359eea35614738cfeeb0326c026ea3c9463b",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/meeting-notes.test.ts",
+          "status": "added",
+          "sha256": "6c7a091af68523a1fcb142a9979db3a84d25e8f50d39f515e61134ae36ad733e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/meeting-notes.ts",
+          "status": "added",
+          "sha256": "45ca5516c1082636feb41d552e533b298fd006918cffd39bc231eac422c226eb",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/registry.ts",
+          "status": "modified",
+          "sha256": "28314407ac39fbd79d93aa0819537126c99b96981f3a1a0b7e13df9721669065",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346520000_calendar_meeting_kind.sql",
+          "status": "added",
+          "sha256": "a4156bc67bf70a6174e23781a2608df73db22360051fb8b2da403d7c0ad5d216",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/calendar_meeting_kind.test.sql",
+          "status": "added",
+          "sha256": "c7810a10055e15fe12a0044431c01b591d05b2e713e341b5f50289e7952e670e",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
