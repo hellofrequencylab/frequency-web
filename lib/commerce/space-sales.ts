@@ -15,7 +15,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type SpaceSaleKind = 'ticket' | 'donation'
+type SpaceSaleKind = 'ticket' | 'donation'
 
 export interface SpaceSale {
   id: string
