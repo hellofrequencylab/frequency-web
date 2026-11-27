@@ -67,7 +67,7 @@ concurrent edits or dispatch, records provenance, and returns the campaign to dr
 Approval, schedule, test-send proof and compiled HTML must be renewed. Emails with
 send history and evergreen quiet-member campaigns require a separate one-time draft.
 The review itself never sends, resumes, schedules or enrolls anyone in a sequence.
-See [ADR-1952](ledger/adr/ADR-1952.md) for the write and evidence boundaries.
+See [ADR-1952](DECISIONS.md#adr-1952-review-campaign-evidence-before-adapting-the-next-invitation) for the write and evidence boundaries.
 
 | Finding | Source | How we apply it |
 |---|---|---|
