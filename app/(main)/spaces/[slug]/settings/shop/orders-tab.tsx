@@ -2,7 +2,8 @@ import { formatDateMedium } from '@/lib/format-date'
 import { Receipt, Wallet, Landmark, RotateCcw, CreditCard } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
-import { listSpaceOrders, readCompleteSpaceEarnings } from '@/lib/commerce/orders'
+import { listSpaceOrders, readCompleteSpaceEarnings, sellerNames, type CommerceOrder } from '@/lib/commerce/orders'
+import { listSpaceTicketAndDonationSales, type SpaceSale } from '@/lib/commerce/space-sales'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
 import { OrderShareNote } from '@/components/marketplace/order-share-note'
 import { setOrderFulfillmentAction } from './shop-actions'
@@ -18,6 +19,11 @@ import { setOrderFulfillmentAction } from './shop-actions'
 // gross in the amount column, and a share line with the net and where the payout stands. Its door
 // moves the Space's OWN share (LIVE-705, ADR-1652): the writer finds the order through the Space's
 // transfer row, and the step shown is the share's, not the other sellers'.
+//
+// TICKETS AND DONATIONS LIST HERE TOO (LIVE-2545). The money cards above this tab count shop orders,
+// ticket sales and donations; the list used to read shop orders alone, so a ticket sale showed in the
+// totals and nowhere else. Every sale now lists with who bought, what, how much, when and its status,
+// newest first, so the list and the cards count the same sales.
 
 function usd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -37,17 +43,34 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Failed',
 }
 
-export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: string; slug: string; readOnly?: boolean }) {
-  const [orders, earnings] = await Promise.all([listSpaceOrders(spaceId, { limit: 50 }), readCompleteSpaceEarnings(spaceId)])
+const KIND_LABEL: Record<SpaceSale['kind'], string> = { ticket: 'Ticket', donation: 'Donation' }
 
-  if (orders.length === 0) {
+type Row = { at: string; order: CommerceOrder; sale?: undefined } | { at: string; sale: SpaceSale; order?: undefined }
+
+export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: string; slug: string; readOnly?: boolean }) {
+  const [orders, sales, earnings] = await Promise.all([
+    listSpaceOrders(spaceId, { limit: 50 }),
+    listSpaceTicketAndDonationSales(spaceId, { limit: 50 }),
+    readCompleteSpaceEarnings(spaceId),
+  ])
+  const buyerNames = await sellerNames(
+    orders.filter((o) => o.buyerProfileId).map((o) => ({ kind: 'profile', profileId: o.buyerProfileId, spaceId: null })),
+  )
+  const rows: Row[] = [
+    ...orders.map((o) => ({ at: o.paidAt ?? o.createdAt, order: o })),
+    ...sales.map((s) => ({ at: s.at, sale: s })),
+  ]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 50)
+
+  if (rows.length === 0) {
     return (
       <div className="mt-4">
         <EmptyState
           icon={Receipt}
           variant="first-use"
           title="No orders yet."
-          description="When someone buys from your shop, it shows up here with what you earned. Payouts run straight to your connected account."
+          description="When someone buys a ticket, an item or a service, or gives a donation, it shows up here with what you earned. Payouts run straight to your connected account."
         />
       </div>
     )
@@ -66,28 +89,46 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
       </div>
 
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
-        {orders.map((o) => (
-          <li key={o.id} className="p-4" data-order-fulfilment={o.needsFulfilment ? o.fulfillmentStatus : undefined}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-body-sm font-medium text-text">
-                  {o.items[0]?.title ?? 'Order'}
-                  {o.items.length > 1 ? ` +${o.items.length - 1}` : ''}
-                </p>
-                <p className="text-meta text-muted">
-                  {when(o.paidAt ?? o.createdAt)} · {STATUS_LABEL[o.status] ?? o.status}
-                </p>
+        {rows.map((r) =>
+          r.sale ? (
+            <li key={`${r.sale.kind}:${r.sale.id}`} className="p-4" data-sale-kind={r.sale.kind}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-body-sm font-medium text-text">
+                    {r.sale.title}
+                    {r.sale.qty > 1 ? ` ×${r.sale.qty}` : ''}
+                  </p>
+                  <p className="truncate text-meta text-muted">
+                    {KIND_LABEL[r.sale.kind]} · {r.sale.buyer ?? 'Guest'} · {when(r.sale.at)} · {r.sale.status === 'refunded' ? 'Refunded' : 'Paid'}
+                  </p>
+                </div>
+                <p className="shrink-0 text-body-sm font-semibold text-text">{usd(r.sale.amountCents)}</p>
               </div>
-              <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents)}</p>
-            </div>
-            <OrderShareNote order={o} />
-            <OrderFulfilmentControl
-              order={o}
-              action={setOrderFulfillmentAction.bind(null, slug, o.id)}
-              readOnly={readOnly}
-            />
-          </li>
-        ))}
+            </li>
+          ) : (
+            <li key={r.order.id} className="p-4" data-order-fulfilment={r.order.needsFulfilment ? r.order.fulfillmentStatus : undefined}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-body-sm font-medium text-text">
+                    {r.order.items[0]?.title ?? 'Order'}
+                    {r.order.items.length > 1 ? ` +${r.order.items.length - 1}` : ''}
+                  </p>
+                  <p className="truncate text-meta text-muted">
+                    Order · {(r.order.buyerProfileId && buyerNames.get(`profile:${r.order.buyerProfileId}`)) || 'Guest'} ·{' '}
+                    {when(r.order.paidAt ?? r.order.createdAt)} · {STATUS_LABEL[r.order.status] ?? r.order.status}
+                  </p>
+                </div>
+                <p className="shrink-0 text-body-sm font-semibold text-text">{usd(r.order.amountCents)}</p>
+              </div>
+              <OrderShareNote order={r.order} />
+              <OrderFulfilmentControl
+                order={r.order}
+                action={setOrderFulfillmentAction.bind(null, slug, r.order.id)}
+                readOnly={readOnly}
+              />
+            </li>
+          ),
+        )}
       </ul>
     </div>
   )
