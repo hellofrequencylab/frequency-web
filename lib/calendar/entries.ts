@@ -97,6 +97,9 @@ export interface EntryInput {
   description?: string | null
   blocksTime: boolean
   showPublicly: boolean
+  /** Private entries only (LIVE-2560): the person who adds it is the only one who reads it. The rest
+   *  of the team sees a Busy block with no details (space_personal_busy). Absent = team-visible. */
+  onlyMe?: boolean
   /** Pencils: YYYY-MM-DD the pencil lapses on, or empty. */
   holdExpiresOn?: string | null
   /** Pencil stage: more candidate start dates, each the same length as this one. */
@@ -187,6 +190,7 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
   }
   const timeZone = (input.timeZone ?? '').trim()
   if (!timeZone) return { error: 'The date needs a time zone.' }
+  const onlyMe = def.kind === 'private' && input.onlyMe === true
 
   return {
     data: {
@@ -200,13 +204,14 @@ export function parseEntryInput(input: EntryInput): { data: EntryWrite } | { err
       time_zone: timeZone,
       status,
       blocks_time: input.blocksTime,
-      visibility: def.canShowPublicly && input.showPublicly ? 'public_unavailable' : 'team',
+      visibility: onlyMe ? 'only_me' : def.canShowPublicly && input.showPublicly ? 'public_unavailable' : 'team',
       hold_expires_at: holdExpiresAt,
       stage: stageDef?.stage ?? null,
       // An event on its way keeps its public description here; a meeting keeps its agenda (LIVE-2533).
       description: def.isPencil || def.isMeeting ? trimOrNull(input.description, MAX_DESCRIPTION) : null,
+      // A personal entry never joins a team Plan: the Plan's people would see it in the Plan's dates.
       plan_id:
-        typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
+        !onlyMe && typeof input.planId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.planId)
           ? input.planId
           : null,
       // Only an event on its way repeats (the drawer offers Repeats to nothing else), and the rule is
@@ -307,6 +312,8 @@ export function entryToInput(row: EntryRow): EntryInput {
     description: row.description ?? '',
     blocksTime: row.blocks_time,
     showPublicly: row.visibility === 'public_unavailable',
+    // Only present when set, so a team entry's form reads exactly as it did before LIVE-2560.
+    ...(row.visibility === 'only_me' ? { onlyMe: true } : {}),
     holdExpiresOn: row.hold_expires_at ? row.hold_expires_at.slice(0, 10) : '',
     candidateDates: [],
     planId: row.plan_id,
@@ -360,6 +367,7 @@ export function entryToCalendarItem(
     holding && row.option_group ? 'One of several dates' : null,
     holding && row.hold_expires_at ? (lapsed ? 'Lapsed' : `Lapses ${shortDateLabel(row.hold_expires_at)}`) : null,
     row.visibility === 'public_unavailable' ? 'Shown publicly' : null,
+    row.visibility === 'only_me' ? 'Only me' : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -485,6 +493,23 @@ export function publicUnavailableToItem(
     coverUrl: null,
     isCancelled: false,
     layer: 'unavailable',
+  }
+}
+
+/** A teammate's only-me time (from public.space_personal_busy, LIVE-2560): a read-only Busy block,
+ *  times only. No entryId, so nothing can open it for editing. */
+export function personalBusyToItem(
+  row: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>,
+  fmt: EntryFormatters,
+  index: number,
+): CalendarEvent {
+  const item = publicUnavailableToItem(row, fmt, index)
+  return {
+    ...item,
+    slug: `busy-${item.dayKey}-${index}`,
+    title: 'Busy',
+    sourceLabel: 'Busy',
+    endTimeLabel: row.all_day ? null : fmt.timeLabel(row.ends_at, row.time_zone),
   }
 }
 

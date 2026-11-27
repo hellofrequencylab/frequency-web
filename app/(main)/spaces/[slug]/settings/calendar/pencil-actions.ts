@@ -163,6 +163,6 @@ export async function addQuickItem(slug: string, rawInput: unknown): Promise<Act
   const saved = await insertCalendarEntries(editor.spaceId, [parsed.data], editor.profileId)
   if ('error' in saved) return fail(saved.error)
   revalidate(slug)
-  return ok({ kind: 'entry', id: saved.data[0].id, line: q.kind === 'private' ? 'Private time added.' : 'Marked unavailable.' })
+  return ok({ kind: 'entry', id: saved.data[0].id, line: q.kind === 'private' ? (q.onlyMe ? 'Added. Only you can see it.' : 'Private time added.') : 'Marked unavailable.' })
 }
 

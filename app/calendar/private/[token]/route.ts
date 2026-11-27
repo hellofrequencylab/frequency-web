@@ -41,6 +41,9 @@ export async function GET(
     .select(ENTRY_COLS)
     .eq('space_id', row.space_id)
     .neq('status', 'cancelled')
+    // A teammate's "Only me" entry (LIVE-2560) is theirs alone. This read is SERVICE ROLE, so no
+    // policy hides it: the team feed must skip it here or every subscriber's phone shows it.
+    .neq('visibility', 'only_me')
     .is('removed_at', null)
     .limit(400)
 
@@ -87,6 +90,7 @@ export async function GET(
         .select(ENTRY_COLS)
         .in('plan_id', livePlanIds)
         .neq('status', 'cancelled')
+        .neq('visibility', 'only_me')
         .is('removed_at', null)
         .limit(400)
       sharedEntries = (hostEntries as FeedEntryRow[] | null) ?? []

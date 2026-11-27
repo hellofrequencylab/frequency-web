@@ -264,7 +264,8 @@ export function entryKind(kind: string | null | undefined): EntryKindDef | null 
 export const ENTRY_STATUSES = ['confirmed', 'tentative', 'cancelled'] as const
 export type EntryStatus = (typeof ENTRY_STATUSES)[number]
 
-export const ENTRY_VISIBILITIES = ['team', 'public_unavailable'] as const
+/** `only_me` (LIVE-2560): readable by the person who made it alone; the rest of the team sees Busy. */
+export const ENTRY_VISIBILITIES = ['team', 'public_unavailable', 'only_me'] as const
 export type EntryVisibility = (typeof ENTRY_VISIBILITIES)[number]
 
 /** How far along an event on its way is (ADR-1388). Mirrors the `stage` check on
