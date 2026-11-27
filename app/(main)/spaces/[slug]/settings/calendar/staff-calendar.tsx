@@ -46,6 +46,7 @@ import {
 } from './entry-actions'
 import { createPenciledPlan, joinEntryToPlan, startPlanFromEntry } from './plan-actions'
 import { PlanDrawer } from './plan-drawer'
+import { MeetingTodosPanel } from './meeting-todos-panel'
 import { SeriesDeleteDialog, SeriesSaveDialog } from './series-choice-dialog'
 
 // THE STAFF CALENDAR (ADR-1385, ADR-1388). The Space's public events and its private layer on one grid,
@@ -128,6 +129,7 @@ const QUICK_ADD_LINE: Record<string, string> = {
   pencil: 'Hold the date for something on its way. Only your team sees it.',
   unavailable: 'Block the day off. You can show it publicly as Unavailable.',
   private: 'A note on the day for your team only.',
+  meeting: 'A team meeting with an agenda and notes. Vera turns the notes into to-dos.',
 }
 
 export function StaffCalendar({
@@ -906,8 +908,23 @@ export function StaffCalendar({
               </div>
             )}
 
+            {def?.isMeeting && (
+              <div className="grid gap-1">
+                <label htmlFor="entry-agenda" className={labelClasses}>Agenda (optional)</label>
+                <Textarea
+                  id="entry-agenda"
+                  rows={4}
+                  maxLength={MAX_DESCRIPTION}
+                  value={input.description ?? ''}
+                  onChange={(e) => set('description', e.target.value)}
+                  aria-describedby="entry-agenda-hint"
+                />
+                <p id="entry-agenda-hint" className="text-meta text-muted">What the meeting will cover, one item a line.</p>
+              </div>
+            )}
+
             <div className="grid gap-1">
-              <label htmlFor="entry-notes" className={labelClasses}>Team notes (optional)</label>
+              <label htmlFor="entry-notes" className={labelClasses}>{def?.isMeeting ? 'Meeting notes (optional)' : 'Team notes (optional)'}</label>
               <Textarea
                 id="entry-notes"
                 rows={3}
@@ -916,8 +933,13 @@ export function StaffCalendar({
                 onChange={(e) => set('notes', e.target.value)}
                 aria-describedby="entry-notes-hint"
               />
-              <p id="entry-notes-hint" className="text-meta text-muted">Only your team sees these.</p>
+              <p id="entry-notes-hint" className="text-meta text-muted">
+                {def?.isMeeting ? 'Only your team sees these. Write actions as "Dana: book the room by Friday".' : 'Only your team sees these.'}
+              </p>
             </div>
+
+            {/* MEETING NOTES TO TO-DOS (LIVE-2533): only on a saved meeting, since Vera reads the stored notes. */}
+            {def?.isMeeting && draft?.id && <MeetingTodosPanel slug={slug} entryId={draft.id} />}
 
             {!def?.isPencil && (
               <div className="grid gap-1">

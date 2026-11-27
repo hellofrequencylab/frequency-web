@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-2533",
+  "patch": {
+    "status": "done",
+    "detail": "FOUND 2026-11-24: the calendar has events, pencils, private and unavailable time, but no meeting: a team call has nowhere for an agenda, notes or follow-ups. Fix: a 'meeting' entry kind (one value added to the kind check, per the private calendar layer's own rule) with agenda and notes; after the meeting Vera reads the notes and proposes to-dos with assignees and due dates through the existing vera-command 'todo' change, which a person ticks and accepts.\n\nDONE 2026-11-24: a meeting entry kind (migration 20270346520000 adds one value to the kind check; registry row Meeting on the Private layer) with an Agenda (description) and Meeting notes (notes) in the calendar drawer. Turn notes into to-dos: notesToTodos (lib/calendar/meeting-notes.ts) reads checkbox, TODO/Action and 'Name: / Name to / @Name' lines with due phrases counted from the meeting day; the person unticks, re-assigns or re-dates, and Accept files them as Space to-dos (on the meeting's Plan when it has one). The vera-command todo change needs a Plan and carries no owner or day, so a standalone meeting files through createTask directly; the propose-then-accept gate is the same.",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node scripts/probes/hub-2026-11-24.mjs LIVE-2533",
+      "note": "Passes once a migration adds meeting to the kind check and lib/calendar exports notesToTodos."
+    },
+    "closed": "2026-11-24"
+  }
+}
