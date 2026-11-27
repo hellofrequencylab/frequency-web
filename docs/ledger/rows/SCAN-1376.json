@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1376",
+  "title": "New Space owner day 1, 3 and 7 emails wait for a reasonable local hour, as the come-backs do",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/marketing/operator-lifecycle.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: the operator lifecycle emails go out from the lifecycle-triggers cron at 00:00 UTC (vercel.json) with no local-hours window, unlike the launch come-backs and draft reminders (8am to 8pm in the person's zone, lib/launch/comeback.ts). Fix: reuse hourInZone and the same send window.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1376",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1364",
+  "title": "Every registered lifecycle email and the Vera owner brief go through the 1-a-day / 3-a-week cap",
+  "lane": "live",
+  "priority": "P1",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "lib/lifecycle/registry.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: LIFECYCLE_CAP_ENABLED is on in production (checked 2026-11-27), but the cap only applies where a sender calls reserveLifecycleSend. signup_recovery (lib/crm/signup-lead-recovery.ts), made_it (lib/events/dispatch.ts), this_week (lib/this-week.ts) and weekly_digest (app/api/cron/weekly-digest/route.ts) are registered kinds that never call it, and the daily Vera owner brief (lib/ai/vera/owner-brief.ts, cron 13:00) is not registered at all. In launch month the digest, This Week, the brief and campaigns can stack on the same person, which is what the cap exists to stop. scripts/probes/EMAIL-064.mjs checks only five senders. Fix: reserve through the cap in each sender (transactional kinds can be marked exempt in the registry instead, on purpose).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1364",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

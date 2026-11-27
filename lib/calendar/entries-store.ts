@@ -8,6 +8,7 @@ import {
   ENTRY_COLS,
   MAX_CANDIDATE_DATES,
   entryItemsInWindow,
+  personalBusyToItem,
   publicUnavailableToItem,
   type EntryFormatters,
   type EntryRow,
@@ -44,6 +45,10 @@ type Untyped = {
   rpc: {
     (
       fn: 'space_public_unavailable',
+      args: { p_space_id: string; p_from_day: string; p_to_day: string },
+    ): Promise<{ data: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[] | null; error: unknown }>
+    (
+      fn: 'space_personal_busy',
       args: { p_space_id: string; p_from_day: string; p_to_day: string },
     ): Promise<{ data: Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[] | null; error: unknown }>
     (fn: 'keep_pencil_date', args: { p_space_id: string; p_entry_id: string }): Promise<{ data: number | null; error: unknown }>
@@ -150,9 +155,33 @@ export async function listStaffCalendarItems(
   toDay: string,
   opts: { editable: boolean },
 ): Promise<CalendarEvent[]> {
-  const rows = await listSpaceCalendarEntries(spaceId, fromDay, toDay)
+  const [rows, busy] = await Promise.all([listSpaceCalendarEntries(spaceId, fromDay, toDay), listPersonalBusyRows(spaceId, fromDay, toDay)])
   const now = dayInZone(new Date())
-  return rows.flatMap((r) => entryItemsInWindow(r, entryFormatters, { ...opts, now }, { fromDay, toDay }))
+  return [
+    ...rows.flatMap((r) => entryItemsInWindow(r, entryFormatters, { ...opts, now }, { fromDay, toDay })),
+    ...busy.map((r, i) => personalBusyToItem(r, entryFormatters, i)),
+  ]
+}
+
+/** TEAMMATES' ONLY-ME TIME (LIVE-2560): the windows other people on this Space marked "Only me", as
+ *  times and nothing else, on the CALLER's session (the RPC answers only someone who can write the
+ *  Space's calendar). The caller's own only-me rows are not here: RLS already returns them in full
+ *  through listSpaceCalendarEntries. Fails safe to [], and says so in the log. */
+export async function listPersonalBusyRows(
+  spaceId: string,
+  fromDay: string,
+  toDay: string,
+): Promise<Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'time_zone'>[]> {
+  try {
+    const { data, error } = await (await db()).rpc('space_personal_busy', { p_space_id: spaceId, p_from_day: fromDay, p_to_day: toDay })
+    if (error || !data) {
+      log.warn('calendar.entries.personal_busy_read_failed', { space_id: spaceId })
+      return []
+    }
+    return data
+  } catch {
+    return []
+  }
 }
 
 /** The public "Unavailable" spans for [fromDay, toDay): times only. */

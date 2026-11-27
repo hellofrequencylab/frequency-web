@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1378",
+  "title": "The funnel docs a new engineer reads first describe the funnels the code runs",
+  "lane": "hygiene",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/marketing/funnel-config.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: lib/marketing/funnel-config.ts (funnelStartHref docstring, :1067-1070) and lib/funnels/definitions.ts:147-150 say niche doors build /join?seq=<niche>; they go to /spaces/new?mode= (NICHE_FUNNEL_DESTINATIONS). docs/ANALYTICS.md:243-252 lists events that lib/analytics/events.ts does not have (onboarding.step_viewed, post.created, invite.sent, session.active, practice.verified). The code wins; fix the comments and the doc.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1378",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1372",
+  "title": "The first emails everyone gets (confirm, magic link, reset) live in the repo where they can be reviewed",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "supabase/config.toml",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: there is no supabase/templates folder and the auth email template blocks in supabase/config.toml:241-250 are commented out, so the confirm, magic-link and password-reset emails exist only in the Supabase dashboard (RUNBOOKS lists them among settings a migration does not carry). The first email every person gets cannot be reviewed for voice, sender or the brand rules. Fix: check the live templates into supabase/templates and point config.toml at them; dashboard stays the deploy step.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1372",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

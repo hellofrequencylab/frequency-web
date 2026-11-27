@@ -130,6 +130,8 @@ interface QuickAddPlan {
   day: string | null
   startMin: number | null
   durMin: number
+  /** Private only (LIVE-2560): only the person adding it reads it; the team sees Busy. */
+  onlyMe?: boolean
 }
 
 /** Reads a quick add or a command-bar create. A to-do may have no day; everything else needs one. */
@@ -147,11 +149,15 @@ export function planQuickAdd(raw: unknown): { data: QuickAddPlan } | { error: st
   if (start === 'bad') return { error: 'That is not a start time.' }
   const dur = cleanLength(r.durMin)
   if (dur === 'bad') return { error: 'That is not a length.' }
-  return { data: { kind, title, day, startMin: kind === 'unavailable' ? null : start, durMin: dur } }
+  const onlyMe = kind === 'private' && r.onlyMe === true
+  return { data: { kind, title, day, startMin: kind === 'unavailable' ? null : start, durMin: dur, ...(onlyMe ? { onlyMe } : {}) } }
 }
 
 /** The entry form for a private or unavailable quick add. An unavailable span is always all day. */
-export function quickEntry(q: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin: number }, timeZone: string): EntryInput {
+export function quickEntry(
+  q: { kind: QuickKind; title: string; day: string | null; startMin: number | null; durMin: number; onlyMe?: boolean },
+  timeZone: string,
+): EntryInput {
   const timed = q.kind === 'private' && q.startMin !== null
   const startMin = q.startMin ?? 0
   return {
@@ -165,6 +171,7 @@ export function quickEntry(q: { kind: QuickKind; title: string; day: string | nu
     timeZone,
     blocksTime: q.kind === 'unavailable',
     showPublicly: false,
+    ...(q.kind === 'private' && q.onlyMe ? { onlyMe: true } : {}),
   }
 }
 

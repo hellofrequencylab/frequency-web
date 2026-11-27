@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1360",
+  "title": "A builder sign-up keeps working when the bot check is switched on: both email claims carry the Turnstile token",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "app/(marketing)/launch-your-business/actions.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: claimWithEmail (launch-your-business/actions.ts:129-132) and claimFeatureWithEmail (lib/feature-builder/actions.ts:45-48) build a fresh FormData with only email and next, then call sendSignupLink, which refuses any request without a token once NEXT_PUBLIC_TURNSTILE_SITE_KEY is set (app/sign-in/actions.ts:206-207). Neither claim form (create-space-claim.tsx, feature-studio.tsx) renders <BotCheck>. The key is not set in production yet (checked 2026-11-27), and the owner approved switching it on (2026-11-26), so the first day it is set every Launch Your Business, Create a Space, Free Spotlight, website and email builder sign-up fails. The RUNBOOKS switch-on test only checks /sign-in. Fix: render BotCheck on both claim forms and forward BOT_CHECK_FIELD into the send. Must land before the site key goes into Vercel.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1360",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

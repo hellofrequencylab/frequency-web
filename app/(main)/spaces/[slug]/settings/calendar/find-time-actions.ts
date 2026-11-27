@@ -14,7 +14,7 @@ import {
   listTimeVoteRows,
   setMyTimeVoteRow,
 } from '@/lib/calendar/time-votes-store'
-import { insertCalendarEntries, listSpaceCalendarEntries } from '@/lib/calendar/entries-store'
+import { insertCalendarEntries, listPersonalBusyRows, listSpaceCalendarEntries } from '@/lib/calendar/entries-store'
 import { MAX_CANDIDATE_DATES, parseEntryInput } from '@/lib/calendar/entries'
 import { listSpaceEventSpans } from '@/lib/calendar/admin-calendar'
 import { availabilityWindow } from '@/lib/calendar/availability'
@@ -166,9 +166,10 @@ export async function suggestPlanTimes(slug: string, planId: string): Promise<Ac
   const zone = options[0]?.time_zone ?? space?.timeZone ?? null
   const today = dayInZone(new Date(), zone)
   const window = availabilityWindow(today, 30)
-  const [{ people, todos }, entries, events, pastYesRows] = await Promise.all([
+  const [{ people, todos }, entries, personalBusy, events, pastYesRows] = await Promise.all([
     planPeople(seat, options.map((o) => o.id)),
     listSpaceCalendarEntries(seat.spaceId, window.fromDay, window.toDay),
+    listPersonalBusyRows(seat.spaceId, window.fromDay, window.toDay),
     listSpaceEventSpans(seat.spaceId),
     listSpaceYesVotes(seat.spaceId),
   ])
@@ -176,6 +177,8 @@ export async function suggestPlanTimes(slug: string, planId: string): Promise<Ac
   // The Space's calendar, the Plan's own candidate dates included, so Vera never offers one twice.
   const spaceBusy: WallSpan[] = [
     ...entries.filter((e) => e.status !== 'cancelled').map((e) => wallSpanOf(e.starts_at, e.ends_at)),
+    // Teammates' only-me time (LIVE-2560): Busy, so Vera never offers a slot over it.
+    ...personalBusy.map((e) => wallSpanOf(e.starts_at, e.ends_at)),
     ...events.filter((e) => !e.is_cancelled).map((e) => wallSpanOf(e.starts_at, e.ends_at)),
   ].filter((s): s is WallSpan => s !== null)
 

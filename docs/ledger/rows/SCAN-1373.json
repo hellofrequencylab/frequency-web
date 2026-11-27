@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1373",
+  "title": "A new /start lead who ticks the box is asked to confirm, so persona nurture can start",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "open",
+  "source": {
+    "file": "app/(marketing)/start/actions.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: /start enrolls a lead in nurture only when the address is already subscribed (app/(marketing)/start/actions.ts:139-142, SCAN-1216 made that safe). Nothing asks a new lead to confirm, so a new /start persona lead never reaches its nurture series. Fix: when consent is unknown and the box is ticked, send the double opt-in (requestOptin / sendOptinConfirmEmail) and enroll on confirm, as /subscribe does.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1373",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-1374",
+  "title": "Nothing the pixels receive can carry Space intents, and every gtag call passes the guard",
+  "lane": "live",
+  "priority": "P3",
+  "size": "S",
+  "status": "open",
+  "source": {
+    "file": "lib/analytics/sanitize.ts",
+    "ref": "Funnel and onboarding audit 2026-11-27 (project thread: Audit funnels and onboarding for Fergal; doc https://claude.ai/artifact/K6WJF8sPmATEFjjDNCr3sh)"
+  },
+  "detail": "FOUND 2026-11-27: createspace.offer sends intents to GA4 (lib/create-space/signal.ts:74 through app/api/create-space/signal/route.ts) because intents is not a denied key in lib/analytics/sanitize.ts:102-127, contradicting lib/spaces/provision.ts:282-283. lib/how/brief-tracker.ts:66 calls gtag without pixelSafeProps. Both carry business goals, not wellness data, today; the rule is no persona data to pixels, so the guard should not depend on that.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/funnel-audit-2026-11-27.mjs SCAN-1374",
+    "note": "Passes once the consequence in the title holds."
+  },
+  "wave": "W7"
+}

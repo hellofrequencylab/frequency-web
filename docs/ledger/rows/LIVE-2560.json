@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2560",
+  "title": "A Space owner can add an Only me date that no one else reads, and the team sees a Busy block",
+  "lane": "live",
+  "priority": "P2",
+  "size": "M",
+  "status": "done",
+  "source": {
+    "file": "supabase/migrations/20270346560000_calendar_only_me_entries.sql",
+    "ref": "Owner ask 2026-11-27 (project thread: Layer personal, business and collective calendars); ruling card 'Build it, team sees Busy'"
+  },
+  "detail": "Owner ask 2026-11-27: 'Really what I just want to do is be able to have private events on my own account.' The Private entry kind meant private to the Space TEAM (every editor, moderator and admin, plus site admins), so a personal appointment had nowhere to go.\n\nDONE 2026-11-27: one value on the existing visibility column ('only_me'), no new table. RLS keeps an only-me row to its created_by (read, update, delete, insert), private.can_write_entry follows (comments and activity on that date), and public.space_personal_busy() hands the rest of the team start, end, all-day and zone only. The quick add offers an Only me box on Private; the date shows on the owner's Private layer tagged 'Only me', teammates see a read-only Busy block on the Unavailable layer, Find a time counts it as busy, and the service-role private team feed skips it. An only-me date never joins a Plan. Bookings keep honouring blocks_time as before. Later step (not built): paste per-calendar Google secret iCal links as labelled personal and business layers.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/only-me-calendar-2026-11-27.mjs LIVE-2560",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}
