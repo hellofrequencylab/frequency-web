@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -13,23 +12,16 @@ import { openingMonth } from '@/lib/calendar/open-month'
 import { dayInZone } from '@/lib/time/zone'
 import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
 import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
-import { monthGridWindow, operatorHorizonWindow } from '@/lib/calendar/month-window'
+import { monthGridWindow } from '@/lib/calendar/month-window'
 import { loadSpaceCalendarMonth } from './actions'
 import { CalendarSeo } from './calendar-seo'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { getSpaceCapabilities, resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { loadAdminCalendar } from '@/lib/calendar/admin-calendar'
 import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
-import {
-  calendarViewCookieName,
-  firstSearchParam,
-  parseConsoleFlag,
-  resolveOperatorCalendarView,
-} from '@/lib/calendar/admin-views'
-import { parseTimeView, timeViewCookieName } from '@/lib/calendar/time-views'
-import { asksForPublicCalendar } from '@/lib/calendar/audience'
+import { firstSearchParam } from '@/lib/calendar/admin-views'
+import { audienceHref } from '@/lib/calendar/audience'
 import { CALENDAR_NAME } from '@/lib/calendar/name'
 
 // THE MERGED CALENDAR AND EVENTS PAGE (Events EC2, ADR-1385, ADR-1464, ADR-1467; merged by
@@ -38,18 +30,18 @@ import { CALENDAR_NAME } from '@/lib/calendar/name'
 // Calendar and Events were two menu rows over one subject: this tab, and the Home page's `#events`
 // section anchor beside it. They are one page now. This page composes, top to bottom:
 //   · the Up next band  — what is next at this Space, soonest first, as a feed (SpaceUpcomingFeed).
-//   · the control bar   — WHEN (month, zone, paging, jump), HOW (the surface switch, now drawn for a
-//                         MEMBER too), WHAT (the layer filter, when there is more than one layer),
-//                         ACTIONS (subscribe; plus Pencil / Fullscreen for the team).
-//   · the month grid, or the month's agenda, or — for the team — List and Workflow.
+//   · the control bar   — WHEN (month, paging, jump), HOW (Grid or List), WHAT (the layer filter,
+//                         when there is more than one layer), ACTIONS (Subscribe, and for the team
+//                         one "Open team calendar" button).
+//   · the month grid, or the month's agenda.
 //
-// ROLE BASED, AND THIS TAB STAYS ITS OWN PAGE (owner ruling 2026-10-29). A Space's team sees this page with
-// its sort functions in the header and moves a date between Pencil, Plan and Production right on it
-// (Workflow). The full calendar manager lives at the console route and is one link away. A visitor sees
-// the public calendar, and an admin asking for Public view (`?as=public`) lands on Guest preview.
-//
-// Operators load Guest and Admin data once. Views slide in a client shell.
-// Unsigned visitors stay Guest-only and never hit loadAdminCalendar.
+// ONE CALENDAR FOR EVERYONE (SCAN-1344, owner ruling 2026-11-25, "Public only, link to team";
+// supersedes the 2026-10-29 ruling that kept team tools on this tab). This tab is the guest calendar
+// for every viewer, the Space's team included. The team plans, pencils and runs events on the team
+// calendar at /spaces/<slug>/settings/calendar, and this page links there. An old operator link
+// (`?view=`, `?plan=`, `?item=`, `?console=`, `?look=`) still lands where it meant to go: an operator
+// is sent on to the team calendar, carrying `?plan=` when the link named one. Nobody's request on
+// this tab reads the team's records.
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -108,12 +100,6 @@ export default async function SpaceCalendarPage({
     />
   )
 
-  // THE SPACE'S OWN ZONE (LIVE-471), read once here so the console header, the staff drawer and Ask
-  // Vera all name the same one. Null when the Space has never said; those surfaces then fall back to
-  // the viewer's browser zone, which is what they all did before this row. Only the operator's half
-  // of this page reads it, so a guest's calendar view never names it. It rides the Space row already loaded above.
-  const spaceTimeZone = adminAllowed ? space.timeZone : null
-
   const grid = monthGridWindow(initialYear, initialMonth1)
   // THE BAND'S FLOOR IS THE SPACE'S OWN DAY (LIVE-520), never UTC's. `starts_at` holds the wall
   // clock as UTC parts, so a UTC floor drops tonight's 7 PM gathering from 5 PM Pacific onward --
@@ -158,82 +144,51 @@ export default async function SpaceCalendarPage({
   const skyMarkers = skyOn ? astroMarkersInRange(skyWindow[0], skyWindow[1], space.timeZone) : []
 
 
-  if (!adminAllowed) {
-    return (
-      <>
+  // An old operator deep link into the team views this tab used to carry goes to the team calendar.
+  if (adminAllowed && asksForTeamView(query)) {
+    const plan = firstSearchParam(query.plan)
+    redirect(plan ? `${audienceHref(slug, 'team')}?plan=${encodeURIComponent(plan)}` : audienceHref(slug, 'team'))
+  }
+
+  return (
+    <>
       <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
       <CalendarWorkspace
         slug={slug}
-        spaceId={space.id}
         brandName={brandName}
-        adminAllowed={false}
-        canManage={false}
-        initialView="guest"
-        initialListItem={null}
-        initialPlanId={null}
+        showTeamLink={adminAllowed}
         initialYear={initialYear}
         initialMonth1={initialMonth1}
         monthPinned={monthPinned}
         guestEvents={guestEvents}
         guestFirstUse={feed.isFirstUse}
-        adminEvents={[]}
-        dayNotes={[]}
-        plans={[]}
         subscribe={subscribe}
         upcoming={upcoming}
         memberLayers={memberLayers}
         skyMarkers={skyMarkers}
         loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
       />
-      </>
-    )
-  }
-
-  const jar = await cookies()
-  const remembered = jar.get(calendarViewCookieName(slug))?.value
-  const initialView = asksForPublicCalendar(query) ? 'guest' : resolveOperatorCalendarView(query.view, remembered)
-  // Day, Week or Timeline (LIVE-1178): the link names it, otherwise the last one this reader chose.
-  const initialTimeView = parseTimeView(query.look) ?? parseTimeView(jar.get(timeViewCookieName(slug))?.value)
-  const admin = await loadAdminCalendar(space.id, {
-    canManage,
-    year: initialYear,
-    month1: initialMonth1,
-    now,
-    // List and Workflow derive from this one read and never page, so the window is anchored on
-    // today and runs well past the end of a season (lib/calendar/month-window.ts says why).
-    entryWindow: operatorHorizonWindow(now),
-  })
-
-  return (
-    <>
-    <CalendarSeo slug={slug} brandName={brandName} timeZone={space.timeZone} rows={upcomingRows} />
-    <CalendarWorkspace
-      slug={slug}
-      spaceId={space.id}
-      brandName={brandName}
-      adminAllowed
-      canManage={canManage}
-      initialView={initialView}
-      initialListItem={firstSearchParam(query.item) ?? null}
-      initialPlanId={firstSearchParam(query.plan) ?? null}
-      initialConsole={parseConsoleFlag(query.console)}
-      initialTimeView={initialTimeView}
-      initialDay={spaceDay}
-      initialYear={initialYear}
-      initialMonth1={initialMonth1}
-        monthPinned={monthPinned}
-      guestEvents={guestEvents}
-      guestFirstUse={feed.isFirstUse}
-      adminEvents={admin.events}
-      dayNotes={admin.dayNotes}
-      plans={admin.plans}
-      spaceTimeZone={spaceTimeZone}
-      subscribe={subscribe}
-      upcoming={upcoming}
-      memberLayers={memberLayers}
-      skyMarkers={skyMarkers}
-      loadGuestMonth={loadSpaceCalendarMonth.bind(null, slug)}
-    />
     </>
+  )
+}
+
+const PUBLIC_VIEW = 'guest'
+
+/** True when the link names one of the old operator views on this tab. `?view=guest` was the Guest
+ *  preview, which is simply this page now, so it stays. */
+function asksForTeamView(query: {
+  view?: string | string[]
+  item?: string | string[]
+  plan?: string | string[]
+  console?: string | string[]
+  look?: string | string[]
+}): boolean {
+  const view = firstSearchParam(query.view)
+  return Boolean(
+    (view && view !== PUBLIC_VIEW) ||
+      firstSearchParam(query.plan) ||
+      firstSearchParam(query.item) ||
+      firstSearchParam(query.console) ||
+      firstSearchParam(query.look),
   )
 }

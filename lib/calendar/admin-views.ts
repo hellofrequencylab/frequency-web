@@ -2,7 +2,7 @@
 // Legacy timeline/projects URL values are accepted and safely mapped below.
 
 export const CALENDAR_ADMIN_VIEWS = ['guest', 'admin', 'list', 'workflow'] as const
-export type CalendarAdminView = (typeof CALENDAR_ADMIN_VIEWS)[number]
+type CalendarAdminView = (typeof CALENDAR_ADMIN_VIEWS)[number]
 
 export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   view: CalendarAdminView
@@ -109,11 +109,6 @@ export function resolveOperatorCalendarView(
     return parseAdminCalendarView(query)
   }
   return parseRememberedCalendarView(cookieView) ?? 'admin'
-}
-
-export function rememberCalendarView(slug: string, view: CalendarAdminView): void {
-  if (typeof document === 'undefined') return
-  document.cookie = `${calendarViewCookieName(slug)}=${view}; Path=/; Max-Age=31536000; SameSite=Lax`
 }
 
 // ─── ONE CONTROL, NOT TWO (LIVE-490, owner ask 2026-09-23: the List states "are super confused and
