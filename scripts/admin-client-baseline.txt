@@ -925,6 +925,7 @@ lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/shipping-profiles-store.ts
+lib/commerce/space-sales.ts
 lib/commerce/split-refund.ts
 lib/commerce/ticket-projection.ts
 lib/commerce/transfer-retry.ts
