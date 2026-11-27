@@ -1,11 +1,11 @@
 -- pgTAP guard for the meeting entry kind (LIVE-2533, migration 20270346520000).
 --
 -- The kind check gained exactly one value. A meeting saves with its agenda in description and its
--- notes in notes, a made-up kind is still refused, and a meeting cannot carry a stage (the stage
--- belongs to an event on its way). Runs via `supabase test db`, NOT under vitest.
+-- notes in notes, a made-up kind is still refused, and a meeting never keeps a stage (the stage
+-- belongs to an event on its way; the stage sync trigger clears it). Runs via `supabase test db`, NOT under vitest.
 
 begin;
-select plan(4);
+select plan(5);
 
 insert into auth.users (id, email) values ('00000000-0000-4000-a533-000000000001', 'meeting-owner@test.local');
 insert into public.profiles (id, auth_user_id, display_name, handle) values
@@ -45,12 +45,19 @@ select throws_ok($$
           '2026-12-03T00:00:00Z', '2026-12-04T00:00:00Z', 'America/Los_Angeles', false, 'team')
 $$, '23514', NULL, 'a made-up kind is still refused');
 
-select throws_ok($$
+select lives_ok($$
   insert into public.space_calendar_entries
-    (space_id, kind, title, all_day, starts_at, ends_at, time_zone, blocks_time, visibility, stage)
+    (space_id, kind, title, all_day, starts_at, ends_at, time_zone, blocks_time, visibility, stage, created_by)
   values ('00000000-0000-4000-c533-000000000001', 'meeting', 'Staged meeting', true,
-          '2026-12-03T00:00:00Z', '2026-12-04T00:00:00Z', 'America/Los_Angeles', false, 'team', 'pencil')
-$$, '23514', NULL, 'a meeting cannot carry an event stage');
+          '2026-12-03T00:00:00Z', '2026-12-04T00:00:00Z', 'America/Los_Angeles', false, 'team', 'pencil',
+          '00000000-0000-4000-b533-000000000001')
+$$, 'a meeting sent with a stage still saves');
+
+-- The stage sync trigger (20270345005500) clears the stage on every kind but pencil before the
+-- stage pairing check runs, so a meeting can never hold one.
+select results_eq($$
+  select count(*)::int from public.space_calendar_entries where title = 'Staged meeting' and stage is null
+$$, $$ values (1) $$, 'a meeting never carries an event stage');
 
 select * from finish();
 rollback;
