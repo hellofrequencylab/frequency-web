@@ -11,6 +11,7 @@
 // never passed off as the whole one. Server-only. No em or en dashes.
 
 import 'server-only'
+import { feeBearingSpaceId } from '@/lib/events/belonging'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -165,7 +166,7 @@ export async function findPayments(rawQuery: string | null | undefined, opts: { 
   if (eventIds.length) {
     const { data } = await db().from('events').select('id, title, host_space_id, space_id').in('id', eventIds)
     for (const e of (data ?? []) as { id: string; title: string | null; host_space_id: string | null; space_id: string | null }[]) {
-      events.set(e.id, { title: e.title, spaceId: e.host_space_id ?? e.space_id })
+      events.set(e.id, { title: e.title, spaceId: feeBearingSpaceId(e) })
     }
   }
   const spaceIds = [

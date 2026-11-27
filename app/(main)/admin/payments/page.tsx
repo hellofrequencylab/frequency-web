@@ -9,6 +9,8 @@ import { PayoutsToggle } from './payments-toggle'
 import { findPayments, type FoundPayment } from '@/lib/admin/payments-finder'
 import { EmptyState } from '@/components/ui/empty-state'
 import Link from 'next/link'
+import { formatPriceCents } from '@/lib/commerce/types'
+import { HOME_TZ } from '@/lib/time/home-zone'
 import { Input } from '@/components/ui/field'
 import { buttonClasses } from '@/components/ui/button'
 
@@ -21,10 +23,6 @@ export const dynamic = 'force-dynamic'
 // toggle autosaves with an inline "Saved".
 const KIND: Record<FoundPayment['kind'], string> = { ticket: 'Ticket', donation: 'Donation', order: 'Order' }
 
-function money(cents: number, currency: string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
-}
-
 // Staff answer "where is that payment?" here (LIVE-2547): every ticket, donation and shop order
 // across every Space, newest first, narrowed by a Stripe payment id, a guest email or a buyer name.
 function PaymentRow({ p }: { p: FoundPayment }) {
@@ -33,7 +31,7 @@ function PaymentRow({ p }: { p: FoundPayment }) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: 'America/Los_Angeles',
+    timeZone: HOME_TZ,
     timeZoneName: 'short',
   })
   return (
@@ -47,8 +45,8 @@ function PaymentRow({ p }: { p: FoundPayment }) {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-right text-body-sm">
-          <span className="font-semibold text-text">{money(p.amountCents, p.currency)}</span>
-          <span className="block text-2xs text-muted">fee {money(p.feeCents, p.currency)}</span>
+          <span className="font-semibold text-text">{formatPriceCents(p.amountCents, p.currency)}</span>
+          <span className="block text-2xs text-muted">fee {formatPriceCents(p.feeCents, p.currency)}</span>
         </span>
         {p.spaceSlug && (
           <Link href={`/spaces/${p.spaceSlug}/settings/shop?tab=orders`} className={buttonClasses('ghost', 'sm')}>
