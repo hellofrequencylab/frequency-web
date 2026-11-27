@@ -115,6 +115,5 @@ $$;
 comment on function public.space_personal_busy(uuid, date, date) is
   'Busy windows of teammates'' only-me calendar entries (LIVE-2560): times only, never details, and only to someone who can write the Space''s calendar. Skips the caller''s own rows and removed entries.';
 
-revoke all on function public.space_personal_busy(uuid, date, date) from public;
-revoke all on function public.space_personal_busy(uuid, date, date) from anon;
+revoke execute on function public.space_personal_busy(uuid, date, date) from public, anon;
 grant execute on function public.space_personal_busy(uuid, date, date) to authenticated;
