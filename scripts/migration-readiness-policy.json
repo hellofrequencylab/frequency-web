@@ -6691,9 +6691,9 @@
         },
         {
           "file": "docs/ledger/rows/LIVE-2560.json",
-          "status": "modified",
+          "status": "added",
           "sha256": "e536ff320a4cbf70a2d7f3c867d4db53a88e4ef4305ce60f45e89026d72bb593",
-          "baseMode": "100644",
+          "baseMode": "000000",
           "headMode": "100644"
         },
         {
@@ -6742,6 +6742,13 @@
           "file": "scripts/check-schema-contract.mjs",
           "status": "modified",
           "sha256": "f7e6ab456b096545f697b87bbcee2b31b37a312877efc0634f51ff4e6f8dfa58",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-shipped-ids.mjs",
+          "status": "modified",
+          "sha256": "343ab47235848bb8605805df7eb2be94f5deb108eb3810eb90e61161e83da866",
           "baseMode": "100644",
           "headMode": "100644"
         },
