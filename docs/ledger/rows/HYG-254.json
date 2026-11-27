@@ -4,16 +4,17 @@
   "lane": "hygiene",
   "priority": "P3",
   "size": "S",
-  "status": "open",
+  "status": "done",
   "source": {
     "file": "app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions.ts",
     "ref": "SCAN-1344 follow-up 2026-11-27 (plans and calendar clarity audit, doc https://claude.ai/artifact/GUTHmChGkqaEmPSRUdzJHz)"
   },
-  "detail": "FOUND 2026-11-27: removing the public Calendar tab's own team mode (SCAN-1344) left server actions with no caller. veraCalendarCommand, undoVeraChanges and listVeraChangeLog were called only by the tab's Ask Vera box (the team calendar has its own Vera command bar). startPlanFromEntry, createPenciledPlan and joinEntryToPlan are called only by staff-calendar.tsx, which SCAN-1345 removes. A server action nothing imports is a callable endpoint (the LIVE-468 rule). Fix: delete or un-export each once nothing imports it, with its tests and the PROG-CAL10 probe that reads the box. 2026-11-27 (SCAN-1345): the staff calendar retired and startPlanFromEntry, createPenciledPlan and joinEntryToPlan were deleted with it, so the plan-actions half is done. Only the three Vera actions remain, waiting on the owner decision on Vera for the team calendar.",
+  "detail": "FOUND 2026-11-27: removing the public Calendar tab's own team mode (SCAN-1344) left server actions with no caller. veraCalendarCommand, undoVeraChanges and listVeraChangeLog were called only by the tab's Ask Vera box (the team calendar has its own Vera command bar). startPlanFromEntry, createPenciledPlan and joinEntryToPlan are called only by staff-calendar.tsx, which SCAN-1345 removes. A server action nothing imports is a callable endpoint (the LIVE-468 rule). Fix: delete or un-export each once nothing imports it, with its tests and the PROG-CAL10 probe that reads the box. 2026-11-27 (SCAN-1345): the staff calendar retired and startPlanFromEntry, createPenciledPlan and joinEntryToPlan were deleted with it, so the plan-actions half is done. Only the three Vera actions remain, waiting on the owner decision on Vera for the team calendar. CLOSED 2026-11-27: the owner chose Ask Vera on the team calendar. VeraCalendarBox is back, in the team calendar's own sheet (the command bar hands it what was typed), so veraCalendarCommand, undoVeraChanges and listVeraChangeLog have a caller again. The staff-only plan actions were deleted in SCAN-1345 part 1 (#5526).",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/public-calendar-tab.mjs HYG-254",
     "note": "Fails while any listed action is exported and imported by nothing outside its own file and tests."
   },
+  "closed": "2026-11-27",
   "wave": "W7"
 }

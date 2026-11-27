@@ -31,6 +31,7 @@ export function SuiteCommand({
   items,
   onRun,
   onClose,
+  vera = false,
 }: {
   today: string
   timeZone: string
@@ -40,6 +41,8 @@ export function SuiteCommand({
   /** Runs a row. A create row comes with what was parsed. Returns a sentence when it failed. */
   onRun: (row: CommandRow, parsed: Parsed | null) => Promise<string | null>
   onClose: () => void
+  /** The viewer may change this calendar: offer Ask Vera for whatever is typed. */
+  vera?: boolean
 }) {
   const [text, setText] = useState('')
   const [idx, setIdx] = useState(0)
@@ -64,8 +67,9 @@ export function SuiteCommand({
         views,
         plans,
         items,
+        vera,
       }),
-    [text, parsed, views, plans, items],
+    [text, parsed, views, plans, items, vera],
   )
   const at = Math.min(idx, Math.max(0, rows.length - 1))
 
@@ -184,7 +188,7 @@ export function SuiteCommand({
                 {row.type === 'create' ? (
                   <i className="cal-cmd-dot" style={{ background: row.dot }} aria-hidden />
                 ) : (
-                  <FqIcon name={row.type === 'view' ? 'event' : row.type === 'today' ? 'clock' : row.type === 'plan' ? 'compass' : 'arrow'} size={16} />
+                  <FqIcon name={row.type === 'vera' ? 'vera' : row.type === 'view' ? 'event' : row.type === 'today' ? 'clock' : row.type === 'plan' ? 'compass' : 'arrow'} size={16} />
                 )}
                 <span className="cal-cmd-label">{row.label}</span>
                 <span className="cal-cmd-meta">{row.meta}</span>
