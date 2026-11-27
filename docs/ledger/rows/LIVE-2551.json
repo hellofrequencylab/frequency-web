@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2551",
+  "title": "A refunded ticket emails the buyer and tells the host by bell and email",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/tickets.ts",
+    "ref": "Owner ask 2026-11-27 (project thread: Trace the House of Fates payment); audit /mnt/project-files/payments-audit/PAYMENTS-ORDERS-TICKETS-AUDIT-2026-11-27.md"
+  },
+  "detail": "Before: a ticket refund (from the event page, the guest list, the Orders tab or the Stripe dashboard) flipped the row and freed the seat and told nobody. The buyer learned from their bank with no event name on it; the host learned from a smaller payout.\n\nDONE 2026-11-27: recordTicketRefund calls notifyTicketRefund once per row refund_ticket_atomic flipped. The buyer gets an email (a member at their account address on the transactional gate, a guest at the address they paid with unless it is suppressed) naming the event, the amount and when a bank shows it. The payee (the hosting Space's owner, else the host) gets a bell and an email with a link to Orders. Emails carry a dedupe key per ticket. A cancelled event sends nothing from here because the cancellation already writes each buyer. Never throws. No migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/ticket-refund-notice-2026-11-27.mjs LIVE-2551",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}
