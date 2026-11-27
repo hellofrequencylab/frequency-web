@@ -197,7 +197,7 @@ describe('a member bought a ticket to a personal event', () => {
       reference_id: 'ev-1',
       // The bell renders the actor's name in front of `body`, so this reads
       // "Dana bought 2 tickets to Sunrise Session".
-      body: 'bought 2 tickets to Sunrise Session',
+      body: 'bought 2 tickets to Sunrise Session for $40',
     })
   })
 
@@ -251,7 +251,7 @@ describe('a GUEST bought the ticket', () => {
     await notifyTicketSaleHost({ ...SALE, buyer_profile_id: null, guest_email: 'jo@example.com' })
     expect(bell()).toMatchObject({
       actor_id: null,
-      body: 'A guest bought 2 tickets to Sunrise Session',
+      body: 'A guest bought 2 tickets to Sunrise Session for $40',
     })
   })
 

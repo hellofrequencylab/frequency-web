@@ -85,6 +85,20 @@ export function overageLine(sale: Pick<SoldTicket, 'over_capacity' | 'tier_quant
   return `This tier is now past its limit: ${sold} sold against ${quantity}. You can refund a ticket or make room for one more.`
 }
 
+/** " for $44.00", or "" when the sale carried no amount. PURE. */
+export function bellAmount(sale: Pick<SoldTicket, 'amount_cents' | 'currency'>): string {
+  return typeof sale.amount_cents === 'number' && sale.amount_cents > 0
+    ? ` for ${formatPriceCents(sale.amount_cents, sale.currency)}`
+    : ''
+}
+
+/** The hosting Space's Orders tab, where the sale is listed (LIVE-2545), or null when unreadable. */
+async function spaceOrdersUrl(admin: ReturnType<typeof createAdminClient>, spaceId: string, appUrl: string): Promise<string | null> {
+  const { data } = await admin.from('spaces').select('slug').eq('id', spaceId).maybeSingle()
+  const slug = (data as { slug: string | null } | null)?.slug
+  return slug ? `${appUrl}/spaces/${slug}/settings/shop?tab=orders` : null
+}
+
 /** Tell the host they sold a ticket: a bell and an email.
  *
  *  Never throws. The money has already moved and the ticket is already `succeeded` by the time this
@@ -177,9 +191,10 @@ export async function notifyTicketSaleHost(sale: SoldTicket): Promise<void> {
     type: TICKET_SALE_NOTIFICATION_TYPE,
     reference_type: 'event',
     reference_id: sale.event_id,
+    // The amount rides in the bell (LIVE-2546): "bought a ticket" alone sent an owner hunting.
     body: sale.buyer_profile_id
-      ? `bought ${countLabel} to ${ev.title}`
-      : `${ANONYMOUS_BUYER} bought ${countLabel} to ${ev.title}`,
+      ? `bought ${countLabel} to ${ev.title}${bellAmount(sale)}`
+      : `${ANONYMOUS_BUYER} bought ${countLabel} to ${ev.title}${bellAmount(sale)}`,
   })
   if (bellErr) {
     console.error('[tickets] sale notice: bell insert failed', { ticketId: sale.id, error: bellErr.message })
@@ -222,6 +237,7 @@ export async function notifyTicketSaleHost(sale: SoldTicket): Promise<void> {
       ...cardFeeLabels(sale),
       overage,
       eventUrl: `${appUrl}/events/${ev.slug}`,
+      ordersUrl: ev.host_space_id ? await spaceOrdersUrl(admin, ev.host_space_id, appUrl) : null,
     }
 
     await enqueueEmail({
@@ -269,6 +285,8 @@ interface SaleCopy {
   netLabel?: string | null
   overage: string | null
   eventUrl: string
+  /** The hosting Space's Orders tab, or null for a personal event. */
+  ordersUrl?: string | null
 }
 
 /** The sale in one sentence, shared by both renderings so they can never drift. */
@@ -313,7 +331,7 @@ export function saleEmailHtml(c: SaleCopy): string {
 <p data-fq="fq-p" style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(saleSentence(c))}</p>
 ${overageBlock}
 <p data-fq="fq-muted" style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(payoutSentence(c))}</p>
-<p style="${EMAIL_P}color:${EMAIL_INK};"><a href="${c.eventUrl}" style="color:${EMAIL_INK};">See who’s coming</a></p>
+<p style="${EMAIL_P}color:${EMAIL_INK};"><a href="${c.eventUrl}" style="color:${EMAIL_INK};">See who’s coming</a>${c.ordersUrl ? ` · <a href="${c.ordersUrl}" style="color:${EMAIL_INK};">See it in your orders</a>` : ''}</p>
 `)
 }
 
@@ -321,5 +339,6 @@ export function saleEmailText(c: SaleCopy): string {
   const lines = [`Hi ${c.hostName},`, '', saleSentence(c)]
   if (c.overage) lines.push('', c.overage)
   lines.push('', payoutSentence(c), '', `See who’s coming: ${c.eventUrl}`)
+  if (c.ordersUrl) lines.push(`See it in your orders: ${c.ordersUrl}`)
   return lines.join('\n')
 }

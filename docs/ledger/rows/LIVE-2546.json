@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2546",
+  "title": "The ticket sale bell names the amount, and the sale email links to the Space's Orders tab",
+  "lane": "live",
+  "priority": "P2",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "lib/billing/ticket-sale-notify.ts",
+    "ref": "Owner report 2026-11-27 (project thread: Trace the House of Fates payment)"
+  },
+  "detail": "Owner report 2026-11-27: Toni got 'A guest bought a ticket to Hypnotic Sound by HOUSE OF FATES' in her bell with no amount, and the email linked only to the event page, so the sale read as a notice with no detail and no way to find it.\n\nDONE 2026-11-27: the bell body ends with the amount ('... for $44') whenever the sale carried one, and a Space-hosted sale's email links to that Space's Orders tab (which lists ticket sales since LIVE-2545) beside 'See who's coming'. Daniel approved updating the two bell-body test pins on the decision card 2026-11-27 16:30Z.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-sales-2026-11-27.mjs LIVE-2546",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}
