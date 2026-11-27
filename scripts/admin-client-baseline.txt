@@ -796,6 +796,7 @@ lib/admin/audit.ts
 lib/admin/content-signals.ts
 lib/admin/guard.ts
 lib/admin/journeys-context.ts
+lib/admin/payments-finder.ts
 lib/admin/practices-context.ts
 lib/ai/accounting.ts
 lib/ai/campaign-coach.ts
