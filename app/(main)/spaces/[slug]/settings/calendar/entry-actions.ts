@@ -8,35 +8,28 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import {
   candidateWrites,
-  entryDaySpan,
   MAX_CANDIDATE_DATES,
   occurrenceWrite,
   parseEntryInput,
   seriesLandsOn,
   type EntryInput,
 } from '@/lib/calendar/entries'
-import { asDayKey, expandPencilSeries, seriesRule, withExceptionDate } from '@/lib/calendar/pencil-series'
+import { asDayKey, seriesRule, withExceptionDate } from '@/lib/calendar/pencil-series'
 import { parseDayNoteInput, type DayNoteInput } from '@/lib/calendar/day-notes'
 import { deleteDayNote, insertDayNote, listDayNotes, updateDayNote } from '@/lib/calendar/day-notes-store'
-import { listSpaceCalendarEvents } from '@/lib/events/store'
 import {
   countOptionGroup,
   deleteCalendarEntryRow,
   getCalendarEntryRow,
   insertCalendarEntries,
   keepPencilDateRow,
-  listSpaceCalendarEntries,
-  listStaffCalendarItems,
   setEntryExceptionDates,
   splitCalendarSeriesRow,
   updateCalendarEntryRow,
 } from '@/lib/calendar/entries-store'
-import { monthGridWindow, safeMonth } from '@/lib/calendar/month-window'
 import { patchSpacePreferences, writeSpaceTimeZone } from '@/lib/spaces/store'
 import { isValidTimeZone } from '@/lib/time/zone'
-import { entryKind, entryStage } from '@/lib/calendar/registry'
-import type { CalendarEvent } from '@/lib/calendar/item'
-import { listDueDateItems } from '@/lib/calendar/due-dates-store'
+import { entryStage } from '@/lib/calendar/registry'
 import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 import { shortDateLabel } from '@/lib/calendar/short-date'
 import { reanchorPlanTodos, transitionPlanStage } from './plan-actions'
@@ -285,20 +278,6 @@ export async function saveCalendarEntryOccurrence(
   return ok()
 }
 
-/** One month of private entries for the staff calendar. [] for anyone who cannot edit the Space. */
-export async function loadStaffCalendarMonth(slug: string, year: number, month1: number): Promise<CalendarEvent[]> {
-  const month = safeMonth(year, month1)
-  if (!month) return []
-  const editor = await resolveEditor(slug)
-  if (!editor) return []
-  const { fromDay, toDay } = monthGridWindow(month.year, month.month1)
-  const [items, dueItems] = await Promise.all([
-    listStaffCalendarItems(editor.spaceId, fromDay, toDay, { editable: true }),
-    listDueDateItems(editor.spaceId, fromDay, toDay),
-  ])
-  return [...items, ...dueItems]
-}
-
 /** Keep one candidate date of a pencil and remove the others, atomically (ADR-1386, ADR-1388). */
 export async function pickPencilDate(slug: string, entryId: string): Promise<ActionResult<void>> {
   const editor = await resolveEditor(slug)
@@ -308,41 +287,6 @@ export async function pickPencilDate(slug: string, entryId: string): Promise<Act
   if ('error' in res) return fail(res.error)
   revalidate(slug)
   return ok()
-}
-
-/** What the entry being edited would overlap: events on this Space's calendar and its other entries.
- *  A warning, never a block (ADR-1386). Titles only; [] for anyone who cannot edit the Space. */
-export async function findEntryClashes(slug: string, entryId: string | null, input: EntryInput): Promise<string[]> {
-  const editor = await resolveEditor(slug)
-  if (!editor) return []
-  const parsed = parseEntryInput(input)
-  if ('error' in parsed) return []
-  const w = parsed.data
-  // A cancelled date is not competing for the time, so there is nothing to warn about.
-  if (w.status === 'cancelled') return []
-  const { dayKey, endDayKey } = entryDaySpan(w)
-  const toDay = new Date(Date.UTC(+endDayKey.slice(0, 4), +endDayKey.slice(5, 7) - 1, +endDayKey.slice(8, 10) + 1))
-    .toISOString()
-    .slice(0, 10)
-  const overlaps = (s: string, e: string | null) => s < w.ends_at && (e ?? s) > w.starts_at
-  const [entries, events] = await Promise.all([
-    listSpaceCalendarEntries(editor.spaceId, dayKey, toDay),
-    listSpaceCalendarEvents(editor.spaceId, { fromDay: dayKey }),
-  ])
-  const out: string[] = []
-  for (const ev of events) {
-    if (ev.starts_at.slice(0, 10) > endDayKey) continue
-    // An event with no end counts as its start hour.
-    const end = ev.ends_at ?? new Date(new Date(ev.starts_at).getTime() + 3_600_000).toISOString()
-    if (overlaps(ev.starts_at, end)) out.push(`Event: ${ev.title}`)
-  }
-  for (const en of entries) {
-    if (en.id === entryId || en.status === 'cancelled') continue
-    // A repeating entry competes for the time on each of its landings in these days, skips excluded.
-    const label = `${entryStage(en.stage)?.label ?? entryKind(en.kind)?.label ?? 'Entry'}: ${en.title}`
-    if (expandPencilSeries(en, { fromDay: dayKey, toDay }).some((o) => overlaps(o.starts_at, o.ends_at))) out.push(label)
-  }
-  return out.slice(0, 6)
 }
 
 async function nextDayNoteSort(spaceId: string): Promise<number> {

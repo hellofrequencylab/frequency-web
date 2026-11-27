@@ -70,6 +70,8 @@ export function planDoorStage(stage: Exclude<PlanStage, 'event'>): 'pencil' | 'p
 export interface ItemEdit {
   title?: string
   notes?: string
+  /** The public copy an event on its way carries into the event it becomes (pencil kinds only). */
+  description?: string
   /** The day it stands on, YYYY-MM-DD. */
   date?: string
   /** Minutes since midnight, or null for all day. */
@@ -112,6 +114,7 @@ function changesNothing(item: SuiteItem, edit: ItemEdit): boolean {
   const input = item.entryInput as EntryInput
   if (edit.title !== undefined && edit.title.trim() !== item.title) return false
   if (edit.notes !== undefined && edit.notes.trim() !== (input.notes ?? '').trim()) return false
+  if (edit.description !== undefined && edit.description.trim() !== (input.description ?? '').trim()) return false
   if (edit.date !== undefined && edit.date !== item.date) return false
   if (edit.startMin !== undefined && edit.startMin !== item.startMin) return false
   if (edit.durMin !== undefined && edit.durMin !== item.durMin) return false
@@ -126,6 +129,7 @@ function inputWith(item: SuiteItem, edit: ItemEdit, whole: boolean): EntryInput 
   const next: EntryInput = { ...input, candidateDates: [] }
   if (edit.title !== undefined) next.title = edit.title.trim()
   if (edit.notes !== undefined) next.notes = edit.notes.trim() || null
+  if (edit.description !== undefined) next.description = edit.description.trim() || null
   if (edit.date !== undefined && edit.date !== item.date) {
     const delta = diffDays(item.date, edit.date)
     if (whole) {

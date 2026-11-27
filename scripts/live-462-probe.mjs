@@ -28,11 +28,15 @@
 //
 // Exit 0 = done, 1 = not done, 79 = could not look.
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 
-const FILE = 'app/(main)/spaces/[slug]/settings/calendar/staff-calendar.tsx'
-if (!existsSync(FILE)) {
-  console.error(`could not read ${FILE}`)
+// SCAN-1345 (2026-11-27): the staff calendar's drawer (staff-calendar.tsx) was retired; the team
+// calendar is the suite (components/calendar-suite/), whose Details panel is where a date is edited
+// now. The defect is the same shape there: a write that also refreshes the route from the client
+// holds every `disabled={busy}` control until the second render lands. So this reads the suite.
+const DIR = 'components/calendar-suite/'
+if (!existsSync(DIR)) {
+  console.error(`could not read ${DIR}`)
   process.exit(79)
 }
 const fail = (m) => {
@@ -40,24 +44,24 @@ const fail = (m) => {
   process.exit(1)
 }
 
-const src = readFileSync(FILE, 'utf8')
-const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+const files = readdirSync(DIR).filter((n) => /\.tsx?$/.test(n) && !/\.test\./.test(n))
+const code = files.map((n) => strip(readFileSync(DIR + n, 'utf8'))).join('\n')
 
-// 1. The drawer's controls are still gated on `pending` — if that ever stops being true this probe
-//    is measuring nothing, and it should say so rather than pass quietly.
-if (!/disabled=\{pending\}/.test(code)) {
-  console.error('LIVE-462: no control in this drawer is disabled={pending} any more; re-read this probe before trusting it')
+// 1. The Details controls are still gated on the write in flight. If that ever stops being true this
+//    probe is measuring nothing, and it should say so rather than pass quietly.
+if (!/disabled=\{busy\}/.test(code)) {
+  console.error('LIVE-462: no control in the team calendar is disabled={busy} any more; re-read this probe before trusting it')
   process.exit(79)
 }
 
-// 2. NO CLIENT REFRESH IN THIS FILE. Any router.refresh() — in a transition, in a helper, in an
-//    effect — is a second render the action already did, and inside the transition it is the freeze.
+// 2. NO CLIENT REFRESH IN THE TEAM CALENDAR. Any router.refresh() is a second render the action
+//    already did, and while a write is in flight it is the freeze.
 if (/router\.refresh\(\)/.test(code)) {
   fail(
-    'router.refresh() is back in staff-calendar.tsx. The write actions already revalidate both ' +
-      'calendar routes inside the action, which re-renders the viewed page in the same round trip; ' +
-      'a client refresh on top is a second full render, and inside startTransition it re-freezes ' +
-      'every disabled={pending} control until it returns.',
+    'router.refresh() is in the team calendar (components/calendar-suite/). The write actions already ' +
+      'revalidate both calendar routes inside the action, which re-renders the viewed page in the same ' +
+      'round trip; a client refresh on top is a second full render that holds every disabled={busy} control.',
   )
 }
 
@@ -72,7 +76,7 @@ const both = actions + '\n' + entryActions
 if (!/function revalidate\(slug: string\) \{[\s\S]*?revalidatePath\(`\/spaces\/\$\{slug\}\/calendar`\)/.test(both)) {
   fail('revalidate(slug) no longer revalidates /spaces/<slug>/calendar, the route the drawer is used on, so nothing refreshes the page after a save now that the client refresh is gone')
 }
-for (const name of ['createPenciledPlan', 'saveCalendarEntry', 'deleteCalendarEntry']) {
+for (const name of ['saveCalendarEntry', 'deleteCalendarEntry']) {
   const at = both.indexOf(`export async function ${name}(`)
   if (at < 0) fail(`${name} is gone; re-read this probe`)
   const next = both.indexOf('\nexport async function ', at + 10)
@@ -82,23 +86,12 @@ for (const name of ['createPenciledPlan', 'saveCalendarEntry', 'deleteCalendarEn
   }
 }
 
-// 4. THE SECOND HALF OF THE SAME DEFECT: a successful save must leave the operator able to ACT.
-//    "Open Plan" used to be gated on finding the Plan inside the `plans` server prop, which on the
-//    one path that matters — opening the Plan the save just created — has not caught up. `find`
-//    returned undefined, the guard fell through to `setOpenPlan(null)`, and the button did nothing
-//    at all. `onOpenPlan` takes an ID (calendar-workspace.tsx's `selectPlan` only sets state and
-//    writes `?plan=`), so requiring the object was never necessary.
-const openPlan = code.slice(code.indexOf('Open Plan') - 1400, code.indexOf('Open Plan'))
-if (!openPlan.includes('onOpenPlan')) {
-  console.error('LIVE-462: could not find the Open Plan handler; re-read this probe before trusting it')
+// 4. The staff drawer's "Open Plan" button, which was gated on a stale server prop, retired with the
+//    drawer (SCAN-1345). The suite selects a Plan by its id (`select({ kind: 'plan', id })`), so there
+//    is no object lookup left to go stale.
+if (!/kind: 'plan', id/.test(code)) {
+  console.error('LIVE-462: could not find the team calendar selecting a Plan by id; re-read this probe before trusting it')
   process.exit(79)
 }
-if (/if \(onOpenPlan && plan\)/.test(openPlan) || /onOpenPlan && plans\.find/.test(openPlan)) {
-  fail(
-    'the Open Plan button is gated on finding the Plan in the `plans` server prop. That prop is ' +
-      'stale for the Plan the save just created, so the button silently does nothing on exactly ' +
-      'the path it exists for. Pass input.planId straight to onOpenPlan, which takes an id.',
-  )
-}
 
-console.log('✓ LIVE-462: no client refresh in the drawer, every write still revalidates the calendar routes, and Open Plan is not gated on a stale server prop.')
+console.log('✓ LIVE-462: no client refresh in the team calendar, every write still revalidates the calendar routes, and a Plan opens by id.')

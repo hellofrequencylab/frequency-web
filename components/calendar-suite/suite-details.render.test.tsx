@@ -248,7 +248,8 @@ describe('a date', () => {
     await mount({ sel, items: [item({ plan: 'p1' })], plans: [PLAN], actions })
     await click(button('Production'))
     expect(vi.mocked(actions.saveEntry).mock.calls[0][1]).toMatchObject({ stage: 'production' })
-    await click(button('Cancel'))
+    // A date on a Plan says it cancels the Plan, because it does (LIVE-467).
+    await click(button('Cancel the Plan'))
     expect(vi.mocked(actions.saveEntry).mock.calls[1][1]).toMatchObject({ stage: 'cancelled' })
   })
 
@@ -275,6 +276,14 @@ describe('a date', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('edits the public description of an event on its way and saves it on leave', async () => {
+    const actions = actionsOf()
+    await mount({ sel, items: [item()], actions })
+    await type(field('Description') as HTMLTextAreaElement, 'A slow supper by the water.')
+    await leave(field('Description'))
+    expect(vi.mocked(actions.saveEntry).mock.calls[0][1]).toMatchObject({ description: 'A slow supper by the water.' })
+  })
+
   it('shows the server sentence when a write is refused', async () => {
     const actions = actionsOf({ saveEntry: vi.fn(async () => ({ error: 'This is one of several possible dates. Keep one date before you move it past Pencil.' })) })
     await mount({ sel, items: [item()], actions })
@@ -297,6 +306,42 @@ describe('a date', () => {
     expect(actions.saveEntry).not.toHaveBeenCalled()
     expect(vi.mocked(actions.saveOccurrence).mock.calls[0].slice(0, 2)).toEqual(['entry-c', '2026-10-19'])
     expect(vi.mocked(actions.saveOccurrence).mock.calls[0][2]).toMatchObject({ title: 'Craft and tea' })
+  })
+
+  // LIVE-533, the owner's lost series: Delete on one date of a repeating entry asks which dates it
+  // means, says the whole-series delete cannot be undone, and This date only skips that one day and
+  // leaves the row alone. Moved here from the retired staff calendar's render test (SCAN-1345).
+  it('asks before deleting a repeating date: This date only skips that day, the series choice deletes the row', async () => {
+    const craft = item(
+      { id: 'entry-c:2026-10-19', entryId: 'entry-c', date: '2026-10-19', occurrenceDate: '2026-10-19', series: true, title: 'Craft night' },
+      { title: 'Craft night', repeat: 'FREQ=WEEKLY', startDate: '2026-10-05', endDate: '2026-10-05' },
+    )
+    const choice = (start: string) =>
+      [...$('[data-series-choice="delete"]')!.querySelectorAll('button')].find((b) => b.textContent?.startsWith(start))!
+
+    const one = actionsOf()
+    await mount({ sel: { kind: 'item', id: craft.id }, items: [craft], actions: one })
+    await click(button('Delete'))
+    expect(one.deleteEntry).not.toHaveBeenCalled()
+    const dialog = $('[data-series-choice="delete"]')?.textContent ?? ''
+    expect(dialog).toContain('This cannot be undone.')
+    expect(dialog).toContain('Delete the whole series')
+    expect(dialog).toContain('This date only (Mon, Oct 19)')
+    expect(dialog).toContain('Keep everything')
+    await click(choice('This date only'))
+    expect(one.skipDate).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(one.skipDate).mock.calls[0]).toEqual(['entry-c', '2026-10-19'])
+    expect(one.deleteEntry).not.toHaveBeenCalled()
+
+    act(() => root?.unmount())
+    document.body.innerHTML = ''
+    const all = actionsOf()
+    await mount({ sel: { kind: 'item', id: craft.id }, items: [craft], actions: all })
+    await click(button('Delete'))
+    await click(choice('Delete the whole series'))
+    expect(all.deleteEntry).toHaveBeenCalledTimes(1)
+    expect(all.deleteEntry).toHaveBeenCalledWith('entry-c')
+    expect(all.skipDate).not.toHaveBeenCalled()
   })
 
   it('offers Go live on a production and Go to event on an event, as links', async () => {

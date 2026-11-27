@@ -13,7 +13,7 @@ import { withReturnPath } from '@/lib/events/return-path'
 /** The three stages the row walks, in order. Cancelled is deliberately absent. */
 export const STAGE_PIPELINE: readonly EntryStage[] = ['pencil', 'planning', 'production'] as const
 
-export const PUBLISH_STEP = 'publish' as const
+const PUBLISH_STEP = 'publish' as const
 type TimelineStepKey = (typeof STAGE_PIPELINE)[number] | typeof PUBLISH_STEP
 
 type TimelineStepState = 'done' | 'current' | 'upcoming'
