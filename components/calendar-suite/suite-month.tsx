@@ -7,7 +7,8 @@ import { notesForDay, type DayNote } from '@/lib/calendar/day-notes'
 import { itemChip, todoChip, type ChipModel } from '@/lib/calendar/planner/chip'
 import { dayItems, isInvitePending, itemPartnerId } from '@/lib/calendar/planner/day-items'
 import { SEASON_WASH } from '@/lib/calendar/planner/kinds'
-import { monthName, monthSky, monthWeeks, monthsBetween, shiftMonth, skyOnDay } from '@/lib/calendar/planner/month'
+import { monthName, monthSky, monthsBetween, shiftMonth, skyOnDay } from '@/lib/calendar/planner/month'
+import { MonthGridWeekdays, monthGridWeeks } from '@/components/calendar/month-grid'
 import type { PlannerData } from '@/lib/calendar/planner/types'
 import { SuiteChip } from './suite-chip'
 import { isEmptyClick, type QuickAnchor, type SuiteContext, type SuiteSelection } from './suite-types'
@@ -26,7 +27,6 @@ const EXTEND_BY = 6
 const EXTEND_NEAR = 900
 /** A block counts as the one in view once its top passes the window's top by this much. */
 const TITLE_SYNC = 60
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 /** Chips a day shows before "+N more". */
 const DAY_CHIPS = 3
 
@@ -62,7 +62,7 @@ function SkyMark({ icon, house, label }: { icon: 'moon' | 'sun' | 'sign'; house:
 }
 
 const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes, sky, dnd, onSelect, onMore, onQuick }: BlockProps) {
-  const weeks = useMemo(() => monthWeeks(ym), [ym])
+  const weeks = useMemo(() => monthGridWeeks(ym), [ym])
   const info = useMemo(() => monthSky(ym, sky), [ym, sky])
   const year = ym.slice(0, 4)
   return (
@@ -88,9 +88,8 @@ const MonthBlock = memo(function MonthBlock({ ym, data, ctx, selectedKey, notes,
         ) : null}
       </header>
       {weeks.map((week) => (
-        <div className="cal-week" key={week[0]}>
-          {week.map((day) => {
-            const inMonth = day.slice(0, 7) === ym
+        <div className="cal-week" key={week[0].date}>
+          {week.map(({ date: day, inMonth }) => {
             if (!inMonth) return <div className="cal-day" data-out key={day} aria-hidden />
             const { items, todos } = dayItems(data, day, ctx.ownSpaceId)
             const live = items.filter((i) => i.kind !== 'cancelled')
@@ -293,11 +292,7 @@ export function SuiteMonth({
   const selectedKey = selKey(sel)
   return (
     <div className="cal-month" ref={root} data-ready="false">
-      <div className="cal-weekdays" aria-hidden>
-        {WEEKDAYS.map((d) => (
-          <span key={d}>{d}</span>
-        ))}
-      </div>
+      <MonthGridWeekdays className="cal-weekdays" hidden />
       <div className="cal-scroll" ref={scroller} onScroll={onScroll} tabIndex={-1}>
         {win.start > minYm ? null : <p className="cal-edge cal-serif">This is as far back as the calendar loads.</p>}
         {months.map((ym) => (

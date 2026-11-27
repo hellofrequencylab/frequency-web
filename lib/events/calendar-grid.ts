@@ -7,6 +7,9 @@
 // `starts_at` directly (no conversion) — a 7pm event shows on the day the host set it, in every viewer's
 // grid. (Converting to the viewer's zone is a per-viewer refinement for a later phase.)
 
+import { monthWeeks } from '@/lib/calendar/planner/month'
+import { WEEKDAY_SHORT_LABELS } from '@/lib/calendar/week-start'
+
 /** A single day cell in the month grid. `date` is YYYY-MM-DD; `inMonth` is false for the leading/trailing
  *  days that pad the first/last week (shown greyed). */
 export interface DayCell {
@@ -36,31 +39,16 @@ export function addMonth(year: number, month1: number, delta: number): { year: n
 }
 
 /**
- * The weeks of the month grid for `year`/`month1` (month1 is 1-12). Weeks start on Sunday. The grid runs
- * from the Sunday on/before the 1st to the Saturday on/after the last day, so every row is a full 7-day
- * week and the month's days sit in their real weekday columns. Pure + deterministic (no `now`).
+ * The weeks of the month grid for `year`/`month1` (month1 is 1-12). Weeks start on the one week start
+ * (lib/calendar/week-start.ts). The grid runs from the week's first day on/before the 1st to its last
+ * day on/after the month's last day, so every row is a full 7-day week and the month's days sit in
+ * their real weekday columns. Pure + deterministic (no `now`).
  */
 export function monthMatrix(year: number, month1: number): DayCell[][] {
-  const firstOfMonth = new Date(Date.UTC(year, month1 - 1, 1))
-  const lastOfMonth = new Date(Date.UTC(year, month1, 0)) // day 0 of next month = last day of this one
-  // Back up to the Sunday starting the first week; advance to the Saturday ending the last week.
-  const start = new Date(firstOfMonth)
-  start.setUTCDate(start.getUTCDate() - start.getUTCDay())
-  const end = new Date(lastOfMonth)
-  end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()))
-
-  const weeks: DayCell[][] = []
-  const cursor = new Date(start)
-  while (cursor.getTime() <= end.getTime()) {
-    const week: DayCell[] = []
-    for (let i = 0; i < 7; i++) {
-      const date = `${cursor.getUTCFullYear()}-${pad2(cursor.getUTCMonth() + 1)}-${pad2(cursor.getUTCDate())}`
-      week.push({ date, inMonth: cursor.getUTCMonth() === month1 - 1 })
-      cursor.setUTCDate(cursor.getUTCDate() + 1)
-    }
-    weeks.push(week)
-  }
-  return weeks
+  // ONE GEOMETRY (SCAN-1345): the team calendar's month engine draws the weeks, so the public grid
+  // and the team grid can never disagree on which column a date sits in.
+  const ym = `${year}-${pad2(month1)}`
+  return monthWeeks(ym).map((week) => week.map((date) => ({ date, inMonth: date.slice(0, 7) === ym })))
 }
 
 /** The event's calendar day key (YYYY-MM-DD) — the date portion of `starts_at` (the stored wall-clock
@@ -72,8 +60,8 @@ export function eventDayKey(startsAt: string | null | undefined): string | null 
   return m ? m[1] : null
 }
 
-/** The weekday column headers for a Sunday-start grid. */
-export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+/** The weekday column headers, first day of the week first. */
+export const WEEKDAY_LABELS = WEEKDAY_SHORT_LABELS
 
 /** The twelve short month names, for a month-and-year jump and a list view's date pill. One copy,
  *  because the grid and the console header both draw a jump now. */

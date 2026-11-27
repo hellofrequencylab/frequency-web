@@ -8,7 +8,8 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 import { planStats } from '@/lib/calendar/planner/board'
 import { addDays, lastDay } from '@/lib/calendar/planner/days'
 import { KINDS } from '@/lib/calendar/planner/kinds'
-import { monthName, monthWeeks, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthName, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthGridWeekdays, monthGridWeeks } from '@/components/calendar/month-grid'
 import { SUITE_LAYERS, layerCounts } from '@/lib/calendar/planner/suite-model'
 import { teamLoad } from '@/lib/calendar/planner/team-load'
 import type { PlanStage, PlannerData, PlannerLayer } from '@/lib/calendar/planner/types'
@@ -51,7 +52,7 @@ function MiniMonth({
   onPick: (day: string) => void
 }) {
   const [ym, setYm] = useState(initialYm)
-  const weeks = useMemo(() => monthWeeks(ym), [ym])
+  const weeks = useMemo(() => monthGridWeeks(ym).map((w) => w.map((d) => d.date)), [ym])
   return (
     <section className="cal-mini" aria-label="Mini month">
       <div className="cal-mini-bar">
@@ -66,7 +67,7 @@ function MiniMonth({
         </button>
       </div>
       <div className="cal-mini-grid" role="grid">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+        {monthGridWeekdays('letter').map((d, i) => (
           <span key={i} className="cal-mini-wd" aria-hidden>
             {d}
           </span>

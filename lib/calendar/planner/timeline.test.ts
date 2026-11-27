@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { TIMELINE_DAYS, buildTimeline, dueState } from './timeline'
 import type { PlannerData, PlannerItem, PlannerPlan, PlannerTask } from './types'
 
-const today = '2026-10-21' // a Wednesday; this week's Monday is Oct 19; the span starts a week earlier, Oct 12, and ends Dec 14
+const today = '2026-10-21' // a Wednesday; this week starts Sunday Oct 18 (lib/calendar/week-start.ts); the span starts a week earlier, Oct 11, and ends Dec 13
 const plan = (o: Partial<PlannerPlan> & { id: string }): PlannerPlan => ({
   title: o.id, stage: 'planning', target: 'Event', team: ['dt'], spaces: [], ...o,
 })
@@ -13,17 +13,17 @@ const task = (o: Partial<PlannerTask> & { id: string }): PlannerTask => ({ title
 const data = (o: Partial<PlannerData>): PlannerData => ({ items: [], tasks: [], plans: [], ...o })
 
 describe('buildTimeline', () => {
-  it('starts nine weeks from last Monday and labels each week', () => {
+  it('starts nine weeks from the first day of last week and labels each week', () => {
     const t = buildTimeline(data({}), today)
-    expect(t.start).toBe('2026-10-12')
+    expect(t.start).toBe('2026-10-11')
     expect(t.weeks).toHaveLength(9)
-    expect(t.weeks[0]).toEqual({ label: 'Oct 12', leftPct: 0 })
-    expect(t.weeks[1].label).toBe('Oct 19')
-    expect(t.weeks[8].label).toBe('Dec 7')
+    expect(t.weeks[0]).toEqual({ label: 'Oct 11', leftPct: 0 })
+    expect(t.weeks[1].label).toBe('Oct 18')
+    expect(t.weeks[8].label).toBe('Dec 6')
     expect(t.weeks[1].leftPct).toBeCloseTo(100 / 9, 6)
   })
   it('puts today on the line', () => {
-    expect(buildTimeline(data({}), today).todayPct).toBeCloseTo((9 * 100) / TIMELINE_DAYS, 6)
+    expect(buildTimeline(data({}), today).todayPct).toBeCloseTo((10 * 100) / TIMELINE_DAYS, 6)
   })
   it('drops cancelled Plans', () => {
     const t = buildTimeline(data({ plans: [plan({ id: 'a' }), plan({ id: 'b', stage: 'cancelled' })] }), today)
@@ -36,8 +36,8 @@ describe('buildTimeline', () => {
       tasks: [task({ id: 't', plan: 'a', due: '2026-10-19' })],
     })
     const [row] = buildTimeline(d, today).rows
-    // Bar: Oct 19 (day 7) through Oct 28 inclusive (end Oct 29 = day 17): 10 days wide.
-    expect(row.bar.leftPct).toBeCloseTo((7 * 100) / 63, 6)
+    // Bar: Oct 19 (day 8) through Oct 28 inclusive (end Oct 29 = day 18): 10 days wide.
+    expect(row.bar.leftPct).toBeCloseTo((8 * 100) / 63, 6)
     expect(row.bar.widthPct).toBeCloseTo((10 * 100) / 63, 6)
     expect(row.bar.startsBefore).toBe(false)
     expect(row.bar.bd).toContain('24%')
@@ -52,7 +52,7 @@ describe('buildTimeline', () => {
   })
   it('sits a Plan with no dates at today', () => {
     const [row] = buildTimeline(data({ plans: [plan({ id: 'a' })] }), today).rows
-    expect(row.bar.leftPct).toBeCloseTo((9 * 100) / 63, 6)
+    expect(row.bar.leftPct).toBeCloseTo((10 * 100) / 63, 6)
     expect(row.health.label).toBe('Needs a date')
   })
   it('says when a bar runs past either edge instead of faking a date', () => {
@@ -86,7 +86,7 @@ describe('buildTimeline', () => {
   })
   it('places a hold', () => {
     const d = data({ plans: [plan({ id: 'a', stage: 'pencil', hold: '2026-10-28' })] })
-    expect(buildTimeline(d, today).rows[0].holdPct).toBeCloseTo((16 * 100) / 63, 6)
+    expect(buildTimeline(d, today).rows[0].holdPct).toBeCloseTo((17 * 100) / 63, 6)
   })
   it('says which edge a date or due falls past, so the view does not draw a clamped one', () => {
     const d = data({
@@ -98,9 +98,9 @@ describe('buildTimeline', () => {
         item({ id: 'runs-in', plan: 'a', date: '2026-10-05', end: '2026-10-14' }),
       ],
       tasks: [
-        task({ id: 'before', plan: 'a', due: '2026-10-11' }),
-        task({ id: 'first', plan: 'a', due: '2026-10-12' }),
-        task({ id: 'after', plan: 'a', due: '2026-12-14' }),
+        task({ id: 'before', plan: 'a', due: '2026-10-10' }),
+        task({ id: 'first', plan: 'a', due: '2026-10-11' }),
+        task({ id: 'after', plan: 'a', due: '2026-12-13' }),
       ],
     })
     const [row] = buildTimeline(d, today).rows

@@ -20,21 +20,26 @@ const OCT: AstroMarker[] = [
 ]
 
 describe('monthWeeks', () => {
-  it('starts on the Monday on or before the 1st and runs whole weeks', () => {
+  // Weeks start on Sunday (lib/calendar/week-start.ts, SCAN-1345).
+  it('starts on the Sunday on or before the 1st and runs whole weeks', () => {
     const weeks = monthWeeks('2026-10')
-    expect(weeks[0][0]).toBe('2026-09-28')
+    expect(weeks[0][0]).toBe('2026-09-27')
     expect(weeks[0]).toHaveLength(7)
     expect(weeks).toHaveLength(5)
-    expect(weeks[4][6]).toBe('2026-11-01')
+    expect(weeks[4][6]).toBe('2026-10-31')
   })
   it('uses six rows when the month needs them', () => {
     const weeks = monthWeeks('2026-08')
-    expect(weeks[0][0]).toBe('2026-07-27')
+    expect(weeks[0][0]).toBe('2026-07-26')
     expect(weeks).toHaveLength(6)
-    expect(weeks[5][0]).toBe('2026-08-31')
+    expect(weeks[5][0]).toBe('2026-08-30')
   })
   it('holds four rows for a February that fits', () => {
-    expect(monthWeeks('2027-02')).toHaveLength(4)
+    expect(monthWeeks('2026-02')).toHaveLength(4)
+    expect(monthWeeks('2026-02')[0][0]).toBe('2026-02-01')
+  })
+  it('draws the same weeks as the public grid', () => {
+    expect(monthWeeks('2026-07')[0][0]).toBe('2026-06-28')
   })
 })
 

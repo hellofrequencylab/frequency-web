@@ -1,5 +1,6 @@
 import { daysBetween, shiftDayKey } from '../date-move'
 import { shortDateLabel } from '../short-date'
+import { daysIntoWeek } from '../week-start'
 
 // DAY AND CLOCK ARITHMETIC for the planner engine. Day keys are YYYY-MM-DD and every sum is UTC, so a
 // daylight-saving shift can never move a date. The two primitives are the existing ones in
@@ -23,9 +24,9 @@ export function dayOfWeek(key: string): number {
   return new Date(`${key}T00:00:00.000Z`).getUTCDay()
 }
 
-/** The Monday on or before `key` (weeks start on Monday). */
-export function mondayOnOrBefore(key: string): string {
-  return addDays(key, -((dayOfWeek(key) + 6) % 7))
+/** The first day of the week `key` sits in (lib/calendar/week-start.ts names that day). */
+export function weekStartOnOrBefore(key: string): string {
+  return addDays(key, -daysIntoWeek(dayOfWeek(key)))
 }
 
 /** The last day an item runs on: `end` when it spans, else its own date. */
