@@ -157,6 +157,16 @@ zone; a subscribe button that downloads a dead snapshot; burying the grid behind
 - **Calendar surfaces compose the page framework** (`IndexTemplate` for the grid; the rail falls
   through to `'global'` — no `page-chrome` edit needed).
 
+## One month grid, one week start (SCAN-1345)
+
+The public Calendar tab (`components/events/event-calendar.tsx`) and the team calendar
+(`components/calendar-suite/suite-month.tsx`) look different, but they draw the same grid. Both take
+their weeks and their weekday header from `components/calendar/month-grid.tsx`, and the day a week
+starts on is one constant, `WEEK_STARTS_ON` in `lib/calendar/week-start.ts` (Sunday). The team
+calendar's week view, mini-month and Pencil it in, the timeline, and a Space website's month
+(`components/sites/site-month.tsx`) follow the same constant. A surface brings its own day cell and
+classes. It never works out which column a date sits in. The old staff grid was removed in #5526.
+
 ## Calendar and Events are ONE page (LIVE-520)
 
 Owner ask, 2026-09-27: *"Calendar & Events should be all one page: Please design a page structure

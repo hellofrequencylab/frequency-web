@@ -7,7 +7,8 @@ import { IconButton } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { CalendarPreview } from '@/components/events/event-calendar'
 import { SITE_MONTH_CSS } from '@/components/sites/site-month-css'
-import { monthName, monthWeeks, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthName, shiftMonth } from '@/lib/calendar/planner/month'
+import { monthGridWeekdays, monthGridWeeks } from '@/components/calendar/month-grid'
 import { siteDayItems, siteMonthAgenda, type SiteMonthItem } from '@/lib/calendar/site-month'
 import type { CalendarEvent } from '@/lib/calendar/item'
 
@@ -21,7 +22,6 @@ import type { CalendarEvent } from '@/lib/calendar/item'
 
 /** Chips a day shows before "+N more". */
 const DAY_CHIPS = 3
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const DAY_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 type View = 'auto' | 'month' | 'agenda'
@@ -110,7 +110,7 @@ export function SiteMonth({
     () => serverToday,
   )
 
-  const weeks = useMemo(() => monthWeeks(ym), [ym])
+  const weeks = useMemo(() => monthGridWeeks(ym).map((w) => w.map((d) => d.date)), [ym])
   const agenda = useMemo(() => siteMonthAgenda(items, ym), [items, ym])
   const year = ym.slice(0, 4)
   const atMin = ym <= minYm
@@ -158,7 +158,7 @@ export function SiteMonth({
       <div className="sm-month-panel">
         <div className="sm-card" role="grid" aria-label={`${monthName(ym)} ${year}`}>
           <div className="sm-weekdays" aria-hidden>
-            {WEEKDAYS.map((d) => (
+            {monthGridWeekdays('short').map((d) => (
               <span key={d}>{d}</span>
             ))}
           </div>

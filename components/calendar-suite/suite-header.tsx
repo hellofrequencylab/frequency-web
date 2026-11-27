@@ -5,7 +5,7 @@ import { FqIcon } from '@/components/frequency/icon'
 import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { CalendarAudienceToggle } from './audience-toggle'
-import { addDays, mondayOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
+import { addDays, weekStartOnOrBefore, monthDayLabel, weekdayName } from '@/lib/calendar/planner/days'
 import { monthName } from '@/lib/calendar/planner/month'
 import {
   PLAN_LAYOUTS,
@@ -32,7 +32,7 @@ function titleFor(view: SuiteView, cursor: string): string {
   if (view === 'timeline') return 'Next nine weeks'
   if (view === 'day') return `${weekdayName(cursor)}, ${monthDayLabel(cursor)}`
   if (view === 'week') {
-    const start = mondayOnOrBefore(cursor)
+    const start = weekStartOnOrBefore(cursor)
     const end = addDays(start, 6)
     return end.slice(0, 7) === start.slice(0, 7)
       ? `${monthDayLabel(start)} to ${Number(end.slice(8, 10))}`

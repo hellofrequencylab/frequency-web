@@ -8,7 +8,7 @@ import {
   diffDays,
   lastDay,
   lengthLabel,
-  mondayOnOrBefore,
+  weekStartOnOrBefore,
   monthDayLabel,
   spansDay,
   weekdayName,
@@ -28,11 +28,11 @@ describe('day arithmetic', () => {
     expect(addDays('nope', 3)).toBe('nope')
     expect(diffDays('nope', '2026-10-21')).toBe(0)
   })
-  it('finds the Monday of a week', () => {
+  it('finds the first day of a week (Sunday, lib/calendar/week-start.ts)', () => {
     expect(dayOfWeek('2026-10-21')).toBe(3)
-    expect(mondayOnOrBefore('2026-10-21')).toBe('2026-10-19')
-    expect(mondayOnOrBefore('2026-10-25')).toBe('2026-10-19')
-    expect(mondayOnOrBefore('2026-10-26')).toBe('2026-10-26')
+    expect(weekStartOnOrBefore('2026-10-21')).toBe('2026-10-18')
+    expect(weekStartOnOrBefore('2026-10-24')).toBe('2026-10-18')
+    expect(weekStartOnOrBefore('2026-10-25')).toBe('2026-10-25')
     expect(weekdayName('2026-10-21')).toBe('Wednesday')
   })
   it('knows what a run covers', () => {

@@ -28,15 +28,13 @@ import { Dialog } from '@/components/ui/dialog'
 import { buttonClasses } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
-  monthMatrix,
   monthLabel,
   addMonth,
   calendarChrome,
   cellFloorClass,
-  WEEKDAY_LABELS,
   SHORT_MONTH_LABELS,
-  type DayCell,
 } from '@/lib/events/calendar-grid'
+import { MonthGridWeekdays, monthGridWeeks, type MonthGridDay } from '@/components/calendar/month-grid'
 import { CalendarLayerChips, CalendarViewSwitch, MonthJumpPanel, countByMonthKey, monthCount } from '@/components/events/calendar-chrome'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 import { IconButton } from '@/components/ui/icon-button'
@@ -768,7 +766,7 @@ export function EventCalendar({
     return byDay
   }, [skyMarkers])
 
-  const weeks = useMemo(() => monthMatrix(year, month1), [year, month1])
+  const weeks = useMemo(() => monthGridWeeks(monthKey(year, month1)), [year, month1])
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
     for (const ev of all) {
@@ -864,7 +862,7 @@ export function EventCalendar({
   const viewSwitch = <CalendarViewSwitch view={view} onView={setView} />
 
   /** The week rows of one month. One month under `page`; every month of the band under `scroll`. */
-  const renderWeeks = (rows: DayCell[][]) =>
+  const renderWeeks = (rows: MonthGridDay[][]) =>
     rows.map((week) => (
               // 🔴 `min-h-0` IS WHY THE LAST WEEK IS ON SCREEN (owner report 2026-09-27: "I am unable
               // to see the fifth week on any month"). A column-flex item's automatic minimum size is
@@ -878,7 +876,7 @@ export function EventCalendar({
               // this className); `min-h-0` is what makes it mean share.
               <div key={week[0].date} role={dayGrid ? 'row' : undefined} className={cn('grid grid-cols-7 border-b border-border last:border-b-0', fill && 'min-h-0 flex-1', scroll && 'flex-none')}>
                 {week.map((cell) => {
-                  // A PADDED DAY IS A PLACEHOLDER UNDER THE SCROLL (LIVE-530). monthMatrix pads each
+                  // A PADDED DAY IS A PLACEHOLDER UNDER THE SCROLL (LIVE-530). monthGridWeeks pads each
                   // month to whole weeks, so 2026-09-30 is a cell in BOTH the September and the
                   // October band. Drawn twice, a chip is two buttons with one name, a drop ring
                   // paints in two places and post-move focus can land on the copy a month away. So
@@ -1485,14 +1483,16 @@ export function EventCalendar({
             onToggle={(key) => setActiveSeries((cur) => (cur === key ? null : key))}
           />
           <DayGridFrame on={dayGrid && !scroll} label={monthLabel(year, month1)} fill={fill}>
-          <div className="grid grid-cols-7 border-b border-border" role={dayGrid ? 'row' : undefined}>
-            {WEEKDAY_LABELS.map((label) => (
+          <MonthGridWeekdays
+            className="grid grid-cols-7 border-b border-border"
+            role={dayGrid ? 'row' : undefined}
+            cell={(label) => (
               <div key={label} role={dayGrid ? 'columnheader' : undefined} className="px-2 py-2 text-center text-2xs font-semibold text-muted">
                 <span className="hidden sm:inline">{label}</span>
                 <span className="sm:hidden">{label[0]}</span>
               </div>
-            ))}
-          </div>
+            )}
+          />
 
           {/* The gesture surface stays mounted across months (its listeners live on it); the inner
               wrapper re-keys per month so the slide replays. */}
@@ -1535,7 +1535,7 @@ export function EventCalendar({
                     {monthDidNotLoad(failedKeys, key) && (
                       <MonthLoadError year={parts.year} month1={parts.month1} onRetry={() => ensureMonth(key)} />
                     )}
-                    <div data-calendar-month={key}>{renderWeeks(monthMatrix(parts.year, parts.month1))}</div>
+                    <div data-calendar-month={key}>{renderWeeks(monthGridWeeks(key))}</div>
                   </section>
                 )
               })}
