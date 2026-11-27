@@ -22,6 +22,7 @@ import { cartEnabled } from '@/lib/commerce/cart-flag'
 import { saveSpaceShippingProfile } from '@/lib/commerce/shipping-profiles-store'
 import { upsertVariants } from '@/lib/commerce/variants'
 import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
+import { refundSpaceSale, type RefundableSaleKind } from '@/lib/commerce/space-refunds'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
@@ -47,7 +48,7 @@ import type {
 
 /** Resolve the Space + assert the caller may manage it (write authority). Returns the space id, or null
  *  when the caller is not an editor (a staff preview is read-only, so it cannot write). */
-async function gateSpaceWrite(slug: string): Promise<{ spaceId: string } | null> {
+async function gateSpaceWrite(slug: string): Promise<{ spaceId: string; role: string | null } | null> {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return null
@@ -60,7 +61,7 @@ async function gateSpaceWrite(slug: string): Promise<{ spaceId: string } | null>
   // write can never bypass a disabled or role-locked Shop (server actions are addressable on their own).
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
   if (!spaceFunctionAccess(space, 'shop', caps.role)) return null
-  return { spaceId: space.id }
+  return { spaceId: space.id, role: caps.role ?? null }
 }
 
 /** Map the editor's `kind` to (product_kind, vertical). Service items sit on the 'service' vertical; a
@@ -376,6 +377,27 @@ export async function setOrderFulfillmentAction(
   if (!result.ok) console.warn('[shop] fulfilment refused', { slug, orderId, status, reason: result.error })
   revalidatePath(`/spaces/${slug}/settings/shop`)
   revalidatePath('/orders')
+}
+
+/**
+ * Refund one of this Space's sales from the Orders tab (LIVE-2550): a shop order, a ticket or a
+ * donation, in full. Real money, so the gate is tighter than the rest of the Shop: the owner or a
+ * Space admin only (an editor can list and fulfil, not send money back). refundSpaceSale pins the
+ * sale to this Space before anything moves.
+ */
+export async function refundSpaceSaleAction(
+  slug: string,
+  kind: RefundableSaleKind,
+  id: string,
+): Promise<{ ok: true } | { error: string }> {
+  const gate = await gateSpaceWrite(slug)
+  if (!gate) return { error: 'You can’t refund sales for this Space.' }
+  if (gate.role !== 'admin') return { error: 'Only the owner or an admin can refund a sale.' }
+  if (kind !== 'order' && kind !== 'ticket' && kind !== 'donation') return { error: 'That sale can’t be refunded here.' }
+  const result = await refundSpaceSale(gate.spaceId, kind, id)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+  revalidatePath('/orders')
+  return result
 }
 
 /** Save the Storefront tab settings: the renameable tab label + the published toggle (Phase 6 surfaces

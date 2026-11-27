@@ -75,6 +75,10 @@ export const MIN_IDS = 10
  *  without the reason.
  *  @type {Record<string, string>} */
 export const EXCEPTIONS = {
+  'LIVE-2560':
+    'Named before its row merged. #5532 (2026-11-27) is the migration-readiness registration for PR #5531, ' +
+    'whose title names LIVE-2560 while the row itself lands with #5531. #5531 removes this entry in the same ' +
+    'merge that adds the row, so the exception lives only until the feature does.',
   'LIVE-044':
     'Retracted, not shipped. #2154 (de76c12a2, 2026-08-18) is titled "Retract LIVE-044: the 45-file ' +
     'label claim was false"; the row was withdrawn the day it was minted and LIVE-046 carries what ' +

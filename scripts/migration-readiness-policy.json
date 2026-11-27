@@ -6643,6 +6643,154 @@
         "Real local service, anon and authenticated Launch API acceptance",
         "Always destroy dispatched staging containers and volumes"
       ]
+    },
+    {
+      "pullRequest": 5531,
+      "expiresAt": "2026-12-04T00:00:00Z",
+      "migrations": [
+        {
+          "file": "supabase/migrations/20270346560000_calendar_only_me_entries.sql",
+          "sha256": "f408ef7dc4d3cef085a70b10956c46fbbc9698453a433ea0152d1a956f4bea12"
+        }
+      ],
+      "reviewedChanges": [
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/find-time-actions.ts",
+          "status": "modified",
+          "sha256": "61cd1a15133464fe515e66f2c167f4a105fb9e9a58bb5619cadea6aa3c593da6",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/(main)/spaces/[slug]/settings/calendar/pencil-actions.ts",
+          "status": "modified",
+          "sha256": "e9052b261f1612ec4cc58bb2fe8f8978697d53d6aa003ee5d3f3db3b9c3305ca",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "app/calendar/private/[token]/route.ts",
+          "status": "modified",
+          "sha256": "07557c0b94dca7a51e481c2d46e089342f37c96007d331f6e3222252e5ffdef8",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/calendar-suite/suite-quick.tsx",
+          "status": "modified",
+          "sha256": "b10f01d846c681a617960ec3cd525fb026cfa519c5cbd3ac4c83f85393e46dab",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "components/calendar-suite/use-suite-create.ts",
+          "status": "modified",
+          "sha256": "ddda0cab28d9ec4f4f3fb715d6f2434ad72f7ac5b5cb1592e56e9f92d48d025c",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "docs/ledger/rows/LIVE-2560.json",
+          "status": "added",
+          "sha256": "e536ff320a4cbf70a2d7f3c867d4db53a88e4ef4305ce60f45e89026d72bb593",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/entries-store.ts",
+          "status": "modified",
+          "sha256": "5567f214df1753f1d86bc56adc4be65dd6fb620a55ece3cfdfea1bf4741887ea",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/entries.ts",
+          "status": "modified",
+          "sha256": "3941479d6fb2e8d0fecaf8b0d875dcd8b4578105125863afe50e3d8fe386129a",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/only-me.test.ts",
+          "status": "added",
+          "sha256": "e9707319e08d42373931b5ea5b7b2d1b0216c722fc87e6fd9a892b1c1248788d",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/planner/pencil-it-in.ts",
+          "status": "modified",
+          "sha256": "b3fa3a9305621c8324593a63365159f7eaece4b069079954f2ad6ae82b362104",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "lib/calendar/registry.ts",
+          "status": "modified",
+          "sha256": "7d83da3f12b7459ec684552026244855e61ed39200835ca0c695dd04275d89e7",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/authz-route-ledger.json",
+          "status": "modified",
+          "sha256": "1991488c5b22233de59f47a315e5d2395c6ee14ad543a21c159954aa06a24951",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-schema-contract.mjs",
+          "status": "modified",
+          "sha256": "f7e6ab456b096545f697b87bbcee2b31b37a312877efc0634f51ff4e6f8dfa58",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/check-shipped-ids.mjs",
+          "status": "modified",
+          "sha256": "343ab47235848bb8605805df7eb2be94f5deb108eb3810eb90e61161e83da866",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/function-grants.txt",
+          "status": "modified",
+          "sha256": "860c916f66fbc983609ac73550658c4d2db05e9257ac59a7686e33cfa1e3b8a1",
+          "baseMode": "100644",
+          "headMode": "100644"
+        },
+        {
+          "file": "scripts/probes/only-me-calendar-2026-11-27.mjs",
+          "status": "added",
+          "sha256": "2dffb81240c802f78197e34911bfdad2a3fcd856fbed610f3375db74b548d3a9",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/migrations/20270346560000_calendar_only_me_entries.sql",
+          "status": "added",
+          "sha256": "f408ef7dc4d3cef085a70b10956c46fbbc9698453a433ea0152d1a956f4bea12",
+          "baseMode": "000000",
+          "headMode": "100644"
+        },
+        {
+          "file": "supabase/tests/calendar_only_me_entries.test.sql",
+          "status": "added",
+          "sha256": "ab23a4c3c18634319e7d25986e83de34f92aec09138a28dc690420dec6eb6d7b",
+          "baseMode": "000000",
+          "headMode": "100644"
+        }
+      ],
+      "workflowPath": ".github/workflows/db-tests.yml",
+      "workflowSha256": "c75247647a7fe4d4e032bc7afd7d5f2711747394d21d2390da5a8feb853c4fb7",
+      "apiAcceptanceStep": "Real local service, anon and authenticated Launch API acceptance",
+      "requiredSteps": [
+        "Start local Supabase (applies all migrations)",
+        "Run pgTAP RLS/RPC tests",
+        "Refuse an unstated permanent skip in the TAP output",
+        "Real local service, anon and authenticated Launch API acceptance",
+        "Always destroy dispatched staging containers and volumes"
+      ]
     }
   ]
 }
