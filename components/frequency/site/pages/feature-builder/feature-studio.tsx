@@ -16,6 +16,8 @@ import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { FqIcon } from '@/components/frequency/icon'
+import { BotCheck } from '@/components/frequency/auth/bot-check'
+import { BOT_CHECK_FIELD } from '@/lib/auth/bot-check'
 import { Input, Textarea } from '@/components/ui/field'
 import { claimFeatureWithEmail, claimFeatureWithGoogle, finishSignedIn } from '@/lib/feature-builder/actions'
 import { feature as featureEntry, type FeatureId } from '@/lib/feature-builder/catalog'
@@ -102,6 +104,9 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
   const [clock, setClock] = useState<ClockState>({ startedAt: null, endedAt: null })
   const [now, setNow] = useState(0)
   const [email, setEmail] = useState('')
+  // The invisible bot check (SEC-047). A token works once, so each send remounts the widget for a fresh one.
+  const [botToken, setBotToken] = useState('')
+  const [botRound, setBotRound] = useState(0)
   const [note, setNote] = useState<string | null>(error === 'save' ? 'We could not save that. Try again.' : error === 'draft' ? 'We lost part of that. Check the steps and try again.' : null)
   const [liveHref, setLiveHref] = useState<string | null>(done?.liveHref ?? null)
   const [pending, start] = useTransition()
@@ -177,7 +182,9 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
   const sendLink = () => start(async () => {
     setNote(null)
     if (!EMAIL.test(email.trim())) { setNote('Enter a full email address.'); return }
-    const res = await claimFeatureWithEmail(form({ email: email.trim() }))
+    const res = await claimFeatureWithEmail(form(botToken ? { email: email.trim(), [BOT_CHECK_FIELD]: botToken } : { email: email.trim() }))
+    setBotToken('')
+    setBotRound((n) => n + 1)
     if (!res.ok) { setNote(res.error); return }
     setPhase('sent')
   })
@@ -271,6 +278,7 @@ export function FeatureStudio({ feature, steps, copy, signedIn, done, error, pre
                     <button type="button" className="cs-email-go" disabled={pending} onClick={sendLink}>
                       {pending ? 'Sending...' : 'Email me a link to finish'}
                     </button>
+                    <BotCheck key={botRound} onToken={setBotToken} />
                   </>
                 )}
                 {note ? <p className="cs-alert" role="alert">{note}</p> : null}
