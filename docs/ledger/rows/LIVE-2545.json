@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-2545",
+  "title": "A Space's Orders tab lists every sale (tickets, donations and shop orders) with buyer, item, amount, date and status",
+  "lane": "live",
+  "priority": "P1",
+  "size": "S",
+  "status": "done",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/shop/orders-tab.tsx",
+    "ref": "Owner report 2026-11-27 (project thread: Trace the House of Fates payment)"
+  },
+  "detail": "Owner report 2026-11-27: House of Fates sold a $44 ticket at 8:27 PM Pacific on Nov 26 (live Stripe, destination charge to the Space's payout account, 0% Frequency fee). The owner could not find it. The Orders tab's money cards read four sources (shop orders, tickets, donations, split shares) and showed '2 orders, $88.00', but the list under them read shop orders alone and said 'No orders yet.', so a Space that sells tickets or takes donations never saw a single sale listed.\n\nDONE 2026-11-27: lib/commerce/space-sales.ts reads ticket sales (same event rule as the earnings cards) and donations, names the buyer (member display name, or the email a guest paid with) and the Orders tab lists them beside shop orders, newest first, each with what, who, how much, when and Paid or Refunded. Shop order rows name their buyer too. The empty state shows only when there is no sale of any kind.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/space-sales-2026-11-27.mjs LIVE-2545",
+    "note": "Passes while the consequence in the title holds."
+  },
+  "closed": "2026-11-27",
+  "wave": "W7"
+}
