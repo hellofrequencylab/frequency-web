@@ -36,7 +36,6 @@ import { listSpaceCustomFields } from '@/lib/crm/import/store'
 import { templateFieldsForContact } from '@/lib/crm/segment-fields'
 import { humanizeFieldKey } from '@/lib/crm/import/custom-fields'
 import type { ValueType } from '@/lib/crm/import/types'
-import { listSpacePurchasesForPerson, type SpaceSale } from '@/lib/commerce/space-sales'
 
 /** The identity + enriched fields the detail header shows. name/email come from the Space contact row;
  *  phone/company/city are best-effort enrichment from a linked capture (null when none is known). */
@@ -112,9 +111,6 @@ export interface SpaceContactDetail {
   timeline: TimelineEntry[]
   deals: CrmDeal[]
   notes: ClientNote[]
-  /** What this person bought from this Space (LIVE-2549): tickets, gifts and shop orders, newest
-   *  first. Empty for someone who has bought nothing, and on any read error. */
-  purchases: SpaceSale[]
   /** Altitude 3: the resonance/health insight band + About facts (fail-safe, member-only). */
   insight: SpaceContactInsight
 }
@@ -155,14 +151,13 @@ export async function getSpaceContactDetail(
   // Fold the sources in parallel; each is independently fail-safe. The Space's custom-field registry labels
   // + types this contact's meta.custom (fail-safe to []). The person-stitch read is STRICTLY scoped to this
   // Space (listInteractionsForPerson(..., spaceId)), so it never surfaces another party's platform touches.
-  const [enrichment, interactions, notes, dealsAll, registry, templated, purchases] = await Promise.all([
+  const [enrichment, interactions, notes, dealsAll, registry, templated] = await Promise.all([
     enrichFromCapture(contact.email, editorId, spaceId),
     listInteractionsForPerson([contactId, profileId], 100, spaceId),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
     listSpaceCustomFields(spaceId),
     templateFieldsForContact(spaceId, contactId),
-    listSpacePurchasesForPerson(spaceId, { profileId, email: contact.email }),
   ])
   const registryByKey = new Map(registry.map((f) => [f.key, f]))
 
@@ -221,7 +216,7 @@ export async function getSpaceContactDetail(
     autoAllowed,
   )
 
-  return { identity, timeline, deals, notes, purchases, insight }
+  return { identity, timeline, deals, notes, insight }
 }
 
 /** The member profile id behind a Space contact (the score / matches / facts key), or null for a

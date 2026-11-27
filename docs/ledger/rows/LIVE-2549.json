@@ -6,10 +6,10 @@
   "size": "M",
   "status": "done",
   "source": {
-    "file": "lib/crm/space-contact-detail.ts",
+    "file": "modules/crm/components/space-contact-detail.tsx",
     "ref": "Owner report 2026-11-27 (project thread: Trace the House of Fates payment); audit /mnt/project-files/payments-audit/PAYMENTS-ORDERS-TICKETS-AUDIT-2026-11-27.md item 7"
   },
-  "detail": "Owner report 2026-11-27: 'Toni couldn't get any info on her profile.' Settling a ticket files the buyer as a contact of the Space, but the contact record read no sales table at all (lib/crm never touched event_tickets, commerce_orders or space_donations), so the person who just paid looked like a stranger.\n\nDONE 2026-11-27: listSpacePurchasesForPerson (lib/commerce/space-sales.ts) reads the person's tickets to this Space's events (by member profile, or by the email on a guest ticket), their gifts to this Space and the shop orders this Space sold them, every read scoped to the Space. The contact record shows a Purchases section with each item, kind, date, Paid or Refunded and amount, and a line for the total spent net of refunds. No migration.",
+  "detail": "Owner report 2026-11-27: 'Toni couldn't get any info on her profile.' Settling a ticket files the buyer as a contact of the Space, but the contact record read no sales table at all (lib/crm never touched event_tickets, commerce_orders or space_donations), so the person who just paid looked like a stranger.\n\nDONE 2026-11-27: listSpacePurchasesForPerson (lib/commerce/space-sales.ts) reads the person's tickets to this Space's events (by member profile, or by the email on a guest ticket), their gifts to this Space and the shop orders this Space sold them, every read scoped to the Space, and only after the owner-gated contact read has answered (the read lives in the component, so the LIVE-881 privacy harness on the detail module is untouched). The contact record shows a Purchases section with each item, kind, date, Paid or Refunded and amount, and a line for the total spent net of refunds. No migration.",
   "verify": {
     "kind": "cmd",
     "cmd": "node scripts/probes/space-sales-2026-11-27.mjs LIVE-2549",

@@ -48,9 +48,9 @@ if (id === 'LIVE-2545') {
   const fn = sales.slice(sales.indexOf('export async function listSpacePurchasesForPerson'))
   if (!fn) bad.push('no per-person purchase read')
   if (!/owner_space_id', spaceId/.test(fn) || !fn.includes('ticketSales(spaceId')) bad.push('purchases are not scoped to the Space')
-  const detail = code(read('lib/crm/space-contact-detail.ts'))
-  if (!detail.includes('listSpacePurchasesForPerson(spaceId')) bad.push('the contact detail never reads purchases')
   const view = code(read('modules/crm/components/space-contact-detail.tsx'))
+  if (!view.includes('listSpacePurchasesForPerson(spaceId')) bad.push('the contact record never reads purchases')
+  if (view.indexOf('listSpacePurchasesForPerson(spaceId') < view.indexOf('getSpaceContactDetail(spaceId')) bad.push('purchases are read before the owner gate answers')
   if (!view.includes('title="Purchases"')) bad.push('the contact record has no Purchases section')
   if (!view.includes('lifetimeSpendCents(purchases)')) bad.push('the contact record does not total what the person spent')
 } else {

@@ -23,7 +23,7 @@ import {
 import { getSpaceContactDetail, type SpaceContactInsight } from '@/lib/crm/space-contact-detail'
 import { ContactCustomFieldsEditor } from './contact-custom-fields-editor'
 import { formatMoney } from '@/lib/crm/pipeline'
-import { lifetimeSpendCents, type SpaceSale } from '@/lib/commerce/space-sales'
+import { lifetimeSpendCents, listSpacePurchasesForPerson, type SpaceSale } from '@/lib/commerce/space-sales'
 import { formatPriceCents } from '@/lib/commerce/types'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -117,7 +117,10 @@ export async function SpaceContactDetail({
     )
   }
 
-  const { identity, timeline, deals, notes, purchases, insight } = detail
+  const { identity, timeline, deals, notes, insight } = detail
+  // What they bought from this Space (LIVE-2549). Read only after the owner-gated, Space-scoped detail
+  // above has answered, and itself scoped to this Space on every table. Fail-soft to [].
+  const purchases = await listSpacePurchasesForPerson(spaceId, { profileId: insight.profileId, email: identity.email })
   const name = identity.name || identity.email || 'Unnamed contact'
 
   // Derive an at-a-glance recency line from the existing timeline (newest-first out of buildTimeline):
