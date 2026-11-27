@@ -189,7 +189,7 @@ export async function loadCampaignFromName(campaignId: string): Promise<string |
  * is configured, every reply lands as a ticket on the CRM Inbox timeline (/admin/crm/inbox) and alerts the
  * owner. Override per-deployment with the EMAIL_REPLY_TO env var.
  */
-export const BRAND_REPLY_TO = 'hello@frequencylocal.com'
+const BRAND_REPLY_TO = 'hello@frequencylocal.com'
 
 /**
  * Resolve the Reply-To for a campaign. It is ALWAYS the brand inbox (EMAIL_REPLY_TO env, else BRAND_REPLY_TO)

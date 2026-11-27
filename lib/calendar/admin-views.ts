@@ -4,7 +4,7 @@
 export const CALENDAR_ADMIN_VIEWS = ['guest', 'admin', 'list', 'workflow'] as const
 type CalendarAdminView = (typeof CALENDAR_ADMIN_VIEWS)[number]
 
-export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
+const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   view: CalendarAdminView
   label: string
   /** One line under the Calendar heading. Guest interpolates the Space name. */

@@ -135,7 +135,7 @@ export interface NotificationContexts {
  *  read). The bell prints the actor's name before `body` and picks its destination from
  *  `type` + `referenceType` + `referenceId` (lib/notifications/href.ts), so a type that rides
  *  the in-app channel hands in exactly that tuple; there is no free-form URL on the row. */
-export interface InappPayload {
+interface InappPayload {
   /** The row's `type`, e.g. 'guestbook_signed'. */
   type: string
   /** The sentence after the actor's name, e.g. 'signed your guestbook'. */
