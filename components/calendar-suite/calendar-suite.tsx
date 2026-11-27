@@ -39,6 +39,8 @@ import { SuiteNeedsYou } from './suite-needs-you'
 import { SuiteRail } from './suite-rail'
 import type { CommandRow } from '@/lib/calendar/planner/command-results'
 import { SuiteCommand } from './suite-command'
+import { SuiteSheet } from './suite-sheet'
+import { VeraCalendarBox } from '@/components/spaces/vera-calendar-box'
 import { SuitePencil } from './suite-pencil'
 import { SuiteQuick } from './suite-quick'
 import { SuiteSettings } from './suite-settings'
@@ -122,7 +124,7 @@ export interface CalendarSuiteProps {
   detailsActions?: DetailsActions
 }
 
-type Sheet = 'pencil' | 'command' | 'settings' | null
+type Sheet = 'pencil' | 'command' | 'settings' | 'vera' | null
 /** What the Pencil it in sheet opens with: a day and a title carried over from a quick add. */
 interface PencilSeed {
   day: string | null
@@ -191,6 +193,8 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   const [railOpen, setRailOpen] = useState(false)
   const [jumpOpen, setJumpOpen] = useState(false)
   const [sheet, setSheet] = useState<Sheet>(null)
+  /** What the command bar handed to Ask Vera; she reads it as soon as her sheet opens. */
+  const [veraAsk, setVeraAsk] = useState('')
   const [seed, setSeed] = useState<PencilSeed>({ day: null, title: '' })
   const [quick, setQuick] = useState<(QuickAnchor & { box: { width: number; height: number } }) | null>(null)
   const box = useRef<HTMLDivElement>(null)
@@ -407,6 +411,12 @@ export function CalendarSuite(props: CalendarSuiteProps) {
   // The command bar's rows. Views, Today, a Plan or a date just move the calendar; the create row writes.
   const runCommand = useCallback(
     async (row: CommandRow, parsed: ReturnType<typeof parseCommand>): Promise<string | null> => {
+      if (row.type === 'vera') {
+        if (!canEdit) return 'You can look at this calendar but not change it.'
+        setVeraAsk(row.ask)
+        setSheet('vera')
+        return null
+      }
       if (row.type === 'view') chooseView(row.view)
       else if (row.type === 'today') goToday()
       else if (row.type === 'plan') select({ kind: 'plan', id: row.ref })
@@ -592,7 +602,22 @@ export function CalendarSuite(props: CalendarSuiteProps) {
           items={data.items}
           onRun={runCommand}
           onClose={() => setSheet(null)}
+          vera={canEdit}
         />
+      ) : null}
+      {sheet === 'vera' && canEdit ? (
+        <SuiteSheet title="Ask Vera" line="She proposes. Nothing changes until you accept." onClose={() => setSheet(null)}>
+          <VeraCalendarBox
+            slug={slug}
+            year={Number(activeYm.slice(0, 4))}
+            month1={Number(activeYm.slice(5, 7))}
+            plans={data.plans}
+            events={data.items}
+            spaceTimeZone={props.storedZone ?? null}
+            initialAsk={veraAsk}
+            defaultOpen
+          />
+        </SuiteSheet>
       ) : null}
       {sheet === 'settings' ? (
         <SuiteSettings

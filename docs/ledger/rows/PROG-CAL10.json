@@ -8,6 +8,6 @@
     }
   },
   "append": {
-    "detail": "2026-11-27 (SCAN-1344): the public Calendar tab stopped carrying its own team mode, per the owner ruling of 2026-11-25 (\"Public only, link to team\"). The team half of this row now lives on the team calendar at /spaces/<slug>/settings/calendar; the probe was rewritten to measure that."
+    "detail": "2026-11-27 (SCAN-1344): the public Calendar tab stopped carrying its own team mode, per the owner ruling of 2026-11-25 (\"Public only, link to team\"). The team half of this row now lives on the team calendar at /spaces/<slug>/settings/calendar; the probe was rewritten to measure that. 2026-11-27 (owner chose Ask Vera on the team calendar): the check now measures the real Vera, not the command bar parser that only shares its placeholder wording. The suite mounts VeraCalendarBox in its own sheet, the bar hands it what was typed, and the box still proposes through veraCalendarCommand and holds Accept on a destructive line."
   }
 }

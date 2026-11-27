@@ -147,7 +147,15 @@ const CHECKS = {
   // Vera on the calendar lives in the team calendar's command bar.
   'PROG-CAL10': () => {
     const f = oneCalendarForEveryone()
-    if (!suiteHas(/Tell Vera what to add, find or open/)) f.push('the team calendar has no Ask Vera')
+    // The real Vera, not the command bar's plain parser (which only reads one item at a time): the
+    // suite mounts VeraCalendarBox in its own sheet, the bar hands it what was typed, and the box
+    // still calls the proposal action and gates Accept (owner ruling 2026-11-27, Ask Vera on the team calendar).
+    if (!suiteHas(/<VeraCalendarBox\b/)) f.push('the team calendar does not mount Ask Vera (VeraCalendarBox)')
+    if (!suiteHas(/row\.type === 'vera'/) || !/type: 'vera'/.test(code('lib/calendar/planner/command-results.ts')))
+      f.push('the command bar no longer hands what was typed to Ask Vera')
+    const box = code('components/spaces/vera-calendar-box.tsx')
+    if (!/veraCalendarCommand\(/.test(box) || !/applyVeraChanges\(/.test(box)) f.push('Ask Vera no longer proposes through veraCalendarCommand and applies through applyVeraChanges')
+    if (!/needsConfirmation/.test(box)) f.push('Ask Vera no longer holds Accept until a destructive line is confirmed')
     return f
   },
   // The full-screen edit mode is the team calendar itself now.
