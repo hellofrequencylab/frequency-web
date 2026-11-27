@@ -6628,7 +6628,7 @@
         {
           "file": "supabase/tests/calendar_meeting_kind.test.sql",
           "status": "added",
-          "sha256": "a51b3a035216ec665cb5b981d0d6d57d117d753d3be80c4d2f583720bddc510e",
+          "sha256": "c7810a10055e15fe12a0044431c01b591d05b2e713e341b5f50289e7952e670e",
           "baseMode": "000000",
           "headMode": "100644"
         }
